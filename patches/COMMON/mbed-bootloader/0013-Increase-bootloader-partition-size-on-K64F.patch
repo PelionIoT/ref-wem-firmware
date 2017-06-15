@@ -1,0 +1,32 @@
+From dc7f4f6632a5b7f9e06706001adf9a302eb12854 Mon Sep 17 00:00:00 2001
+From: Nic Costa <nic.costa@arm.com>
+Date: Wed, 25 Oct 2017 09:26:46 -0500
+Subject: [PATCH 3/3] Increase bootloader partition size on K64F
+
+With our FOTA patches, the bootloader is too large to fit
+within the 131072 size boundary.  Increase the size to the
+next available write block size.
+
+Signed-off-by: Nic Costa <nic.costa@arm.com>
+---
+ mbed_app.json | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mbed_app.json b/mbed_app.json
+index 7d4fe93..0b1108e 100755
+--- a/mbed_app.json
++++ b/mbed_app.json
+@@ -34,8 +34,8 @@
+         },
+         "K64F": {
+             "app.use-spi-flash": false,
+-            "firmware_metadata_header_address": "0x20000",
+-            "update-client.application-details": "0x20000",
++            "firmware_metadata_header_address": "0x24000",
++            "update-client.application-details": "0x24000",
+             "firmware_metadata_header_size": "0x400"
+         },
+         "NUCLEO_F429ZI": {
+-- 
+2.14.2
+
