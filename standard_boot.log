@@ -1,0 +1,7 @@
+FOTA demo version:
+init platform
+sd init OK
+init platform: OK
+init network
+[WIFI] connected:
+mbed client registered
