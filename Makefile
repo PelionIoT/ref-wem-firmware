@@ -1,4 +1,4 @@
-PROG:=fotademo
+PROG:=fota-demo
 
 # Specify the default target and toolchain to build.  The defaults are used
 # if 'mbed target' and 'mbed toolchain' are not set.
