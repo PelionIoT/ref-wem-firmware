@@ -119,10 +119,11 @@ clean:
 	rm -rf BUILD
 
 .PHONY: distclean
+distclean:
 	rm -rf Chainable_RGB_LED
 	rm -rf esp8266_driver
 	rm -rf mbed-os
-	rm .deps
+	rm -f .deps
 
 .deps:
 	mbed deploy && touch .deps
