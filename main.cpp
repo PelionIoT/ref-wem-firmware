@@ -23,6 +23,6 @@ int main()
     set_baud(115200);
 
     printf("hello world\r\n");
-    power_led.setColorRGB(0, 1, 0, 0);
+    power_led.setColorRGB(0, 255, 255, 255);
 }
 
