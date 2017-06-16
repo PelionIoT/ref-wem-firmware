@@ -92,11 +92,11 @@ endef
 all: build
 
 .PHONY: clean-build
-clean-build:
+clean-build: .deps
 	@$(call Build/Compile,"--clean")
 
 .PHONY: build
-build:
+build: .deps
 	@$(call Build/Compile)
 
 .PHONY: stats
@@ -117,3 +117,13 @@ tags: Makefile $(SRCS) $(HDRS)
 .PHONY: clean
 clean:
 	rm -rf BUILD
+
+.PHONY: distclean
+distclean:
+	rm -rf Chainable_RGB_LED
+	rm -rf esp8266_driver
+	rm -rf mbed-os
+	rm -f .deps
+
+.deps:
+	mbed deploy && touch .deps
