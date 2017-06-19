@@ -27,10 +27,11 @@ fota-demo is now under ``~/workspace/fota-demo``.  You can look at ``main.cpp`` 
 
 Need to make the current directory an mbed project and install the mbed-os library for the first time setup.
 	
-	```
-	mbed config root .
-	mbed deploy
-	```
+```
+mbed config root .
+mbed deploy
+```
+
 
 ## Compiling
 
