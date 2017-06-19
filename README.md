@@ -23,6 +23,15 @@ To import fota-demo, from the command line:
 
 fota-demo is now under ``~/workspace/fota-demo``.  You can look at ``main.cpp`` to familiarize yourself with the code.
 
+## Setting up mbed environment
+
+Need to make the current directory an mbed project and install the mbed-os library for the first time setup.
+	
+	```
+	mbed config root .
+	mbed deploy
+	```
+
 ## Compiling
 
 The fota-demo project uses a Makefile to compile the source code.  The Makefile attempts to detect the toolchain and target and calls the mbed compiler with appropriate options.
