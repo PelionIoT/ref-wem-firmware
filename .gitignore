@@ -2,3 +2,4 @@
 .deps
 *.swp
 esp8266-driver/
+.targetpath

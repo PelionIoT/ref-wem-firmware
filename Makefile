@@ -59,11 +59,10 @@ else
 	MBED_PROFILE:=${BUILD_PROFILE}
 endif
 
-# Specifies the path to DAPLINK for firmware flashing
-MBED_DAPLINK_MOUNT_PATH:=$(shell mbed detect | grep "mounted" | awk '{ print $$NF }')
-
 # Specifies the path to the directory containing build output files
-MBED_BUILD_DIR:="./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}"
+MBED_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}
+
+BIN_FILE:=${MBED_BUILD_DIR}/${PROG}.bin
 
 # Builds the command to call 'mbed compile'.
 # $1: add extra options to the final command line
@@ -105,9 +104,11 @@ stats:
 	echo "$${cmd}"; \
 	$${cmd}
 
+$(BIN_FILE): build
+
 .PHONY: install flash
-install flash:
-	@cmd="cp ${MBED_BUILD_DIR}/${PROG}.bin ${MBED_DAPLINK_MOUNT_PATH}"; \
+install flash: .targetpath $(BIN_FILE)
+	@cmd="cp ${MBED_BUILD_DIR}/${PROG}.bin $$(cat .targetpath)"; \
 	echo "$${cmd}"; \
 	$${cmd}
 
@@ -119,14 +120,23 @@ clean:
 	rm -rf BUILD
 
 .PHONY: distclean
-distclean:
+distclean: clean
 	rm -rf Chainable_RGB_LED
 	rm -rf esp8266_driver
 	rm -rf mbed-os
 	rm -f .deps
+	rm -f .targetpath
 
 .mbed:
 	mbed config ROOT .
 
 .deps: .mbed
 	mbed deploy && touch .deps
+
+# Acquire (and cache) the mount point of the board.
+# If this fails, check that the board is mounted, and 'mbed detect' works.
+# If the mount point changes, run 'make distclean'
+.targetpath: .deps
+	@set -o pipefail; TARGETPATH=$$(mbed detect | grep "mounted" | awk '{ print $$NF }') && \
+		(echo $$TARGETPATH > .targetpath) || \
+		(echo Error: could not detect mount path for the mbed board.  Verify that 'mbed detect' works.; exit 1)
