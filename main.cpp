@@ -7,7 +7,7 @@
 */
 #include "mbed.h"
 #include <ESP8266Interface.h>
-#include "ChainableLED.h"
+#include "ws2801.h"
 
 static void set_baud(int baudrate)
 {
@@ -41,20 +41,34 @@ static nsapi_security_t wifi_security_str2sec(const char *security)
     return NSAPI_SECURITY_NONE;
 }
 
+
+int COLOR_PASS[] = {
+        WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
+        WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
+        WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
+        WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE
+};
+int COLOR_FAIL[] = {
+        RED, RED, RED, RED, RED, RED, RED, RED,
+        RED, RED, RED, RED, RED, RED, RED, RED,
+        RED, RED, RED, RED, RED, RED, RED, RED,
+        RED, RED, RED, RED, RED, RED, RED, RED
+};
+
 // main() runs in its own thread in the OS
 int main()
 {
     int ret;
-    ChainableLED power_led(D5, D6, 1);
     ESP8266Interface wifi(MBED_CONF_APP_WIFI_TX,
                           MBED_CONF_APP_WIFI_RX,
                           MBED_CONF_APP_WIFI_DEBUG);
+    ws2801 led_strip(D3, D2, 32);
+    led_strip.level(100);
 
     /* console baudrate */
     set_baud(115200);
 
     printf("hello world\r\n");
-    power_led.setColorRGB(0, 255, 255, 255);
 
     /* bring up wifi */
     printf("[WIFI] connecting to: %s\n", MBED_CONF_APP_WIFI_SSID);
@@ -64,8 +78,12 @@ int main()
     if (0 != ret) {
         printf("[WIFI] Failed to connect to: %s (%d)\n",
                MBED_CONF_APP_WIFI_SSID, ret);
+        led_strip.post(COLOR_FAIL);
         return ret;
     }
+
+    led_strip.post(COLOR_PASS);
+
     printf("[WIFI] connected to: %s, ip=%s, netmask=%s, gateway=%s\r\n",
            MBED_CONF_APP_WIFI_SSID,
            wifi.get_ip_address(),
