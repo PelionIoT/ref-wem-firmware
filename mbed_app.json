@@ -1,0 +1,32 @@
+{
+    "config": {
+        "network-interface":{
+            "help": "Options are ETHERNET, WIFI_ESP8266",
+            "value": "WIFI_ESP8266"
+        },
+        "wifi-tx": {
+            "help": "TX pin for serial connection to external device",
+            "value": "D1"
+        },
+        "wifi-rx": {
+            "help": "RX pin for serial connection to external device",
+            "value": "D0"
+        },
+        "wifi-debug": {
+            "help": "Enable debug output for WiFi drivers",
+            "value": "false"
+        },
+        "wifi-ssid": {
+            "help": "The SSID to connect to if using a WiFi interface",
+            "value": "\"Guest-AccessNG\""
+        },
+        "wifi-security": {
+            "help": "WPA, WPA2, WPA/WPA2, WEP, NONE, OPEN",
+            "value": "\"NONE\""
+        },
+        "wifi-password": {
+            "help": "An optional password for wifi security authentication",
+            "value": "\"\""
+        }
+    }
+}
