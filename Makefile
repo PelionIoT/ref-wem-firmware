@@ -125,5 +125,8 @@ distclean:
 	rm -rf mbed-os
 	rm -f .deps
 
-.deps:
+.mbed:
+	mbed config ROOT .
+
+.deps: .mbed
 	mbed deploy && touch .deps
