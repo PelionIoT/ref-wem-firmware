@@ -1,8 +1,27 @@
 {
+    "macros": ["MBEDTLS_USER_CONFIG_FILE=\"mbedtls_mbed_client_config.h\"",
+               "MBED_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
+               "MBED_CLOUD_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
+               "PAL_USE_FATFS_SD=1",
+               "SA_PV_OS_MBEDOS"],
+    "target_overrides": {
+        "*": {
+            "target.features_add": ["COMMON_PAL"],
+            "platform.stdio-baud-rate": 115200,
+            "platform.stdio-convert-newlines": true,
+            "lwip.ipv4-enabled": true,
+            "lwip.ipv6-enabled": false,
+            "mbed-client.sn-coap-max-blockwise-payload-size": 1024,
+            "mbed-trace.enable": null
+        },
+        "K64F": {
+            "mbed-client-pal.update-active-metadata-header-offset": "0x00020000"
+        }
+    },
     "config": {
-        "network-interface":{
-            "help": "Options are ETHERNET, WIFI_ESP8266",
-            "value": "WIFI_ESP8266"
+        "wifi":{
+            "help": "Use the ESP8266 WiFi interface instead of Ethernet",
+            "value": "false"
         },
         "wifi-tx": {
             "help": "TX pin for serial connection to external device",
