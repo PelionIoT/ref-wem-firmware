@@ -3,3 +3,5 @@
 *.swp
 esp8266-driver/
 .targetpath
+mbed_cloud_dev_credentials.c
+tags
