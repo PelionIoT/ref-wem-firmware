@@ -20,8 +20,8 @@
     },
     "config": {
         "wifi":{
-            "help": "Use the ESP8266 WiFi interface instead of Ethernet",
-            "value": "false"
+            "help": "Use the ESP8266 WiFi interface",
+            "value": "true"
         },
         "wifi-tx": {
             "help": "TX pin for serial connection to external device",
@@ -37,11 +37,11 @@
         },
         "wifi-ssid": {
             "help": "The SSID to connect to if using a WiFi interface",
-            "value": "\"Guest-AccessNG\""
+            "value": "\"iotlab\""
         },
         "wifi-security": {
             "help": "WPA, WPA2, WPA/WPA2, WEP, NONE, OPEN",
-            "value": "\"NONE\""
+            "value": "\"WPA2\""
         },
         "wifi-password": {
             "help": "An optional password for wifi security authentication",
