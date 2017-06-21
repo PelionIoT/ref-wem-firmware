@@ -125,6 +125,10 @@ distclean: clean
 	rm -rf Chainable_RGB_LED
 	rm -rf esp8266_driver
 	rm -rf mbed-os
+	rm -rf sd-driver
+	rm -rf ws2801
+	rm -rf mbed-cloud-client-restricted
+	rm -rf mbed-cloud-client-internal
 	rm -f .deps
 	rm -f .targetpath
 

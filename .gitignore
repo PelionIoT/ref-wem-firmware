@@ -2,6 +2,8 @@
 .deps
 *.swp
 esp8266-driver/
+ws2801/
+sd-driver/
 .targetpath
 mbed_cloud_dev_credentials.c
 tags
