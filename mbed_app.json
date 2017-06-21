@@ -46,6 +46,7 @@
         "wifi-password": {
             "help": "An optional password for wifi security authentication",
             "value": "\"\""
-        }
+        },
+	"version": "\"0.1.0\""
     }
 }

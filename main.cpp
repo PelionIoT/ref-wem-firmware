@@ -201,7 +201,7 @@ int main()
     NetworkInterface *net;
     ws2801 led_strip(D3, D2, 32);
 
-    printf("hello world\n");
+    printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
 
     /* minimal init sequence */
     printf("init platform\n");
