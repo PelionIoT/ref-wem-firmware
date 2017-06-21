@@ -7,3 +7,5 @@ sd-driver/
 .targetpath
 mbed_cloud_dev_credentials.c
 tags
+combined.bin
+.patches

@@ -33,6 +33,11 @@ ifeq (${MBED_TARGET},)
   MBED_TARGET:=$(shell mbed detect | grep "Detected" | awk '{ print $$3 }' | sed 's/,//')
   ifeq (${MBED_TARGET},)
     MBED_TARGET:=${DEFAULT_TARGET}
+  else
+    # We only support K64F at this time
+    ifneq (${MBED_TARGET},K64F)
+      $(error We only support K64F at this time.)
+    endif
   endif
 endif
 
@@ -63,7 +68,26 @@ endif
 # Specifies the path to the directory containing build output files
 MBED_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}
 
-BIN_FILE:=${MBED_BUILD_DIR}/${PROG}.bin
+# This file is the combination of the bootloader and the program.
+# Initially flash this file via the USB interface.
+# Subsequently, update using just the program file.
+COMBINED_BIN_FILE:=${MBED_BUILD_DIR}/combined.bin
+
+# Determine the correct bootloader and patches to use
+# The linker script patch allows the compiled application to run after the mbed bootloader.
+# The ram patch gives us more than 130k of ram to use
+ifeq (${MBED_TARGET},K64F)
+  BOOTLOADER:=tools/mbed-bootloader-k64f.bin
+  APP_OFFSET:=0x20400
+  HEADER_OFFSET:=0x20000
+  ifeq (${MBED_TOOLCHAIN},GCC_ARM)
+    PATCHES:=../tools/MK64FN1M0xxx12.ld.diff ../tools/gcc_k64f_ram_patch.diff
+  else ifeq (${MBED_TOOLCHAIN},IAR)
+    PATCHES:=../tools/MK64FN1M0xxx12.icf.diff
+  else ifeq (${MBED_TOOLCHAIN},ARM)
+    PATCHES:=./tools/MK64FN1M0xxx12.sct.diff
+  endif
+endif
 
 # Builds the command to call 'mbed compile'.
 # $1: add extra options to the final command line
@@ -83,20 +107,22 @@ define Build/Compile
 	[ -n "$${force_opts}" ] && { \
 		opts="$${force_opts}"; \
 	}; \
+	opts="$${opts} -N ${PROG}"; \
 	cmd="mbed compile $${opts}"; \
 	echo "$${cmd}"; \
 	$${cmd}
+	tools/combine_bootloader_with_app.py -b ${BOOTLOADER} -a ${MBED_BUILD_DIR}/${PROG}.bin --app-offset ${APP_OFFSET} --header-offset ${HEADER_OFFSET} -o ${COMBINED_BIN_FILE}
 endef
 
 .PHONY: all
 all: build
 
 .PHONY: clean-build
-clean-build: .deps
+clean-build: .deps .patches
 	@$(call Build/Compile,"--clean")
 
 .PHONY: build
-build: .deps
+build: .deps .patches
 	@$(call Build/Compile)
 
 .PHONY: stats
@@ -105,11 +131,11 @@ stats:
 	echo "$${cmd}"; \
 	$${cmd}
 
-$(BIN_FILE): build
+$(COMBINED_BIN_FILE): build
 
 .PHONY: install flash
-install flash: .targetpath $(BIN_FILE)
-	@cmd="cp ${MBED_BUILD_DIR}/${PROG}.bin $$(cat .targetpath)"; \
+install flash: .targetpath $(COMBINED_BIN_FILE)
+	@cmd="cp ${COMBINED_BIN_FILE} $$(cat .targetpath)"; \
 	echo "$${cmd}"; \
 	$${cmd}
 
@@ -131,6 +157,7 @@ distclean: clean
 	rm -rf mbed-cloud-client-internal
 	rm -f .deps
 	rm -f .targetpath
+	rm -f .patches
 
 .mbed:
 	mbed config ROOT .
@@ -145,3 +172,7 @@ distclean: clean
 	@set -o pipefail; TARGETPATH=$$(mbed detect | grep "mounted" | awk '{ print $$NF }') && \
 		(echo $$TARGETPATH > .targetpath) || \
 		(echo Error: could not detect mount path for the mbed board.  Verify that 'mbed detect' works.; exit 1)
+
+.patches: .deps
+	cd mbed-os && git apply ../tools/${PATCHES}
+	touch .patches
