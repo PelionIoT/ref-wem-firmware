@@ -8,6 +8,7 @@ DEFAULT_TOOLCHAIN:=GCC_ARM
 SRCDIR:=.
 SRCS:=$(wildcard $(SRCDIR)/*.cpp)
 HDRS:=$(wildcard $(SRCDIR)/*.h)
+LIBS:=$(wildcard $(SRCDIR)/*.lib)
 
 # Specify the path to the build profile.  If empty, the --profile option will
 # not be provided to 'mbed compile' which causes it to use the builtin default.
@@ -130,8 +131,8 @@ distclean: clean
 .mbed:
 	mbed config ROOT .
 
-.deps: .mbed
-	mbed deploy && touch .deps
+.deps: .mbed ${LIBS}
+	mbed deploy --protocol ssh && touch .deps
 
 # Acquire (and cache) the mount point of the board.
 # If this fails, check that the board is mounted, and 'mbed detect' works.
