@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <factory_configurator_client.h>
 #include <SDBlockDevice.h>
+#include <TextLCD.h>
 #include <ws2801.h>
 
 #if MBED_CONF_APP_WIFI
@@ -200,6 +201,8 @@ int main()
     int ret;
     NetworkInterface *net;
     ws2801 led_strip(D3, D2, 32);
+    I2C i2c_lcd(I2C_SDA, I2C_SCL);
+    TextLCD_I2C lcd(&i2c_lcd, 0x7e, TextLCD::LCD16x2, TextLCD::HD44780);
 
     printf("hello world\n");
 
@@ -219,9 +222,11 @@ int main()
     net = init_network();
     if (NULL == net) {
         printf("failed to init network\n");
+        lcd.printf("Wifi fail");
         return -ENODEV;
     }
     printf("init network: OK\n");
+    lcd.printf("Wifi Connected");
 
     /* initialize the factory configuration client */
     printf("init factory configuration client\n");
