@@ -131,7 +131,7 @@ distclean: clean
 	mbed config ROOT .
 
 .deps: .mbed
-	mbed deploy && touch .deps
+	mbed deploy --protocol ssh && touch .deps
 
 # Acquire (and cache) the mount point of the board.
 # If this fails, check that the board is mounted, and 'mbed detect' works.
