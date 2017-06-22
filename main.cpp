@@ -218,7 +218,8 @@ int main()
     led_strip.level(100);
 
     lcd.setBacklight(TextLCD_I2C::LightOn);
-    lcd.printf("%s", MBED_CONF_APP_VERSION);
+    lcd.setCursor(TextLCD_I2C::CurOff_BlkOff);
+    lcd.printf("Version: %s", MBED_CONF_APP_VERSION);
 
     /* bring up the network */
     printf("init network\n");
