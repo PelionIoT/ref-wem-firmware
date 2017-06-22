@@ -204,7 +204,7 @@ int main()
     I2C i2c_lcd(I2C_SDA, I2C_SCL);
     TextLCD_I2C lcd(&i2c_lcd, 0x7e, TextLCD::LCD16x2, TextLCD::HD44780);
 
-    printf("hello world\n");
+    printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
 
     /* minimal init sequence */
     printf("init platform\n");

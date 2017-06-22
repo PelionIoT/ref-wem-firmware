@@ -12,7 +12,7 @@
 // from ARM Limited or its affiliates.
 //----------------------------------------------------------------------------
 
-#include "update_ui_example.h"
+#include "update-ui.h"
 
 #ifdef MBED_CLOUD_CLIENT_SUPPORT_UPDATE
 

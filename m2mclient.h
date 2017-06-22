@@ -16,7 +16,7 @@
 #define M2MCLIENT_H
 
 #include "m2mresources.h"
-#include "update_ui_example.h"
+#include "update-ui.h"
 
 #include <MbedCloudClient.h>
 #include <m2mdevice.h>
@@ -54,7 +54,7 @@ public:
         }
 
         /* Set callback functions for authorizing updates and monitoring
-         * progress.  Code is implemented in update_ui_example.cpp.
+         * progress.  Code is implemented in update-ui.cpp.
          * Both callbacks are completely optional. If no authorization callback
          * is set, the update process will proceed immediately in each step.
          */
