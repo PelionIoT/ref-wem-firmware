@@ -30,18 +30,16 @@
  * is defined in mbed_app.json */
 extern SDBlockDevice sd;
 
-int COLOR_POWER[] = {
-        WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
-        WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
-        WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
-        WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE
+enum INDICATOR_TYPES {
+    IND_POWER = 0,
+    IND_WIFI,
+    IND_CLOUD,
+    IND_NO_TYPES
 };
-
-int COLOR_CONNECTED[] = {
-        RED, RED, RED, RED, RED, RED, RED, RED,
-        RED, RED, RED, RED, RED, RED, RED, RED,
-        RED, RED, RED, RED, RED, RED, RED, RED,
-        RED, RED, RED, RED, RED, RED, RED, RED
+int LED_STATUS[IND_NO_TYPES] = {
+        BLACK,
+        BLACK,
+        BLACK
 };
 
 // ****************************************************************************
@@ -200,7 +198,7 @@ int main()
 {
     int ret;
     NetworkInterface *net;
-    ws2801 led_strip(D3, D2, 32);
+    ws2801 led_strip(D3, D2, IND_NO_TYPES);
     I2C i2c_lcd(I2C_SDA, I2C_SCL);
     TextLCD_I2C lcd(&i2c_lcd, 0x7e, TextLCD::LCD16x2, TextLCD::HD44780);
 
@@ -215,7 +213,8 @@ int main()
     printf("init platform: OK\n");
 
     /* let the world know we're alive */
-    led_strip.post(COLOR_POWER);
+    LED_STATUS[IND_POWER] = WHITE;
+    led_strip.post(LED_STATUS);
     led_strip.level(100);
 
     /* bring up the network */
@@ -228,7 +227,8 @@ int main()
     }
     printf("init network: OK\n");
     lcd.printf("Wifi Connected");
-    led_strip.post(COLOR_CONNECTED);
+    LED_STATUS[IND_WIFI] = RED;
+    led_strip.post(LED_STATUS);
 
     /* initialize the factory configuration client */
     printf("init factory configuration client\n");
