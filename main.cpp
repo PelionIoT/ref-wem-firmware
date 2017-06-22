@@ -30,14 +30,14 @@
  * is defined in mbed_app.json */
 extern SDBlockDevice sd;
 
-int COLOR_PASS[] = {
+int COLOR_POWER[] = {
         WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
         WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
         WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
         WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE
 };
 
-int COLOR_FAIL[] = {
+int COLOR_CONNECTED[] = {
         RED, RED, RED, RED, RED, RED, RED, RED,
         RED, RED, RED, RED, RED, RED, RED, RED,
         RED, RED, RED, RED, RED, RED, RED, RED,
@@ -215,6 +215,7 @@ int main()
     printf("init platform: OK\n");
 
     /* let the world know we're alive */
+    led_strip.post(COLOR_POWER);
     led_strip.level(100);
 
     /* bring up the network */
@@ -227,6 +228,7 @@ int main()
     }
     printf("init network: OK\n");
     lcd.printf("Wifi Connected");
+    led_strip.post(COLOR_CONNECTED);
 
     /* initialize the factory configuration client */
     printf("init factory configuration client\n");
