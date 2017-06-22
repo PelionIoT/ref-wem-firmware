@@ -217,16 +217,17 @@ int main()
     led_strip.post(LED_STATUS);
     led_strip.level(100);
 
+    lcd.setBacklight(TextLCD_I2C::LightOn);
+    lcd.printf("%s", MBED_CONF_APP_VERSION);
+
     /* bring up the network */
     printf("init network\n");
     net = init_network();
     if (NULL == net) {
         printf("failed to init network\n");
-        lcd.printf("Wifi fail");
         return -ENODEV;
     }
     printf("init network: OK\n");
-    lcd.printf("Wifi Connected");
     LED_STATUS[IND_WIFI] = RED;
     led_strip.post(LED_STATUS);
 
