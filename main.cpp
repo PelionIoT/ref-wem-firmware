@@ -60,20 +60,38 @@ static int init_platform()
     return 0;
 }
 
+static void mbed_client_on_registered(void *context)
+{
+    printf("mbed client registered: Cloud LED=Solid BLUE\n");
+}
+
+static void mbed_client_on_unregistered(void *context)
+{
+    printf("mbed client unregistered: Cloud LED=OFF\n");
+}
+
+static void mbed_client_on_error(void *context)
+{
+    printf("mbed client ERROR: Cloud LED=Blink\n");
+}
+
 static int run_mbed_client(NetworkInterface *iface)
 {
     M2MClient mbed_client;
 
     mbed_client.create_resources();
+    mbed_client.on_registered(NULL, mbed_client_on_registered);
+    mbed_client.on_unregistered(NULL, mbed_client_on_unregistered);
+    mbed_client.on_error(NULL, mbed_client_on_error);
 
-    printf("mbed client: connecting\n");
+    printf("mbed client: connecting: Cloud LED=Blink Blue\n");
     mbed_client.call_register(iface);
 
-    printf("mbed client: waiting for register called\n");
+    printf("mbed client: entering run loop\n");
     while (mbed_client.is_register_called()) {
         Thread::wait(1000);
     }
-    printf("mbed client: waiting for register called: DONE\n");
+    printf("mbed client: exited run loop\n");
 
     return 0;
 }
