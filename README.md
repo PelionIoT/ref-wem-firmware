@@ -105,5 +105,5 @@ make install
 ## Update over the air
 
 ```
-TODO
+make campaign
 ```
