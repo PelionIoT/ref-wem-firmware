@@ -84,6 +84,18 @@ fcc_dev_flow.c:(.text.fcc_developer_flow+0x13c): undefined reference to `MBED_CL
 ...
 ```
 
+### Cleaning the build
+
+```
+make clean
+```
+
+Make clean will clean the c++ compile output.
+```
+make distclean
+```
+Make distclean will remove all dependency files and generated files.
+
 ## Flashing your board
 
 ```
