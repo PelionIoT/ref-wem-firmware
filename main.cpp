@@ -42,11 +42,22 @@ enum INDICATOR_COLORS {
 };
 
 int LED_STATUS[IND_NO_TYPES] = {
-        IND_COLOR_OFF,
-        IND_COLOR_OFF,
-        IND_COLOR_OFF,
-        IND_COLOR_OFF,
-        IND_COLOR_OFF
+    IND_COLOR_OFF,
+    IND_COLOR_OFF,
+    IND_COLOR_OFF,
+    IND_COLOR_OFF,
+    IND_COLOR_OFF
+};
+/* really poor design, but we store the blinkind indicator in the upper 8-bits
+ * and the old color in the lower 24-bits. Once blinking is disabled then we
+ * just update the LED_STATUS field with the original color.
+ */
+int LED_BLINK[IND_NO_TYPES] = {
+    IND_COLOR_OFF,
+    IND_COLOR_OFF,
+    IND_COLOR_OFF,
+    IND_COLOR_OFF,
+    IND_COLOR_OFF
 };
 
 enum FOTA_THREADS {
@@ -71,11 +82,53 @@ Thread tman[FOTA_THREAD_COUNT] = {
 // ****************************************************************************
 // Functions
 // ****************************************************************************
+static bool led_blink_is_enabled(int led_name)
+{
+    return LED_BLINK[led_name] & 0x01000000;
+}
+
+static void led_blink_enable(int led_name)
+{
+    LED_BLINK[led_name] |= 0x01000000;
+}
+
+static void led_blink_disable(int led_name)
+{
+    LED_BLINK[led_name] &= 0x00FFFFFF;
+}
+
+static void led_set_color(enum INDICATOR_TYPES led_name, int led_color, bool blink = false)
+{
+    /* colors are only 24-bits */
+    int color = led_color & 0x00FFFFFF;
+
+    if (led_name >= IND_NO_TYPES) {
+        return;
+    }
+
+    LED_STATUS[led_name] = color;
+
+    /* save the blink state and only update the color */
+    LED_BLINK[led_name] &= 0xFF000000;
+    LED_BLINK[led_name] |= color;
+    blink ? led_blink_enable(led_name) : led_blink_disable(led_name);
+}
+
 static void thread_led_update()
 {
+    int idx;
+
     while (true) {
+        for (idx = 0; idx < IND_NO_TYPES; ++idx) {
+            if (led_blink_is_enabled(idx)) {
+                LED_STATUS[idx] = LED_STATUS[idx] == IND_COLOR_OFF ?
+                    LED_BLINK[idx] & 0x00FFFFFF : IND_COLOR_OFF;
+            } else {
+                LED_STATUS[idx] = LED_BLINK[idx] & 0x00FFFFFF;
+            }
+        }
         led_strip.post(LED_STATUS);
-        wait(0.2f);
+        wait(0.1f);
     }
 }
 
@@ -102,14 +155,6 @@ static int platform_init()
 static void platform_shutdown()
 {
     tman[FOTA_THREAD_LED].join();
-}
-
-static void led_set_color(enum INDICATOR_TYPES led_name, int led_color)
-{
-    if (led_name >= IND_NO_TYPES) {
-        return;
-    }
-    LED_STATUS[led_name] = led_color;
 }
 
 static void mbed_client_on_registered(void *context)
@@ -140,7 +185,7 @@ static int run_mbed_client(NetworkInterface *iface)
     mbed_client.on_error(NULL, mbed_client_on_error);
 
     printf("mbed client: connecting\n");
-    led_set_color(IND_CLOUD, IND_COLOR_IN_PROGRESS);
+    led_set_color(IND_CLOUD, IND_COLOR_IN_PROGRESS, true);
     mbed_client.call_register(iface);
 
     printf("mbed client: entering run loop\n");
@@ -294,7 +339,7 @@ int main()
 
     /* bring up the network */
     printf("init network\n");
-    led_set_color(IND_WIFI, IND_COLOR_IN_PROGRESS);
+    led_set_color(IND_WIFI, IND_COLOR_IN_PROGRESS, true);
     net = init_network();
     if (NULL == net) {
         printf("failed to init network\n");
