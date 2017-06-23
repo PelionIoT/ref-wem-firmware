@@ -1,11 +1,30 @@
 
 .deps
 *.swp
+
+# dependencies
 esp8266-driver/
 ws2801/
 sd-driver/
+TextLCD/
+manifest-tool-restricted/
+mbed-cloud-client-restricted/
+mbed-cloud-update-cli/
+mbed-os/
+
+# generated files
 .targetpath
-mbed_cloud_dev_credentials.c
 tags
 combined.bin
 .patches
+update_default_resources.c
+
+.firmware-url
+.manifest-id
+.manifest_tool.json
+dev-manifest
+.update-certificates/
+
+# credentials from the cloud
+.mbed-cloud-key
+mbed_cloud_dev_credentials.c
