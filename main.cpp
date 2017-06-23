@@ -49,6 +49,11 @@ int LED_STATUS[IND_NO_TYPES] = {
         IND_COLOR_OFF
 };
 
+enum FOTA_THREADS {
+    FOTA_THREAD_LED = 0,
+    FOTA_THREAD_COUNT
+};
+
 // ****************************************************************************
 // Globals
 // ****************************************************************************
@@ -58,10 +63,23 @@ extern SDBlockDevice sd;
 
 ws2801 led_strip(D3, D2, IND_NO_TYPES);
 
+Thread tman[FOTA_THREAD_COUNT] = {
+    /* LEDs */
+    { osPriorityNormal }
+};
+
 // ****************************************************************************
 // Functions
 // ****************************************************************************
-static int init_platform()
+static void thread_led_update()
+{
+    while (true) {
+        led_strip.post(LED_STATUS);
+        wait(0.2f);
+    }
+}
+
+static int platform_init()
 {
     int ret;
 
@@ -77,7 +95,13 @@ static int init_platform()
     led_strip.clear();
     led_strip.level(100);
 
+    tman[FOTA_THREAD_LED].start(thread_led_update);
     return 0;
+}
+
+static void platform_shutdown()
+{
+    tman[FOTA_THREAD_LED].join();
 }
 
 static void led_set_color(enum INDICATOR_TYPES led_name, int led_color)
@@ -86,7 +110,6 @@ static void led_set_color(enum INDICATOR_TYPES led_name, int led_color)
         return;
     }
     LED_STATUS[led_name] = led_color;
-    led_strip.post(LED_STATUS);
 }
 
 static void mbed_client_on_registered(void *context)
@@ -256,7 +279,7 @@ int main()
 
     /* minimal init sequence */
     printf("init platform\n");
-    ret = init_platform();
+    ret = platform_init();
     if (0 != ret) {
         return ret;
     }
@@ -299,6 +322,7 @@ int main()
         return ret;
     }
 
+    platform_shutdown();
     printf("exiting main\n");
     return 0;
 }
