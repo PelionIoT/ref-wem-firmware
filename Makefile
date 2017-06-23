@@ -118,11 +118,11 @@ endef
 all: build
 
 .PHONY: clean-build
-clean-build: .deps .patches update_default_resources.c
+clean-build: .deps .patches
 	@$(call Build/Compile,"--clean")
 
 .PHONY: build
-build: .deps .patches update_default_resources.c
+build: .deps .patches
 	@$(call Build/Compile)
 
 .PHONY: stats
@@ -131,7 +131,7 @@ stats:
 	echo "$${cmd}"; \
 	$${cmd}
 
-${COMBINED_BIN_FILE}: build
+$(COMBINED_BIN_FILE): build
 
 .PHONY: install flash
 install flash: .targetpath $(COMBINED_BIN_FILE)
@@ -155,16 +155,9 @@ distclean: clean
 	rm -rf ws2801
 	rm -rf mbed-cloud-client-restricted
 	rm -rf mbed-cloud-client-internal
-	rm -rf TextLCD
-	rm -rf manifest-tool-restricted
-	rm -f update_default_resources.c
 	rm -f .deps
 	rm -f .targetpath
 	rm -f .patches
-	rm -f .firmware-url
-	rm -f .manifest-id
-	rm -f .manifest_tool.json
-	rm -f ${MANIFEST_FILE}
 
 .mbed:
 	mbed config ROOT .
@@ -183,34 +176,3 @@ distclean: clean
 .patches: .deps
 	cd mbed-os && git apply ../tools/${PATCHES}
 	touch .patches
-
-################################################################################
-# Update related rules
-################################################################################
-
-update_default_resources.c: .deps
-	manifest-tool-restricted/bin/manifest-tool init -d "arm.com" -m "fota-demo" -q
-	touch update_default_resources.c
-
-.mbed-cloud-key:
-	@echo "Error: You need to save an mbed cloud API key in .mbed-cloud-key"
-	@echo "Please go to https://cloud.mbed.com/docs/v1.2/mbed-cloud-web-apps/access-mbed-cloud-with-api-keys.html"
-	@exit 1
-
-.PHONY: campaign
-campaign: .deps ${COMBINED_BIN_FILE} .mbed-cloud-key .manifest-id
-	python mbed-cloud-update-cli/create-campaign.py $$(cat .manifest-id) --key-file .mbed-cloud-key
-
-MANIFEST_FILE=dev-manifest
-.manifest-id: .firmware-url .mbed-cloud-key ${COMBINED_BIN_FILE}
-	manifest-tool-restricted/bin/manifest-tool create -u .firmware-url -p ${MBED_BUILD_DIR}/${PROG}.bin -o ${MANIFEST_FILE}
-	python mbed-cloud-update-cli/upload-manifest.py ${MANIFEST_FILE} --key-file .mbed-cloud-key -o $@
-
-.firmware-url: .mbed-cloud-key ${COMBINED_BIN_FILE}
-	python mbed-cloud-update-cli/upload-firmware.py ${MBED_BUILD_DIR}/${PROG}.bin --key-file .mbed-cloud-key -o $@
-
-.PHONY: certclean
-certclean:
-	rm -rf .update-certificates
-	rm -rf .manifest_tool.json
-	rm -f update_default_resources
