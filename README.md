@@ -71,45 +71,6 @@ The fota-demo project uses a Makefile to compile the source code.  The Makefile 
 make
 ```
 
-Alternatively, the mbed compiler can be invoked manually.  Invoke `mbed compile`, specifying:
-
-* Your board: ``-m <board_name>``
-* Your toolchain: ``-t <`GCC_ARM`, `ARM` or `IAR`>``
-* An optinal build profile: ``--profile path/to/profile.json``
-
-For example, for the board K64F and GCC compiler:
-
-```
-mbed compile -t GCC_ARM -m K64F --profile build_profile.json
-```
-
-Your PC may take a few minutes to compile the code.  At the end you should see the following result:
-
-```
-+--------------------------+-------+-------+-------+
-| Module                   | .text | .data |  .bss |
-+--------------------------+-------+-------+-------+
-| Fill                     |   122 |     0 |  2264 |
-| Misc                     | 22593 |  2480 |   117 |
-| features/storage         |    42 |     0 |   184 |
-| hal                      |   418 |     0 |     8 |
-| platform                 |   818 |     4 |   269 |
-| rtos                     |    40 |     4 |     4 |
-| rtos/rtx                 |  5841 |    20 |  6870 |
-| targets/TARGET_Freescale |  4962 |    12 |   384 |
-| Subtotals                | 34836 |  2520 | 10100 |
-+--------------------------+-------+-------+-------+
-Allocated Heap: 24580 bytes
-Allocated Stack: unknown
-Total Static RAM memory (data + bss): 12620 bytes
-Total RAM memory (data + bss + heap + stack): 37200 bytes
-Total Flash memory (text + data + misc): 38396 bytes
-
-Image: ./BUILD/K64F/GCC_ARM/fota-demo.bin
-```
-
-The program file, ``fota-demo.bin``, is under your ``./BUILD/K64F/GCC_ARM/`` folder.
-
 ### Compilation Errors
 
 The fota-demo project will fail to compile if a developer certificate is not present in the local source directory.  This file is typically named ``mbed_cloud_dev_credentials.c`` and defines several key constants.  Please see [Downloading A Developer Certificate](#GetDevCert) for more information.
@@ -123,12 +84,26 @@ fcc_dev_flow.c:(.text.fcc_developer_flow+0x13c): undefined reference to `MBED_CL
 ...
 ```
 
+### Cleaning the build
+
+```
+make clean
+```
+
+Make clean will clean the c++ compile output.
+```
+make distclean
+```
+Make distclean will remove all dependency files and generated files.
+
 ## Flashing your board
 
-mbed Enabled boards are programmable by drag and drop over a USB connection.
+```
+make install
+```
 
-1. Connect your mbed board to the computer over USB.
-2. Copy the binary file to the board. In the example above, the file is ``fota-demo.bin``, and it's under the ``./BUILD/K64F/GCC_ARM/`` folder.
-3. Press the reset button to start the program.
+## Update over the air
 
-For more information, see the [DAPLINK](https://developer.mbed.org/handbook/DAPLink) documentation.
+```
+make campaign
+```
