@@ -73,20 +73,20 @@ static void led_set_color(enum LED_TYPE led_name, int led_color)
 
 static void mbed_client_on_registered(void *context)
 {
-    printf("mbed client registered: Cloud LED=Solid BLUE\n");
+    printf("mbed client registered\n");
     led_set_color(LED_CLOUD, BLUE);
 }
 
 static void mbed_client_on_unregistered(void *context)
 {
-    printf("mbed client unregistered: Cloud LED=OFF\n");
+    printf("mbed client unregistered\n");
     led_set_color(LED_CLOUD, BLACK);
 }
 
 static void mbed_client_on_error(void *context)
 {
-    printf("mbed client ERROR: Cloud LED=Blink\n");
-    led_set_color(LED_CLOUD, BLACK);
+    printf("mbed client ERROR\n");
+    led_set_color(LED_CLOUD, RED);
 }
 
 static int run_mbed_client(NetworkInterface *iface)
@@ -98,7 +98,8 @@ static int run_mbed_client(NetworkInterface *iface)
     mbed_client.on_unregistered(NULL, mbed_client_on_unregistered);
     mbed_client.on_error(NULL, mbed_client_on_error);
 
-    printf("mbed client: connecting: Cloud LED=Blink Blue\n");
+    printf("mbed client: connecting\n");
+    led_set_color(LED_CLOUD, YELLOW);
     mbed_client.call_register(iface);
 
     printf("mbed client: entering run loop\n");
@@ -244,7 +245,7 @@ int main()
     printf("init platform: OK\n");
 
     /* let the world know we're alive */
-    led_set_color(LED_POWER, WHITE);
+    led_set_color(LED_POWER, DARKGREEN);
 
     lcd.setBacklight(TextLCD_I2C::LightOn);
     lcd.setCursor(TextLCD_I2C::CurOff_BlkOff);
@@ -252,13 +253,15 @@ int main()
 
     /* bring up the network */
     printf("init network\n");
+    led_set_color(LED_WIFI, YELLOW);
     net = init_network();
     if (NULL == net) {
         printf("failed to init network\n");
+        led_set_color(LED_WIFI, RED);
         return -ENODEV;
     }
     printf("init network: OK\n");
-    led_set_color(LED_WIFI, RED);
+    led_set_color(LED_WIFI, BLUE);
 
     /* initialize the factory configuration client */
     printf("init factory configuration client\n");
