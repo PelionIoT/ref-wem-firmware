@@ -22,6 +22,12 @@
 // ****************************************************************************
 // DEFINEs and type definitions
 // ****************************************************************************
+enum LED_TYPE {
+    LED_POWER = 0,
+    LED_WIFI,
+    LED_CLOUD,
+    LED_COUNT
+};
 
 // ****************************************************************************
 // Globals
@@ -30,17 +36,12 @@
  * is defined in mbed_app.json */
 extern SDBlockDevice sd;
 
-enum INDICATOR_TYPES {
-    IND_POWER = 0,
-    IND_WIFI,
-    IND_CLOUD,
-    IND_NO_TYPES
-};
-int LED_STATUS[IND_NO_TYPES] = {
+int LED_STATUS[LED_COUNT] = {
         BLACK,
         BLACK,
         BLACK
 };
+ws2801 led_strip(D3, D2, LED_COUNT);
 
 // ****************************************************************************
 // Functions
@@ -57,22 +58,35 @@ static int init_platform()
     }
     printf("sd init OK\n");
 
+    /* setup the leds */
+    led_strip.clear();
+    led_strip.level(100);
+
     return 0;
+}
+
+static void led_set_color(enum LED_TYPE led_name, int led_color)
+{
+    LED_STATUS[led_name] = led_color;
+    led_strip.post(LED_STATUS);
 }
 
 static void mbed_client_on_registered(void *context)
 {
     printf("mbed client registered: Cloud LED=Solid BLUE\n");
+    led_set_color(LED_CLOUD, BLUE);
 }
 
 static void mbed_client_on_unregistered(void *context)
 {
     printf("mbed client unregistered: Cloud LED=OFF\n");
+    led_set_color(LED_CLOUD, BLACK);
 }
 
 static void mbed_client_on_error(void *context)
 {
     printf("mbed client ERROR: Cloud LED=Blink\n");
+    led_set_color(LED_CLOUD, BLACK);
 }
 
 static int run_mbed_client(NetworkInterface *iface)
@@ -216,7 +230,6 @@ int main()
 {
     int ret;
     NetworkInterface *net;
-    ws2801 led_strip(D3, D2, IND_NO_TYPES);
     I2C i2c_lcd(I2C_SDA, I2C_SCL);
     TextLCD_I2C lcd(&i2c_lcd, 0x7e, TextLCD::LCD16x2, TextLCD::HD44780);
 
@@ -231,9 +244,7 @@ int main()
     printf("init platform: OK\n");
 
     /* let the world know we're alive */
-    LED_STATUS[IND_POWER] = WHITE;
-    led_strip.post(LED_STATUS);
-    led_strip.level(100);
+    led_set_color(LED_POWER, WHITE);
 
     lcd.setBacklight(TextLCD_I2C::LightOn);
     lcd.setCursor(TextLCD_I2C::CurOff_BlkOff);
@@ -247,8 +258,7 @@ int main()
         return -ENODEV;
     }
     printf("init network: OK\n");
-    LED_STATUS[IND_WIFI] = RED;
-    led_strip.post(LED_STATUS);
+    led_set_color(LED_WIFI, RED);
 
     /* initialize the factory configuration client */
     printf("init factory configuration client\n");
