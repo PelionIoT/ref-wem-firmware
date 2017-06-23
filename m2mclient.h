@@ -91,13 +91,14 @@ public:
                        endpoint->mode);
             }
         }
+        _on_registered_cb(_on_registered_context);
     }
 
     void client_unregistered() {
         _registered = false;
         _register_called = false;
-        printf("\nClient unregistered - Exiting application\n\n");
-
+        printf("\nClient unregistered\n\n");
+        _on_unregistered_cb(_on_unregistered_context);
     }
 
     void error(int error_code) {
@@ -181,6 +182,7 @@ public:
         printf("Error occured : %s\r\n", error);
         printf("Error code : %d\r\n", error_code);
         printf("Error details : %s\r\n",_cloud_client.error_description());
+        _on_error_cb(_on_error_context);
     }
 
     bool is_client_registered() {
@@ -200,6 +202,21 @@ public:
         return _cloud_client;
     }
 
+    void on_registered(void *context, void (*callback)(void*)) {
+        _on_registered_cb = callback;
+        _on_registered_context = context;
+    }
+
+    void on_unregistered(void *context, void (*callback)(void*)) {
+        _on_unregistered_cb = callback;
+        _on_unregistered_context = context;
+    }
+
+    void on_error(void *context, void (*callback)(void*)) {
+        _on_error_cb = callback;
+        _on_error_context = context;
+    }
+
 private:
     M2MObjectList       _obj_list;
     MbedCloudClient     _cloud_client;
@@ -208,6 +225,15 @@ private:
     ObservableResource  _observable_resource;
     ExecutableResource  _exec_resource;
     WritableResource    _writable_resource;
+
+    void (*_on_registered_cb)(void *context);
+    void *_on_registered_context;
+
+    void (*_on_unregistered_cb)(void *context);
+    void *_on_unregistered_context;
+
+    void (*_on_error_cb)(void *context);
+    void *_on_error_context;
 };
 
 #endif /* M2MCLIENT_H */
