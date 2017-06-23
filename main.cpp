@@ -22,11 +22,36 @@
 // ****************************************************************************
 // DEFINEs and type definitions
 // ****************************************************************************
-enum LED_TYPE {
-    LED_POWER = 0,
-    LED_WIFI,
-    LED_CLOUD,
-    LED_COUNT
+enum INDICATOR_TYPES {
+    IND_POWER = 0,
+    IND_WIFI,
+    IND_CLOUD,
+    IND_FWUP,
+    IND_LCD,
+    IND_NO_TYPES
+};
+
+#define COMMI_RED RED
+#define CANADIAN_BLUE BLUE
+enum INDICATOR_COLORS {
+    IND_COLOR_OFF = BLACK,
+    IND_COLOR_IN_PROGRESS = YELLOW,
+    IND_COLOR_FAILED = COMMI_RED,
+    IND_COLOR_ON = DARKGREEN,
+    IND_COLOR_SUCCESS = CANADIAN_BLUE
+};
+
+int LED_STATUS[IND_NO_TYPES] = {
+        IND_COLOR_OFF,
+        IND_COLOR_OFF,
+        IND_COLOR_OFF,
+        IND_COLOR_OFF,
+        IND_COLOR_OFF
+};
+
+enum FOTA_THREADS {
+    FOTA_THREAD_LED = 0,
+    FOTA_THREAD_COUNT
 };
 
 // ****************************************************************************
@@ -36,17 +61,25 @@ enum LED_TYPE {
  * is defined in mbed_app.json */
 extern SDBlockDevice sd;
 
-int LED_STATUS[LED_COUNT] = {
-        BLACK,
-        BLACK,
-        BLACK
+ws2801 led_strip(D3, D2, IND_NO_TYPES);
+
+Thread tman[FOTA_THREAD_COUNT] = {
+    /* LEDs */
+    { osPriorityNormal }
 };
-ws2801 led_strip(D3, D2, LED_COUNT);
 
 // ****************************************************************************
 // Functions
 // ****************************************************************************
-static int init_platform()
+static void thread_led_update()
+{
+    while (true) {
+        led_strip.post(LED_STATUS);
+        wait(0.2f);
+    }
+}
+
+static int platform_init()
 {
     int ret;
 
@@ -62,31 +95,39 @@ static int init_platform()
     led_strip.clear();
     led_strip.level(100);
 
+    tman[FOTA_THREAD_LED].start(thread_led_update);
     return 0;
 }
 
-static void led_set_color(enum LED_TYPE led_name, int led_color)
+static void platform_shutdown()
 {
+    tman[FOTA_THREAD_LED].join();
+}
+
+static void led_set_color(enum INDICATOR_TYPES led_name, int led_color)
+{
+    if (led_name >= IND_NO_TYPES) {
+        return;
+    }
     LED_STATUS[led_name] = led_color;
-    led_strip.post(LED_STATUS);
 }
 
 static void mbed_client_on_registered(void *context)
 {
     printf("mbed client registered\n");
-    led_set_color(LED_CLOUD, BLUE);
+    led_set_color(IND_CLOUD, IND_COLOR_SUCCESS);
 }
 
 static void mbed_client_on_unregistered(void *context)
 {
     printf("mbed client unregistered\n");
-    led_set_color(LED_CLOUD, BLACK);
+    led_set_color(IND_CLOUD, IND_COLOR_OFF);
 }
 
 static void mbed_client_on_error(void *context)
 {
     printf("mbed client ERROR\n");
-    led_set_color(LED_CLOUD, RED);
+    led_set_color(IND_CLOUD, IND_COLOR_OFF);
 }
 
 static int run_mbed_client(NetworkInterface *iface)
@@ -99,7 +140,7 @@ static int run_mbed_client(NetworkInterface *iface)
     mbed_client.on_error(NULL, mbed_client_on_error);
 
     printf("mbed client: connecting\n");
-    led_set_color(LED_CLOUD, YELLOW);
+    led_set_color(IND_CLOUD, IND_COLOR_IN_PROGRESS);
     mbed_client.call_register(iface);
 
     printf("mbed client: entering run loop\n");
@@ -238,14 +279,14 @@ int main()
 
     /* minimal init sequence */
     printf("init platform\n");
-    ret = init_platform();
+    ret = platform_init();
     if (0 != ret) {
         return ret;
     }
     printf("init platform: OK\n");
 
     /* let the world know we're alive */
-    led_set_color(LED_POWER, DARKGREEN);
+    led_set_color(IND_POWER, IND_COLOR_ON);
 
     lcd.setBacklight(TextLCD_I2C::LightOn);
     lcd.setCursor(TextLCD_I2C::CurOff_BlkOff);
@@ -253,15 +294,16 @@ int main()
 
     /* bring up the network */
     printf("init network\n");
-    led_set_color(LED_WIFI, YELLOW);
+    led_set_color(IND_WIFI, IND_COLOR_IN_PROGRESS);
     net = init_network();
     if (NULL == net) {
         printf("failed to init network\n");
-        led_set_color(LED_WIFI, RED);
+        led_set_color(IND_WIFI, IND_COLOR_FAILED);
         return -ENODEV;
     }
     printf("init network: OK\n");
-    led_set_color(LED_WIFI, BLUE);
+    lcd.printf("Wifi Connected");
+    led_set_color(IND_WIFI, IND_COLOR_SUCCESS);
 
     /* initialize the factory configuration client */
     printf("init factory configuration client\n");
@@ -280,6 +322,7 @@ int main()
         return ret;
     }
 
+    platform_shutdown();
     printf("exiting main\n");
     return 0;
 }
