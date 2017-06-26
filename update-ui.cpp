@@ -14,6 +14,8 @@
 
 #include "update-ui.h"
 
+#include "ledman.h"
+
 #ifdef MBED_CLOUD_CLIENT_SUPPORT_UPDATE
 
 #include <stdio.h>
@@ -55,6 +57,7 @@ void update_authorize(int32_t request)
             /* clear screen */
             lcd->cls();
 #endif
+            led_set_color(IND_FWUP, IND_COLOR_IN_PROGRESS, true);
             break;
 
         /* Cloud Client wishes to reboot and apply the new firmware.
@@ -68,10 +71,12 @@ void update_authorize(int32_t request)
             printf("Firmware install requested\r\n");
             printf("Authorization granted\r\n");
             _client->update_authorize(MbedCloudClient::UpdateRequestInstall);
+            led_set_color(IND_FWUP, IND_COLOR_IN_PROGRESS, true);
             break;
 
         default:
             printf("Error - unknown request\r\n");
+            led_set_color(IND_FWUP, IND_COLOR_FAILED);
             break;
     }
 }
@@ -154,6 +159,7 @@ void update_progress(uint32_t progress, uint32_t total)
     if (progress == total)
     {
         printf("\r\nDownload completed\r\n");
+        led_set_color(IND_FWUP, IND_COLOR_SUCCESS);
     }
 }
 
