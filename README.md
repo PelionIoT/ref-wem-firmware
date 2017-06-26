@@ -4,6 +4,15 @@
 
 This is an mbed application for a sales tool that demonstrates firmware updates using the Firmware Over The Air (fota) capabilities of mbed and mbed Cloud 1.2.
 
+## Prerequisites
+
+To build this project, you need to install the following:
+
+	```
+	pip install mbed-cli
+	pip install git+ssh://git@github.com/ARMmbed/manifest-tool-restricted.git@v1.2rc2
+	```
+
 ## Getting fota-demo
 
 mbed CLI can import the project, along with the mbed OS codebase and all dependent device drivers.
@@ -26,7 +35,7 @@ fota-demo is now under ``~/workspace/fota-demo``.  You can look at ``main.cpp`` 
 ## Setting up mbed environment
 
 Need to make the current directory an mbed project and install the mbed-os library for the first time setup.
-	
+
 ```
 mbed config root .
 mbed deploy

@@ -118,11 +118,17 @@ endef
 all: build
 
 .PHONY: clean-build
-clean-build: .deps .patches
+clean-build: .deps .patches update_default_resources.c
 	@$(call Build/Compile,"--clean")
 
 .PHONY: build
-build: .deps .patches
+build: .deps .patches update_default_resources.c
+	@$(call Build/Compile)
+
+${COMBINED_BIN_FILE}: .deps .patches update_default_resources.c ${SRCS} ${HDRS} mbed_app.json
+	@$(call Build/Compile)
+
+${MBED_BUILD_DIR}/${PROG}.bin: .deps .patches update_default_resources.c ${SRCS} ${HDRS} mbed_app.json
 	@$(call Build/Compile)
 
 .PHONY: stats
@@ -130,8 +136,6 @@ stats:
 	@cmd="python mbed-os/tools/memap.py -d -t ${MBED_TOOLCHAIN} ${MBED_BUILD_DIR}/${PROG}.map"; \
 	echo "$${cmd}"; \
 	$${cmd}
-
-$(COMBINED_BIN_FILE): build
 
 .PHONY: install flash
 install flash: .targetpath $(COMBINED_BIN_FILE)
@@ -155,9 +159,16 @@ distclean: clean
 	rm -rf ws2801
 	rm -rf mbed-cloud-client-restricted
 	rm -rf mbed-cloud-client-internal
+	rm -rf TextLCD
+	rm -rf manifest-tool-restricted
+	rm -f update_default_resources.c
 	rm -f .deps
 	rm -f .targetpath
 	rm -f .patches
+	rm -f .firmware-url
+	rm -f .manifest-id
+	rm -f .manifest_tool.json
+	rm -f ${MANIFEST_FILE}
 
 .mbed:
 	mbed config ROOT .
@@ -176,3 +187,36 @@ distclean: clean
 .patches: .deps
 	cd mbed-os && git apply ../tools/${PATCHES}
 	touch .patches
+
+################################################################################
+# Update related rules
+################################################################################
+
+update_default_resources.c: .deps
+	@which manifest-tool || (echo Error: manifest-tool not found.  Install it with \"pip install git+ssh://git@github.com/ARMmbed/manifest-tool-restricted.git@v1.2rc2\"; exit 1)
+	manifest-tool init -d "arm.com" -m "fota-demo" -q
+	touch update_default_resources.c
+
+.mbed-cloud-key:
+	@echo "Error: You need to save an mbed cloud API key in .mbed-cloud-key"
+	@echo "Please go to https://cloud.mbed.com/docs/v1.2/mbed-cloud-web-apps/access-mbed-cloud-with-api-keys.html"
+	@exit 1
+
+.PHONY: campaign
+campaign: .deps .mbed-cloud-key .manifest-id
+	python mbed-cloud-update-cli/create-campaign.py $$(cat .manifest-id) --key-file .mbed-cloud-key
+
+MANIFEST_FILE=dev-manifest
+.manifest-id: .firmware-url .mbed-cloud-key ${COMBINED_BIN_FILE}
+	@which manifest-tool || (echo Error: manifest-tool not found.  Install it with \"pip install git+ssh://git@github.com/ARMmbed/manifest-tool-restricted.git@v1.2rc2\"; exit 1)
+	manifest-tool create -u $$(cat .firmware-url) -p ${MBED_BUILD_DIR}/${PROG}.bin -o ${MANIFEST_FILE}
+	python mbed-cloud-update-cli/upload-manifest.py ${MANIFEST_FILE} --key-file .mbed-cloud-key -o $@
+
+.firmware-url: .mbed-cloud-key ${COMBINED_BIN_FILE}
+	python mbed-cloud-update-cli/upload-firmware.py ${MBED_BUILD_DIR}/${PROG}.bin --key-file .mbed-cloud-key -o $@
+
+.PHONY: certclean
+certclean:
+	rm -rf .update-certificates
+	rm -rf .manifest_tool.json
+	rm -f update_default_resources.c
