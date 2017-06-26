@@ -253,7 +253,7 @@ int main()
 
     lcd.setBacklight(TextLCD_I2C::LightOn);
     lcd.setCursor(TextLCD_I2C::CurOff_BlkOff);
-    lcd.printf("Version: %s", MBED_CONF_APP_VERSION);
+    lcd.printf("Version: %s\n", MBED_CONF_APP_VERSION);
 
     /* bring up the network */
     printf("init network\n");
@@ -265,7 +265,7 @@ int main()
         return -ENODEV;
     }
     printf("init network: OK\n");
-    lcd.printf("Wifi Connected");
+    lcd.printf("Wifi Connected\n");
     led_set_color(IND_WIFI, IND_COLOR_SUCCESS);
 
     /* initialize the factory configuration client */
