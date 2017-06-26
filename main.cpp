@@ -7,11 +7,12 @@
 // ****************************************************************************
 #include "m2mclient.h"
 
+#include "ledman.h"
+
 #include <errno.h>
 #include <factory_configurator_client.h>
 #include <SDBlockDevice.h>
 #include <TextLCD.h>
-#include <ws2801.h>
 
 #if MBED_CONF_APP_WIFI
     #include <ESP8266Interface.h>
@@ -22,44 +23,6 @@
 // ****************************************************************************
 // DEFINEs and type definitions
 // ****************************************************************************
-enum INDICATOR_TYPES {
-    IND_POWER = 0,
-    IND_WIFI,
-    IND_CLOUD,
-    IND_FWUP,
-    IND_LCD,
-    IND_NO_TYPES
-};
-
-#define COMMI_RED RED
-#define CANADIAN_BLUE BLUE
-enum INDICATOR_COLORS {
-    IND_COLOR_OFF = BLACK,
-    IND_COLOR_IN_PROGRESS = YELLOW,
-    IND_COLOR_FAILED = COMMI_RED,
-    IND_COLOR_ON = DARKGREEN,
-    IND_COLOR_SUCCESS = CANADIAN_BLUE
-};
-
-int LED_STATUS[IND_NO_TYPES] = {
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF
-};
-/* really poor design, but we store the blinkind indicator in the upper 8-bits
- * and the old color in the lower 24-bits. Once blinking is disabled then we
- * just update the LED_STATUS field with the original color.
- */
-int LED_BLINK[IND_NO_TYPES] = {
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF
-};
-
 enum FOTA_THREADS {
     FOTA_THREAD_LED = 0,
     FOTA_THREAD_COUNT
@@ -72,8 +35,6 @@ enum FOTA_THREADS {
  * is defined in mbed_app.json */
 extern SDBlockDevice sd;
 
-ws2801 led_strip(D3, D2, IND_NO_TYPES);
-
 Thread tman[FOTA_THREAD_COUNT] = {
     /* LEDs */
     { osPriorityNormal }
@@ -82,52 +43,10 @@ Thread tman[FOTA_THREAD_COUNT] = {
 // ****************************************************************************
 // Functions
 // ****************************************************************************
-static bool led_blink_is_enabled(int led_name)
-{
-    return LED_BLINK[led_name] & 0x01000000;
-}
-
-static void led_blink_enable(int led_name)
-{
-    LED_BLINK[led_name] |= 0x01000000;
-}
-
-static void led_blink_disable(int led_name)
-{
-    LED_BLINK[led_name] &= 0x00FFFFFF;
-}
-
-static void led_set_color(enum INDICATOR_TYPES led_name, int led_color, bool blink = false)
-{
-    /* colors are only 24-bits */
-    int color = led_color & 0x00FFFFFF;
-
-    if (led_name >= IND_NO_TYPES) {
-        return;
-    }
-
-    LED_STATUS[led_name] = color;
-
-    /* save the blink state and only update the color */
-    LED_BLINK[led_name] &= 0xFF000000;
-    LED_BLINK[led_name] |= color;
-    blink ? led_blink_enable(led_name) : led_blink_disable(led_name);
-}
-
 static void thread_led_update()
 {
-    int idx;
-
     while (true) {
-        for (idx = 0; idx < IND_NO_TYPES; ++idx) {
-            if (led_blink_is_enabled(idx)) {
-                LED_STATUS[idx] = LED_STATUS[idx] == IND_COLOR_OFF ?
-                    LED_BLINK[idx] & 0x00FFFFFF : IND_COLOR_OFF;
-            } else {
-                LED_STATUS[idx] = LED_BLINK[idx] & 0x00FFFFFF;
-            }
-        }
-        led_strip.post(LED_STATUS);
+        led_post();
         wait(0.1f);
     }
 }
@@ -145,8 +64,7 @@ static int platform_init()
     printf("sd init OK\n");
 
     /* setup the leds */
-    led_strip.clear();
-    led_strip.level(100);
+    led_setup();
 
     tman[FOTA_THREAD_LED].start(thread_led_update);
     return 0;
