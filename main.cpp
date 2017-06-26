@@ -172,7 +172,7 @@ static void mbed_client_on_unregistered(void *context)
 static void mbed_client_on_error(void *context)
 {
     printf("mbed client ERROR\n");
-    led_set_color(IND_CLOUD, IND_COLOR_OFF);
+    led_set_color(IND_CLOUD, IND_COLOR_FAILED);
 }
 
 static int run_mbed_client(NetworkInterface *iface)
