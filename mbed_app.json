@@ -47,6 +47,10 @@
             "help": "An optional password for wifi security authentication",
             "value": "\"\""
         },
-	"version": "\"0.1.0\""
+        "fcc-wipe": {
+            "help": "Wipe the FCC credentials stored on the device",
+            "value": "false"
+        },
+        "version": "\"0.1.0\""
     }
 }
