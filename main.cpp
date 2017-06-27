@@ -119,6 +119,13 @@ static int init_fcc(void)
 {
     fcc_status_e ret;
 
+#if MBED_CONF_APP_FCC_WIPE
+    ret = fcc_storage_delete();
+    if (ret != FCC_STATUS_SUCCESS) {
+        printf("fcc: delete failed: %d\n", ret);
+    }
+#endif
+
     ret = fcc_init();
     if (ret != FCC_STATUS_SUCCESS) {
         printf("fcc: init failed: %d\n", ret);
