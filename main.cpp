@@ -11,6 +11,8 @@
 
 #include <errno.h>
 #include <factory_configurator_client.h>
+#include <mbed-trace-helper.h>
+#include <mbed-trace/mbed_trace.h>
 #include <SDBlockDevice.h>
 #include <TextLCD.h>
 
@@ -54,6 +56,19 @@ static void thread_led_update()
 static int platform_init()
 {
     int ret;
+
+#if MBED_CONF_MBED_TRACE_ENABLE
+    /* Create mutex for tracing to avoid broken lines in logs */
+    if (!mbed_trace_helper_create_mutex()) {
+        printf("ERROR - Mutex creation for mbed_trace failed!\n");
+        return -EACCES;
+    }
+
+    /* Initialize mbed trace */
+    mbed_trace_init();
+    mbed_trace_mutex_wait_function_set(mbed_trace_helper_mutex_wait);
+    mbed_trace_mutex_release_function_set(mbed_trace_helper_mutex_release);
+#endif
 
     /* init the sd card */
     ret = sd.init();
