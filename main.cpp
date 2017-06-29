@@ -283,6 +283,7 @@ int main()
     net = init_network();
     if (NULL == net) {
         printf("failed to init network\n");
+        lcd.printf("Fail: %s\n", MBED_CONF_APP_WIFI_SSID);
         led_set_color(IND_WIFI, IND_COLOR_FAILED);
         return -ENODEV;
     }
