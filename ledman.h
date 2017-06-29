@@ -11,11 +11,11 @@
 // DEFINEs and type definitions
 // ****************************************************************************
 enum INDICATOR_TYPES {
-    IND_LCD = 0,
-    IND_CLOUD,
-    IND_POWER,
+    IND_POWER = 0,
     IND_WIFI,
+    IND_CLOUD,
     IND_FWUP,
+    IND_LCD,
     IND_NO_TYPES
 };
 
