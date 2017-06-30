@@ -42,6 +42,42 @@ Thread tman[FOTA_THREAD_COUNT] = {
     { osPriorityNormal }
 };
 
+class MultiAddrLCD
+{
+public:
+    MultiAddrLCD(I2C *i2c) : _lcd1(i2c, 0x4e, TextLCD::LCD16x2, TextLCD::HD44780),
+                             _lcd2(i2c, 0x7e, TextLCD::LCD16x2, TextLCD::HD44780) {
+    }
+
+    /*Only supporting 16x2 LCDs, so string will be truncated at 32
+      characters.*/
+    int printf(const char* format, ...) {
+        int rc;
+        char buf[33];
+        va_list args;
+        va_start(args, format);
+        vsnprintf(buf, 32, format, args);
+        va_end(args);
+        _lcd1.printf(buf);
+        rc = _lcd2.printf(buf);
+        return rc;
+    }
+
+    void setBacklight(TextLCD_Base::LCDBacklight mode) {
+        _lcd1.setBacklight(mode);
+        _lcd2.setBacklight(mode);
+    }
+
+    void setCursor(TextLCD_Base::LCDCursor mode) {
+        _lcd1.setCursor(mode);
+        _lcd2.setCursor(mode);
+    }
+
+private:
+    TextLCD_I2C _lcd1;
+    TextLCD_I2C _lcd2;
+};
+
 // ****************************************************************************
 // Functions
 // ****************************************************************************
@@ -258,7 +294,7 @@ int main()
     int ret;
     NetworkInterface *net;
     I2C i2c_lcd(I2C_SDA, I2C_SCL);
-    TextLCD_I2C lcd(&i2c_lcd, 0x7e, TextLCD::LCD16x2, TextLCD::HD44780);
+    MultiAddrLCD lcd(&i2c_lcd);
 
     printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
 
