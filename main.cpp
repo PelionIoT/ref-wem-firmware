@@ -84,14 +84,32 @@ private:
 // ****************************************************************************
 // Functions
 // ****************************************************************************
-static void thread_light_sensor()
+static void thread_light_sensor(M2MClient *mbed_client)
 {
+    M2MObject *light_obj;
+    M2MObjectInstance *light_inst;
+    M2MResource *light_res;
+
     using namespace fota::sensor;
+    uint8_t res_buffer[33] = {0};
+    int size = 0;
     light::LightSensor<light::BOARD_GROVE_GL5528> light(A0);
+
+    /* register the m2m object */
+    light_obj = M2MInterfaceFactory::create_object("5002");
+    light_inst = light_obj->create_object_instance();
+
+    light_res = light_inst->create_dynamic_resource("1", "light_resource",
+            M2MResourceInstance::FLOAT, true /* observable */);
+    light_res->set_operation(M2MBase::GET_ALLOWED);
+    light_res->set_value((uint8_t *)"0", 1);
+
+    mbed_client->add_resource(light_obj);
 
     while (true) {
         light.update();
-        printf("reading: %2.2f\r\n", light.getFlux());
+        size = sprintf((char *)res_buffer,"%2.2f", light.getFlux());
+        light_res->set_value(res_buffer, size);
         wait(0.5f);
     }
 }
@@ -104,7 +122,7 @@ static void thread_led_update()
     }
 }
 
-static int platform_init()
+static int platform_init(M2MClient &mbed_client)
 {
     int ret;
 
@@ -133,7 +151,7 @@ static int platform_init()
     led_setup();
 
     tman[FOTA_THREAD_LED].start(thread_led_update);
-    tman[FOTA_THREAD_SENSOR_LIGHT].start(thread_light_sensor);
+    tman[FOTA_THREAD_SENSOR_LIGHT].start(callback(thread_light_sensor, &mbed_client));
     return 0;
 }
 
@@ -160,11 +178,9 @@ static void mbed_client_on_error(void *context)
     led_set_color(IND_CLOUD, IND_COLOR_FAILED);
 }
 
-static int run_mbed_client(NetworkInterface *iface)
+static int run_mbed_client(NetworkInterface *iface,
+        M2MClient &mbed_client)
 {
-    M2MClient mbed_client;
-
-    mbed_client.create_resources();
     mbed_client.on_registered(NULL, mbed_client_on_registered);
     mbed_client.on_unregistered(NULL, mbed_client_on_unregistered);
     mbed_client.on_error(NULL, mbed_client_on_error);
@@ -311,12 +327,13 @@ int main()
     NetworkInterface *net;
     I2C i2c_lcd(I2C_SDA, I2C_SCL);
     MultiAddrLCD lcd(&i2c_lcd);
+    M2MClient mbed_client;
 
     printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
 
     /* minimal init sequence */
     printf("init platform\n");
-    ret = platform_init();
+    ret = platform_init(mbed_client);
     if (0 != ret) {
         return ret;
     }
@@ -354,7 +371,7 @@ int main()
 
     /* start the mbed client. does not return */
     printf("starting mbed client\n");
-    ret = run_mbed_client(net);
+    ret = run_mbed_client(net, mbed_client);
     if (0 != ret) {
         printf("failed to run mbed client: %d\n", ret);
         return ret;
