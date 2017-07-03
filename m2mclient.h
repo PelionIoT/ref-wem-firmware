@@ -29,24 +29,24 @@ class M2MClient {
 public:
     M2MClient() :
         _registered(false),
-        _register_called(false),
-        _exec_resource(_cloud_client) {
+        _register_called(false) {
     }
 
-    void create_resources() {
-        _obj_list.push_back(_observable_resource.get_object());
-        _obj_list.push_back(_exec_resource.get_object());
-        _obj_list.push_back(_writable_resource.get_object());
+    void add_resource(M2MObject *obj) {
+        if (NULL == obj) {
+            return;
+        }
 
+        _obj_list.clear();
+        _obj_list.push_back(obj);
         _cloud_client.add_objects(_obj_list);
-        _cloud_client.on_registered(this, &M2MClient::client_registered);
-        _cloud_client.on_unregistered(this, &M2MClient::client_unregistered);
-        _cloud_client.on_error(this, &M2MClient::error);
-        _cloud_client.set_update_callback(&_writable_resource);
     }
 
     bool call_register(NetworkInterface *iface) {
         bool setup = _cloud_client.setup(iface);
+        _cloud_client.on_registered(this, &M2MClient::client_registered);
+        _cloud_client.on_unregistered(this, &M2MClient::client_unregistered);
+        _cloud_client.on_error(this, &M2MClient::error);
         _register_called = true;
         if (!setup) {
             printf("m2m client setup failed\n");
@@ -192,11 +192,6 @@ public:
     bool is_register_called() {
         return _register_called;
     }
-    void increment_resource_value() {
-        if(_registered) {
-            _observable_resource.increment_resource();
-        }
-    }
 
     MbedCloudClient& get_cloud_client() {
         return _cloud_client;
@@ -222,9 +217,6 @@ private:
     MbedCloudClient     _cloud_client;
     bool                _registered;
     bool                _register_called;
-    ObservableResource  _observable_resource;
-    ExecutableResource  _exec_resource;
-    WritableResource    _writable_resource;
 
     void (*_on_registered_cb)(void *context);
     void *_on_registered_context;

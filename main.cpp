@@ -104,7 +104,7 @@ static void thread_led_update()
     }
 }
 
-static int platform_init()
+static int platform_init(M2MClient &mbed_client)
 {
     int ret;
 
@@ -160,11 +160,9 @@ static void mbed_client_on_error(void *context)
     led_set_color(IND_CLOUD, IND_COLOR_FAILED);
 }
 
-static int run_mbed_client(NetworkInterface *iface)
+static int run_mbed_client(NetworkInterface *iface,
+        M2MClient &mbed_client)
 {
-    M2MClient mbed_client;
-
-    mbed_client.create_resources();
     mbed_client.on_registered(NULL, mbed_client_on_registered);
     mbed_client.on_unregistered(NULL, mbed_client_on_unregistered);
     mbed_client.on_error(NULL, mbed_client_on_error);
@@ -311,12 +309,13 @@ int main()
     NetworkInterface *net;
     I2C i2c_lcd(I2C_SDA, I2C_SCL);
     MultiAddrLCD lcd(&i2c_lcd);
+    M2MClient mbed_client;
 
     printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
 
     /* minimal init sequence */
     printf("init platform\n");
-    ret = platform_init();
+    ret = platform_init(mbed_client);
     if (0 != ret) {
         return ret;
     }
@@ -354,7 +353,7 @@ int main()
 
     /* start the mbed client. does not return */
     printf("starting mbed client\n");
-    ret = run_mbed_client(net);
+    ret = run_mbed_client(net, mbed_client);
     if (0 != ret) {
         printf("failed to run mbed client: %d\n", ret);
         return ret;
