@@ -7,6 +7,8 @@
 // ****************************************************************************
 #include "m2mclient.h"
 
+#include "GL5528.h"
+
 #include "ledman.h"
 
 #include <errno.h>
@@ -27,6 +29,7 @@
 // ****************************************************************************
 enum FOTA_THREADS {
     FOTA_THREAD_LED = 0,
+    FOTA_THREAD_SENSOR_LIGHT,
     FOTA_THREAD_COUNT
 };
 
@@ -81,6 +84,18 @@ private:
 // ****************************************************************************
 // Functions
 // ****************************************************************************
+static void thread_light_sensor()
+{
+    using namespace fota::sensor;
+    light::LightSensor<light::BOARD_GROVE_GL5528> light(A0);
+
+    while (true) {
+        light.update();
+        printf("reading: %2.2f\r\n", light.getFlux());
+        wait(0.5f);
+    }
+}
+
 static void thread_led_update()
 {
     while (true) {
@@ -118,6 +133,7 @@ static int platform_init()
     led_setup();
 
     tman[FOTA_THREAD_LED].start(thread_led_update);
+    tman[FOTA_THREAD_SENSOR_LIGHT].start(thread_light_sensor);
     return 0;
 }
 
