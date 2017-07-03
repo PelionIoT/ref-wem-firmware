@@ -9,6 +9,7 @@
 
 #include "GL5528.h"
 #include "displayman.h"
+#include "DHT.h"
 
 #include <errno.h>
 #include <factory_configurator_client.h>
@@ -22,12 +23,16 @@
     #include <EthernetInterface.h>
 #endif
 
+#define TRACE_GROUP  "main"
+
 // ****************************************************************************
 // DEFINEs and type definitions
 // ****************************************************************************
 enum FOTA_THREADS {
     FOTA_THREAD_DISPLAY = 0,
     FOTA_THREAD_SENSOR_LIGHT,
+    FOTA_THREAD_THERMO,
+    FOTA_THREAD_DHT,
     FOTA_THREAD_COUNT
 };
 
@@ -39,10 +44,7 @@ enum FOTA_THREADS {
 extern SDBlockDevice sd;
 DisplayMan display;
 
-Thread tman[FOTA_THREAD_COUNT] = {
-    /* Display */
-    { osPriorityNormal }
-};
+Thread tman[FOTA_THREAD_COUNT];
 
 // ****************************************************************************
 // Functions
@@ -79,8 +81,91 @@ static void thread_light_sensor(M2MClient *mbed_client)
         printf("reading: %2.2f\r\n", flux);
         display.set_sensor_status(light_id, (char *)res_buffer);
         light_res->set_value(res_buffer, size);
+        Thread::wait(500);
+    }
+}
 
-        wait(0.5f);
+static void thread_thermo(M2MClient *mbed_client)
+{
+    M2MObject *thermo_obj;
+    M2MObjectInstance *thermo_inst;
+    M2MResource *thermo_res;
+
+    uint8_t res_buffer[33] = {0};
+    int size = 0;
+
+    AnalogIn thermistor(A1);
+
+    /* Assuming Grove temperature sensor 1.2 is attached to A1 */
+    float beta = 4275.0;
+    float val, resistance, temperature;
+
+    /* register the m2m object */
+    thermo_obj = M2MInterfaceFactory::create_object("5005");
+    thermo_inst = thermo_obj->create_object_instance();
+
+    thermo_res = thermo_inst->create_dynamic_resource("1", "thermo_resource",
+            M2MResourceInstance::FLOAT, true /* observable */);
+    thermo_res->set_operation(M2MBase::GET_ALLOWED);
+    thermo_res->set_value((uint8_t *)"0", 1);
+
+    mbed_client->add_resource(thermo_obj);
+
+    while (true) {
+        /* Assume 5V VCC */
+        val = thermistor.read() / 5.0 * 3.3;
+
+        /* resistance is in unit of 10k ohms */
+        resistance = 1.0 / val - 1.0;
+
+        /* beta equation */
+        temperature = 1 / (log(resistance) / beta + 1.0 / 298.15) - 273.15;
+
+        tr_debug("thermistor: val = %f, temp = %f\n", val, temperature);
+        size = sprintf((char *)res_buffer, "%.0f", temperature);
+        thermo_res->set_value(res_buffer, size);
+        Thread::wait(1000);
+    }
+}
+
+static void thread_dht(M2MClient *mbed_client)
+{
+    M2MObject *dht_obj;
+    M2MObjectInstance *dht_inst;
+    M2MResource *dht_res;
+
+    uint8_t res_buffer[33] = {0};
+    int size = 0;
+
+    AnalogIn thermistor(A1);
+    DHT dht(D4, AM2302);
+    eError readError;
+    float temperature, humidity;
+
+    /* register the m2m object */
+    dht_obj = M2MInterfaceFactory::create_object("5006");
+    dht_inst = dht_obj->create_object_instance();
+
+    dht_res = dht_inst->create_dynamic_resource("1", "humidity_resource",
+            M2MResourceInstance::FLOAT, true /* observable */);
+    dht_res->set_operation(M2MBase::GET_ALLOWED);
+    dht_res->set_value((uint8_t *)"0", 1);
+
+    mbed_client->add_resource(dht_obj);
+
+
+    while (true) {
+        readError = dht.readData();
+        if (readError == ERROR_NONE) {
+            temperature = dht.ReadTemperature(CELCIUS);
+            humidity = dht.ReadHumidity();
+            tr_debug("DHT: temp = %fC, humi = %f%%\n", temperature, humidity);
+            size = sprintf((char *)res_buffer, "%.0f", humidity);
+            dht_res->set_value(res_buffer, size);
+        } else {
+            tr_error("DHT: readData() failed with %d\n", readError);
+        }
+        Thread::wait(1000);
     }
 }
 
@@ -114,12 +199,17 @@ static int platform_init(M2MClient &mbed_client)
 
     tman[FOTA_THREAD_DISPLAY].start(callback(thread_display_update, &display));
     tman[FOTA_THREAD_SENSOR_LIGHT].start(callback(thread_light_sensor, &mbed_client));
+    tman[FOTA_THREAD_THERMO].start(callback(thread_thermo, &mbed_client));
+    tman[FOTA_THREAD_DHT].start(callback(thread_dht, &mbed_client));
     return 0;
 }
 
 static void platform_shutdown()
 {
     tman[FOTA_THREAD_DISPLAY].join();
+    tman[FOTA_THREAD_SENSOR_LIGHT].join();
+    tman[FOTA_THREAD_THERMO].join();
+    tman[FOTA_THREAD_DHT].join();
 }
 
 static void mbed_client_on_registered(void *context)
