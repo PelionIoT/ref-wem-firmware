@@ -84,14 +84,32 @@ private:
 // ****************************************************************************
 // Functions
 // ****************************************************************************
-static void thread_light_sensor()
+static void thread_light_sensor(M2MClient *mbed_client)
 {
+    M2MObject *light_obj;
+    M2MObjectInstance *light_inst;
+    M2MResource *light_res;
+
     using namespace fota::sensor;
+    uint8_t res_buffer[33] = {0};
+    int size = 0;
     light::LightSensor<light::BOARD_GROVE_GL5528> light(A0);
+
+    /* register the m2m object */
+    light_obj = M2MInterfaceFactory::create_object("5002");
+    light_inst = light_obj->create_object_instance();
+
+    light_res = light_inst->create_dynamic_resource("1", "light_resource",
+            M2MResourceInstance::FLOAT, true /* observable */);
+    light_res->set_operation(M2MBase::GET_ALLOWED);
+    light_res->set_value((uint8_t *)"0", 1);
+
+    mbed_client->add_resource(light_obj);
 
     while (true) {
         light.update();
-        printf("reading: %2.2f\r\n", light.getFlux());
+        size = sprintf((char *)res_buffer,"%2.2f", light.getFlux());
+        light_res->set_value(res_buffer, size);
         wait(0.5f);
     }
 }
@@ -133,7 +151,7 @@ static int platform_init(M2MClient &mbed_client)
     led_setup();
 
     tman[FOTA_THREAD_LED].start(thread_led_update);
-    tman[FOTA_THREAD_SENSOR_LIGHT].start(thread_light_sensor);
+    tman[FOTA_THREAD_SENSOR_LIGHT].start(callback(thread_light_sensor, &mbed_client));
     return 0;
 }
 
