@@ -1,5 +1,10 @@
 PROG:=fota-demo
 
+# We use some bashisms like pipefail.  The default GNU Make SHELL is /bin/sh
+# which is bash on MacOS but not necessarily on Linux.  Explicitly set bash as
+# the SHELL here.
+SHELL=/bin/bash
+
 # Specify the default target and toolchain to build.  The defaults are used
 # if 'mbed target' and 'mbed toolchain' are not set.
 DEFAULT_TARGET:=K64F
