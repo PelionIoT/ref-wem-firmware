@@ -93,6 +93,16 @@ fcc_dev_flow.c:(.text.fcc_developer_flow+0x13c): undefined reference to `MBED_CL
 ...
 ```
 
+### Patching Errors
+
+If the list of dependent libraries change, we will assume that mbed-os was updated as well and try to patch the linker scripts again.  This produces the following error:
+```
+error: patch failed: targets/TARGET_Freescale/TARGET_MCUXpresso_MCUS/TARGET_MCU_K64F/device/TOOLCHAIN_GCC_ARM/MK64FN1M0xxx12.ld:64
+error: targets/TARGET_Freescale/TARGET_MCUXpresso_MCUS/TARGET_MCU_K64F/device/TOOLCHAIN_GCC_ARM/MK64FN1M0xxx12.ld: patch does not apply
+```
+
+If this happens, run `make distclean`, then `make`.
+
 ### Cleaning the build
 
 ```
