@@ -13,6 +13,7 @@ namespace light {
  */
 enum BOARDS {
     BOARD_GROVE_GL5528 = 0, /*!< Grove GL5528 Light Sensor */
+    BOARD_GROVE_LS06, /*!< Grove LS06 Light Sensor */
     BOARD_COUNT /*!< Number of current boards supported */
 };
 
