@@ -22,14 +22,6 @@ public:
         setFlux(_src.read());
     }
 
-    /** Return the calcaulted flux value based on the sensor input.
-     *
-     * @return Returns the calculated flux value from the sensor in luxes.
-     */
-    float getFlux(void) {
-        return ((1023.0f - _lux) * 10.0f / _lux);
-    }
-
 private:
     /** Since Flux will be obtained from the AnalogSensor we prevent any
      * ability to set the value outside of the class.
