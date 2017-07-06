@@ -8,15 +8,13 @@
 #include "m2mclient.h"
 
 #include "GL5528.h"
-
-#include "ledman.h"
+#include "displayman.h"
 
 #include <errno.h>
 #include <factory_configurator_client.h>
 #include <mbed-trace-helper.h>
 #include <mbed-trace/mbed_trace.h>
 #include <SDBlockDevice.h>
-#include <TextLCD.h>
 
 #if MBED_CONF_APP_WIFI
     #include <ESP8266Interface.h>
@@ -28,7 +26,7 @@
 // DEFINEs and type definitions
 // ****************************************************************************
 enum FOTA_THREADS {
-    FOTA_THREAD_LED = 0,
+    FOTA_THREAD_DISPLAY = 0,
     FOTA_THREAD_SENSOR_LIGHT,
     FOTA_THREAD_COUNT
 };
@@ -39,46 +37,11 @@ enum FOTA_THREADS {
 /* declared in pal_plat_fileSystem.cpp, which is included because COMMON_PAL
  * is defined in mbed_app.json */
 extern SDBlockDevice sd;
+DisplayMan display;
 
 Thread tman[FOTA_THREAD_COUNT] = {
-    /* LEDs */
+    /* Display */
     { osPriorityNormal }
-};
-
-class MultiAddrLCD
-{
-public:
-    MultiAddrLCD(I2C *i2c) : _lcd1(i2c, 0x4e, TextLCD::LCD16x2, TextLCD::HD44780),
-                             _lcd2(i2c, 0x7e, TextLCD::LCD16x2, TextLCD::HD44780) {
-    }
-
-    /*Only supporting 16x2 LCDs, so string will be truncated at 32
-      characters.*/
-    int printf(const char* format, ...) {
-        int rc;
-        char buf[33];
-        va_list args;
-        va_start(args, format);
-        vsnprintf(buf, 32, format, args);
-        va_end(args);
-        _lcd1.printf(buf);
-        rc = _lcd2.printf(buf);
-        return rc;
-    }
-
-    void setBacklight(TextLCD_Base::LCDBacklight mode) {
-        _lcd1.setBacklight(mode);
-        _lcd2.setBacklight(mode);
-    }
-
-    void setCursor(TextLCD_Base::LCDCursor mode) {
-        _lcd1.setCursor(mode);
-        _lcd2.setCursor(mode);
-    }
-
-private:
-    TextLCD_I2C _lcd1;
-    TextLCD_I2C _lcd2;
 };
 
 // ****************************************************************************
@@ -94,6 +57,7 @@ static void thread_light_sensor(M2MClient *mbed_client)
     uint8_t res_buffer[33] = {0};
     int size = 0;
     light::LightSensor<light::BOARD_GROVE_GL5528> light(A0);
+    int light_id = display.register_sensor("Light");
 
     /* register the m2m object */
     light_obj = M2MInterfaceFactory::create_object("5002");
@@ -108,17 +72,15 @@ static void thread_light_sensor(M2MClient *mbed_client)
 
     while (true) {
         light.update();
-        size = sprintf((char *)res_buffer,"%2.2f", light.getFlux());
-        light_res->set_value(res_buffer, size);
-        wait(0.5f);
-    }
-}
+        float flux = light.getFlux();
 
-static void thread_led_update()
-{
-    while (true) {
-        led_post();
-        wait(0.1f);
+        size = sprintf((char *)res_buffer,"%2.2f", flux);
+
+        printf("reading: %2.2f\r\n", flux);
+        display.set_sensor_status(light_id, (char *)res_buffer);
+        light_res->set_value(res_buffer, size);
+
+        wait(0.5f);
     }
 }
 
@@ -147,35 +109,35 @@ static int platform_init(M2MClient &mbed_client)
     }
     printf("sd init OK\n");
 
-    /* setup the leds */
-    led_setup();
+    /* setup the display */
+    display.init();
 
-    tman[FOTA_THREAD_LED].start(thread_led_update);
+    tman[FOTA_THREAD_DISPLAY].start(callback(thread_display_update, &display));
     tman[FOTA_THREAD_SENSOR_LIGHT].start(callback(thread_light_sensor, &mbed_client));
     return 0;
 }
 
 static void platform_shutdown()
 {
-    tman[FOTA_THREAD_LED].join();
+    tman[FOTA_THREAD_DISPLAY].join();
 }
 
 static void mbed_client_on_registered(void *context)
 {
     printf("mbed client registered\n");
-    led_set_color(IND_CLOUD, IND_COLOR_SUCCESS);
+    display.set_cloud_registered();
 }
 
 static void mbed_client_on_unregistered(void *context)
 {
     printf("mbed client unregistered\n");
-    led_set_color(IND_CLOUD, IND_COLOR_OFF);
+    display.set_cloud_unregistered();
 }
 
 static void mbed_client_on_error(void *context)
 {
     printf("mbed client ERROR\n");
-    led_set_color(IND_CLOUD, IND_COLOR_FAILED);
+    display.set_cloud_error();
 }
 
 static int run_mbed_client(NetworkInterface *iface,
@@ -186,7 +148,7 @@ static int run_mbed_client(NetworkInterface *iface,
     mbed_client.on_error(NULL, mbed_client_on_error);
 
     printf("mbed client: connecting\n");
-    led_set_color(IND_CLOUD, IND_COLOR_IN_PROGRESS, true);
+    display.set_cloud_in_progress();
     mbed_client.call_register(iface);
 
     printf("mbed client: entering run loop\n");
@@ -340,25 +302,21 @@ int main()
     printf("init platform: OK\n");
 
     /* let the world know we're alive */
-    led_set_color(IND_POWER, IND_COLOR_ON);
+    display.set_power_on();
 
-    lcd.setBacklight(TextLCD_I2C::LightOn);
-    lcd.setCursor(TextLCD_I2C::CurOff_BlkOff);
-    lcd.printf("Version: %s\n", MBED_CONF_APP_VERSION);
+    display.set_version_string(MBED_CONF_APP_VERSION);
 
     /* bring up the network */
     printf("init network\n");
-    led_set_color(IND_WIFI, IND_COLOR_IN_PROGRESS, true);
+    display.set_network_in_progress();
     net = init_network();
     if (NULL == net) {
         printf("failed to init network\n");
-        lcd.printf("Fail: %s\n", MBED_CONF_APP_WIFI_SSID);
-        led_set_color(IND_WIFI, IND_COLOR_FAILED);
+        display.set_network_fail();
         return -ENODEV;
     }
     printf("init network: OK\n");
-    lcd.printf("Wifi Connected\n");
-    led_set_color(IND_WIFI, IND_COLOR_SUCCESS);
+    display.set_network_success();
 
     /* initialize the factory configuration client */
     printf("init factory configuration client\n");
