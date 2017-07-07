@@ -5,3 +5,4 @@ sd init OK
 init platform: OK
 init network
 [WIFI] connecting to: iotlab
+mbed client registered
