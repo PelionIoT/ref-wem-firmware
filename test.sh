@@ -30,12 +30,11 @@ if ! [[ -z "$(grep -i error ${OUTPUT_LOG})" ]]; then
 fi
 
 # Compare boot log to the standard log
-result="$(comm -23 ${STANDARD_LOG} ${OUTPUT_LOG})"
-if [[ -z ${result} ]]; then
+python comparelogs.py ${STANDARD_LOG} ${OUTPUT_LOG}
+rc=$?
+if [[ ${rc} = 0 ]]; then
   echo "Looks good. All lines in ${STANDARD_LOG} were found in your ${OUTPUT_LOG}."
 else
-  echo "ERROR: Your ${OUTPUT_LOG} is missing lines from ${STANDARD_LOG}."
-  echo "Missing lines:"
-  echo $result
+  echo "ERROR: Comparison between your ${OUTPUT_LOG} and the ${STANDARD_LOG} failed."
   exit 1
 fi
