@@ -11,6 +11,7 @@ manifest-tool-restricted/
 mbed-cloud-client-restricted/
 mbed-cloud-update-cli/
 mbed-os/
+DHT/
 
 # generated files
 .targetpath
