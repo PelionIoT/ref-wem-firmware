@@ -15,7 +15,9 @@ enum INDICATOR_TYPES {
     IND_WIFI,
     IND_CLOUD,
     IND_FWUP,
-    IND_LCD,
+    IND_LIGHT,
+    IND_TEMP,
+    IND_SOUND,
     IND_NO_TYPES
 };
 

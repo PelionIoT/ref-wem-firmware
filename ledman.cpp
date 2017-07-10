@@ -16,6 +16,8 @@ static int LED_STATUS[IND_NO_TYPES] = {
     IND_COLOR_OFF,
     IND_COLOR_OFF,
     IND_COLOR_OFF,
+    IND_COLOR_OFF,
+    IND_COLOR_OFF,
     IND_COLOR_OFF
 };
 /* really poor design, but we store the blinkind indicator in the upper 8-bits
@@ -23,11 +25,13 @@ static int LED_STATUS[IND_NO_TYPES] = {
  * just update the LED_STATUS field with the original color.
  */
 static int LED_BLINK[IND_NO_TYPES] = {
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0
 };
 
 // ****************************************************************************
