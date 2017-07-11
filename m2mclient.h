@@ -11,12 +11,10 @@
 // permitted to do so under the terms of a subsisting license agreement
 // from ARM Limited or its affiliates.
 //----------------------------------------------------------------------------
-
 #ifndef M2MCLIENT_H
 #define M2MCLIENT_H
 
 #include "m2mresources.h"
-#include "update-ui.h"
 
 #include <MbedCloudClient.h>
 #include <m2mdevice.h>
@@ -54,13 +52,12 @@ public:
         }
 
         /* Set callback functions for authorizing updates and monitoring
-         * progress.  Code is implemented in update-ui.cpp.
-         * Both callbacks are completely optional. If no authorization callback
-         * is set, the update process will proceed immediately in each step.
-         */
-        update_ui_set_cloud_client(&_cloud_client);
-        _cloud_client.set_update_authorize_handler(update_authorize);
-        _cloud_client.set_update_progress_handler(update_progress);
+         * progress.  Both callbacks are completely optional. If no
+         * authorization callback is set, the update process will proceed
+         * immediately in each step.
+         * */
+        _cloud_client.set_update_authorize_handler(_update_authorize_cb);
+        _cloud_client.set_update_progress_handler(_update_progress_cb);
         return true;
     }
 
@@ -212,6 +209,18 @@ public:
         _on_error_context = context;
     }
 
+    void on_update_authorize(void (*callback)(int32_t)) {
+        _update_authorize_cb = callback;
+    }
+
+    void on_update_progress(void (*callback)(uint32_t, uint32_t)) {
+        _update_progress_cb = callback;
+    }
+
+    void update_authorize(int32_t request) {
+        _cloud_client.update_authorize(request);
+    }
+
 private:
     M2MObjectList       _obj_list;
     MbedCloudClient     _cloud_client;
@@ -226,6 +235,9 @@ private:
 
     void (*_on_error_cb)(void *context);
     void *_on_error_context;
+
+    void (*_update_authorize_cb)(int32_t);
+    void (*_update_progress_cb)(uint32_t, uint32_t);
 };
 
 #endif /* M2MCLIENT_H */

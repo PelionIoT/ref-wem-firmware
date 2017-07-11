@@ -43,11 +43,12 @@ enum FOTA_THREADS {
  * is defined in mbed_app.json */
 extern SDBlockDevice sd;
 DisplayMan display;
+M2MClient *gmbed_client;
 
 Thread tman[FOTA_THREAD_COUNT];
 
 // ****************************************************************************
-// Functions
+// Threads
 // ****************************************************************************
 static void thread_light_sensor(M2MClient *mbed_client)
 {
@@ -169,47 +170,137 @@ static void thread_dht(M2MClient *mbed_client)
     }
 }
 
-static int platform_init(M2MClient &mbed_client)
+static void start_sensors(M2MClient *mbed_client)
 {
-    int ret;
-
-#if MBED_CONF_MBED_TRACE_ENABLE
-    /* Create mutex for tracing to avoid broken lines in logs */
-    if (!mbed_trace_helper_create_mutex()) {
-        printf("ERROR - Mutex creation for mbed_trace failed!\n");
-        return -EACCES;
-    }
-
-    /* Initialize mbed trace */
-    mbed_trace_init();
-    mbed_trace_mutex_wait_function_set(mbed_trace_helper_mutex_wait);
-    mbed_trace_mutex_release_function_set(mbed_trace_helper_mutex_release);
-#endif
-
-    /* init the sd card */
-    ret = sd.init();
-    if (ret != BD_ERROR_OK) {
-        printf("sd init failed: %d\n", ret);
-        return ret;
-    }
-    printf("sd init OK\n");
-
-    /* setup the display */
-    display.init();
-
-    tman[FOTA_THREAD_DISPLAY].start(callback(thread_display_update, &display));
-    tman[FOTA_THREAD_SENSOR_LIGHT].start(callback(thread_light_sensor, &mbed_client));
-    tman[FOTA_THREAD_THERMO].start(callback(thread_thermo, &mbed_client));
-    tman[FOTA_THREAD_DHT].start(callback(thread_dht, &mbed_client));
-    return 0;
+    printf("starting all sensors\n");
+    tman[FOTA_THREAD_SENSOR_LIGHT].start(callback(thread_light_sensor, mbed_client));
+    tman[FOTA_THREAD_THERMO].start(callback(thread_thermo, mbed_client));
+    tman[FOTA_THREAD_DHT].start(callback(thread_dht, mbed_client));
 }
 
-static void platform_shutdown()
+static void stop_sensors()
 {
-    tman[FOTA_THREAD_DISPLAY].join();
-    tman[FOTA_THREAD_SENSOR_LIGHT].join();
-    tman[FOTA_THREAD_THERMO].join();
-    tman[FOTA_THREAD_DHT].join();
+    printf("stopping all sensors\n");
+    tman[FOTA_THREAD_SENSOR_LIGHT].terminate();
+    tman[FOTA_THREAD_THERMO].terminate();
+    tman[FOTA_THREAD_DHT].terminate();
+}
+
+// ****************************************************************************
+// Cloud
+// ****************************************************************************
+void mbed_client_on_update_authorize(int32_t request)
+{
+    M2MClient *mbed_client = gmbed_client;
+
+    switch (request) {
+        /* Cloud Client wishes to download new firmware. This can have a
+         * negative impact on the performance of the rest of the system.
+         *
+         * The user application is supposed to pause performance sensitive tasks
+         * before authorizing the download.
+         *
+         * Note: the authorization call can be postponed and called later.
+         * This doesn't affect the performance of the Cloud Client.
+         * */
+        case MbedCloudClient::UpdateRequestDownload:
+            printf("Firmware download requested\r\n");
+            printf("Authorization granted\r\n");
+            stop_sensors();
+            tman[FOTA_THREAD_DISPLAY].terminate();
+            mbed_client->update_authorize(request);
+            led_set_color(IND_FWUP, IND_COLOR_IN_PROGRESS, true);
+            break;
+
+        /* Cloud Client wishes to reboot and apply the new firmware.
+         *
+         * The user application is supposed to save all current work before
+         * rebooting.
+         *
+         * Note: the authorization call can be postponed and called later.
+         * This doesn't affect the performance of the Cloud Client.
+         * */
+        case MbedCloudClient::UpdateRequestInstall:
+            printf("Firmware install requested\r\n");
+            printf("Authorization granted\r\n");
+            mbed_client->update_authorize(request);
+            led_set_color(IND_FWUP, IND_COLOR_IN_PROGRESS, true);
+            break;
+
+        default:
+            printf("Error - unknown request\r\n");
+            led_set_color(IND_FWUP, IND_COLOR_FAILED);
+            break;
+    }
+}
+
+void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
+{
+    uint8_t percent = progress * 100 / total;
+
+#ifdef MBED_APPLICATION_SHIELD
+    /* display progress */
+    uint8_t bar = progress * 90 / total;
+
+    lcd->locate(0,3);
+    lcd->printf("Downloading: %d / %d KiB", progress / 1024, total / 1024);
+
+    lcd->rect(0, 15, 90, 22, 1);
+    lcd->fillrect(0, 15, bar, 22, 1);
+
+    lcd->locate(91, 15);
+    lcd->printf(" %d %%", percent);
+#endif
+
+/* only show progress bar if debug trace is disabled */
+#if !defined(MBED_CONF_MBED_TRACE_ENABLE) \
+    && !ARM_UC_ALL_TRACE_ENABLE \
+    && !ARM_UC_HUB_TRACE_ENABLE
+
+    printf("\rDownloading: [");
+    for (uint8_t index = 0; index < 50; index++) {
+        if (index < percent / 2) {
+            printf("+");
+        } else if (index == percent / 2) {
+            static uint8_t old_max = 0;
+            static uint8_t counter = 0;
+
+            if (index == old_max) {
+                counter++;
+            } else {
+                old_max = index;
+                counter = 0;
+            }
+
+            switch (counter % 4) {
+                case 0:
+                    printf("/");
+                    break;
+                case 1:
+                    printf("-");
+                    break;
+                case 2:
+                    printf("\\");
+                    break;
+                case 3:
+                default:
+                    printf("|");
+                    break;
+            }
+        } else {
+            printf(" ");
+        }
+    }
+    printf("] %d %%", percent);
+    fflush(stdout);
+#else
+    printf("Downloading: %d %%\r\n", percent);
+#endif
+
+    if (progress == total) {
+        printf("\r\nDownload completed\r\n");
+        led_set_color(IND_FWUP, IND_COLOR_SUCCESS);
+    }
 }
 
 static void mbed_client_on_registered(void *context)
@@ -231,18 +322,20 @@ static void mbed_client_on_error(void *context)
 }
 
 static int run_mbed_client(NetworkInterface *iface,
-        M2MClient &mbed_client)
+                           M2MClient *mbed_client)
 {
-    mbed_client.on_registered(NULL, mbed_client_on_registered);
-    mbed_client.on_unregistered(NULL, mbed_client_on_unregistered);
-    mbed_client.on_error(NULL, mbed_client_on_error);
+    mbed_client->on_registered(NULL, mbed_client_on_registered);
+    mbed_client->on_unregistered(NULL, mbed_client_on_unregistered);
+    mbed_client->on_error(NULL, mbed_client_on_error);
+    mbed_client->on_update_authorize(mbed_client_on_update_authorize);
+    mbed_client->on_update_progress(mbed_client_on_update_progress);
 
     printf("mbed client: connecting\n");
     display.set_cloud_in_progress();
-    mbed_client.call_register(iface);
+    mbed_client->call_register(iface);
 
     printf("mbed client: entering run loop\n");
-    while (mbed_client.is_register_called()) {
+    while (mbed_client->is_register_called()) {
         Thread::wait(1000);
     }
     printf("mbed client: exited run loop\n");
@@ -284,6 +377,9 @@ static int init_fcc(void)
     return 0;
 }
 
+// ****************************************************************************
+// Network
+// ****************************************************************************
 #if MBED_CONF_APP_WIFI
 static nsapi_security_t wifi_security_str2sec(const char *security)
 {
@@ -372,16 +468,81 @@ static NetworkInterface *init_network(void)
 }
 #endif
 
+// ****************************************************************************
+// Generic Helpers
+// ****************************************************************************
+static int platform_init(M2MClient *mbed_client)
+{
+    int ret;
+
+#if MBED_CONF_MBED_TRACE_ENABLE
+    /* Create mutex for tracing to avoid broken lines in logs */
+    if (!mbed_trace_helper_create_mutex()) {
+        printf("ERROR - Mutex creation for mbed_trace failed!\n");
+        return -EACCES;
+    }
+
+    /* Initialize mbed trace */
+    mbed_trace_init();
+    mbed_trace_mutex_wait_function_set(mbed_trace_helper_mutex_wait);
+    mbed_trace_mutex_release_function_set(mbed_trace_helper_mutex_release);
+#endif
+
+    /* init the sd card */
+    ret = sd.init();
+    if (ret != BD_ERROR_OK) {
+        printf("sd init failed: %d\n", ret);
+        return ret;
+    }
+    printf("sd init OK\n");
+
+    /* setup the display */
+    display.init();
+    tman[FOTA_THREAD_DISPLAY].start(callback(thread_display_update, &display));
+
+    return 0;
+}
+
+static void platform_shutdown()
+{
+    rtos::Thread::State state;
+
+    state = tman[FOTA_THREAD_DISPLAY].get_state();
+    if (rtos::Thread::Running == state) {
+        tman[FOTA_THREAD_DISPLAY].join();
+    }
+
+    state = tman[FOTA_THREAD_SENSOR_LIGHT].get_state();
+    if (rtos::Thread::Running == state) {
+        tman[FOTA_THREAD_SENSOR_LIGHT].join();
+    }
+
+    state = tman[FOTA_THREAD_THERMO].get_state();
+    if (rtos::Thread::Running == state) {
+        tman[FOTA_THREAD_THERMO].join();
+    }
+
+    state = tman[FOTA_THREAD_DHT].get_state();
+    if (rtos::Thread::Running == state) {
+        tman[FOTA_THREAD_DHT].join();
+    }
+}
+
+// ****************************************************************************
+// Main
 // main() runs in its own thread in the OS
+// ****************************************************************************
 int main()
 {
     int ret;
     NetworkInterface *net;
     I2C i2c_lcd(I2C_SDA, I2C_SCL);
     MultiAddrLCD lcd(&i2c_lcd);
-    M2MClient mbed_client;
+    M2MClient *mbed_client;
 
     printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
+    gmbed_client = new M2MClient();
+    mbed_client = gmbed_client;
 
     /* minimal init sequence */
     printf("init platform\n");
@@ -417,6 +578,9 @@ int main()
     }
     printf("init factory configuration client: OK\n");
 
+    /* start sampling */
+    start_sensors(mbed_client);
+
     /* start the mbed client. does not return */
     printf("starting mbed client\n");
     ret = run_mbed_client(net, mbed_client);
@@ -425,6 +589,7 @@ int main()
         return ret;
     }
 
+    stop_sensors();
     platform_shutdown();
     printf("exiting main\n");
     return 0;
