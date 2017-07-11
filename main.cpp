@@ -44,6 +44,7 @@ enum FOTA_THREADS {
 extern SDBlockDevice sd;
 DisplayMan display;
 M2MClient *gmbed_client;
+NetworkInterface *gnet;
 
 Thread tman[FOTA_THREAD_COUNT];
 
@@ -192,6 +193,7 @@ static void stop_sensors()
 void mbed_client_on_update_authorize(int32_t request)
 {
     M2MClient *mbed_client = gmbed_client;
+    int ret;
 
     switch (request) {
         /* Cloud Client wishes to download new firmware. This can have a
@@ -222,6 +224,9 @@ void mbed_client_on_update_authorize(int32_t request)
          * */
         case MbedCloudClient::UpdateRequestInstall:
             printf("Firmware install requested\r\n");
+            printf("Disconnecting network...\n");
+            ret = gnet->disconnect();
+            printf("Network disconnect returned with %d\n", ret);
             printf("Authorization granted\r\n");
             mbed_client->update_authorize(request);
             led_set_color(IND_FWUP, IND_COLOR_IN_PROGRESS, true);
@@ -535,7 +540,6 @@ static void platform_shutdown()
 int main()
 {
     int ret;
-    NetworkInterface *net;
     I2C i2c_lcd(I2C_SDA, I2C_SCL);
     MultiAddrLCD lcd(&i2c_lcd);
     M2MClient *mbed_client;
@@ -560,8 +564,8 @@ int main()
     /* bring up the network */
     printf("init network\n");
     display.set_network_in_progress();
-    net = init_network();
-    if (NULL == net) {
+    gnet = init_network();
+    if (NULL == gnet) {
         printf("failed to init network\n");
         display.set_network_fail();
         return -ENODEV;
@@ -583,7 +587,7 @@ int main()
 
     /* start the mbed client. does not return */
     printf("starting mbed client\n");
-    ret = run_mbed_client(net, mbed_client);
+    ret = run_mbed_client(gnet, mbed_client);
     if (0 != ret) {
         printf("failed to run mbed client: %d\n", ret);
         return ret;
