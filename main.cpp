@@ -47,7 +47,7 @@ DisplayMan display;
 Thread tman[FOTA_THREAD_COUNT];
 
 // ****************************************************************************
-// Functions
+// Threads
 // ****************************************************************************
 static void thread_light_sensor(M2MClient *mbed_client)
 {
@@ -169,49 +169,9 @@ static void thread_dht(M2MClient *mbed_client)
     }
 }
 
-static int platform_init(M2MClient &mbed_client)
-{
-    int ret;
-
-#if MBED_CONF_MBED_TRACE_ENABLE
-    /* Create mutex for tracing to avoid broken lines in logs */
-    if (!mbed_trace_helper_create_mutex()) {
-        printf("ERROR - Mutex creation for mbed_trace failed!\n");
-        return -EACCES;
-    }
-
-    /* Initialize mbed trace */
-    mbed_trace_init();
-    mbed_trace_mutex_wait_function_set(mbed_trace_helper_mutex_wait);
-    mbed_trace_mutex_release_function_set(mbed_trace_helper_mutex_release);
-#endif
-
-    /* init the sd card */
-    ret = sd.init();
-    if (ret != BD_ERROR_OK) {
-        printf("sd init failed: %d\n", ret);
-        return ret;
-    }
-    printf("sd init OK\n");
-
-    /* setup the display */
-    display.init();
-
-    tman[FOTA_THREAD_DISPLAY].start(callback(thread_display_update, &display));
-    tman[FOTA_THREAD_SENSOR_LIGHT].start(callback(thread_light_sensor, &mbed_client));
-    tman[FOTA_THREAD_THERMO].start(callback(thread_thermo, &mbed_client));
-    tman[FOTA_THREAD_DHT].start(callback(thread_dht, &mbed_client));
-    return 0;
-}
-
-static void platform_shutdown()
-{
-    tman[FOTA_THREAD_DISPLAY].join();
-    tman[FOTA_THREAD_SENSOR_LIGHT].join();
-    tman[FOTA_THREAD_THERMO].join();
-    tman[FOTA_THREAD_DHT].join();
-}
-
+// ****************************************************************************
+// Cloud
+// ****************************************************************************
 static void mbed_client_on_registered(void *context)
 {
     printf("mbed client registered\n");
@@ -284,6 +244,9 @@ static int init_fcc(void)
     return 0;
 }
 
+// ****************************************************************************
+// Network
+// ****************************************************************************
 #if MBED_CONF_APP_WIFI
 static nsapi_security_t wifi_security_str2sec(const char *security)
 {
@@ -372,7 +335,56 @@ static NetworkInterface *init_network(void)
 }
 #endif
 
+// ****************************************************************************
+// Generic Helpers
+// ****************************************************************************
+static int platform_init(M2MClient &mbed_client)
+{
+    int ret;
+
+#if MBED_CONF_MBED_TRACE_ENABLE
+    /* Create mutex for tracing to avoid broken lines in logs */
+    if (!mbed_trace_helper_create_mutex()) {
+        printf("ERROR - Mutex creation for mbed_trace failed!\n");
+        return -EACCES;
+    }
+
+    /* Initialize mbed trace */
+    mbed_trace_init();
+    mbed_trace_mutex_wait_function_set(mbed_trace_helper_mutex_wait);
+    mbed_trace_mutex_release_function_set(mbed_trace_helper_mutex_release);
+#endif
+
+    /* init the sd card */
+    ret = sd.init();
+    if (ret != BD_ERROR_OK) {
+        printf("sd init failed: %d\n", ret);
+        return ret;
+    }
+    printf("sd init OK\n");
+
+    /* setup the display */
+    display.init();
+
+    tman[FOTA_THREAD_DISPLAY].start(callback(thread_display_update, &display));
+    tman[FOTA_THREAD_SENSOR_LIGHT].start(callback(thread_light_sensor, &mbed_client));
+    tman[FOTA_THREAD_THERMO].start(callback(thread_thermo, &mbed_client));
+    tman[FOTA_THREAD_DHT].start(callback(thread_dht, &mbed_client));
+    return 0;
+}
+
+static void platform_shutdown()
+{
+    tman[FOTA_THREAD_DISPLAY].join();
+    tman[FOTA_THREAD_SENSOR_LIGHT].join();
+    tman[FOTA_THREAD_THERMO].join();
+    tman[FOTA_THREAD_DHT].join();
+}
+
+// ****************************************************************************
+// Main
 // main() runs in its own thread in the OS
+// ****************************************************************************
 int main()
 {
     int ret;
