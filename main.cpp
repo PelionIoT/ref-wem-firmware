@@ -338,6 +338,20 @@ static NetworkInterface *init_network(void)
 // ****************************************************************************
 // Generic Helpers
 // ****************************************************************************
+static void start_sensors(M2MClient *mbed_client)
+{
+    tman[FOTA_THREAD_SENSOR_LIGHT].start(callback(thread_light_sensor, mbed_client));
+    tman[FOTA_THREAD_THERMO].start(callback(thread_thermo, mbed_client));
+    tman[FOTA_THREAD_DHT].start(callback(thread_dht, mbed_client));
+}
+
+static void stop_sensors()
+{
+    tman[FOTA_THREAD_SENSOR_LIGHT].terminate();
+    tman[FOTA_THREAD_THERMO].terminate();
+    tman[FOTA_THREAD_DHT].terminate();
+}
+
 static int platform_init(M2MClient &mbed_client)
 {
     int ret;
@@ -365,11 +379,8 @@ static int platform_init(M2MClient &mbed_client)
 
     /* setup the display */
     display.init();
-
     tman[FOTA_THREAD_DISPLAY].start(callback(thread_display_update, &display));
-    tman[FOTA_THREAD_SENSOR_LIGHT].start(callback(thread_light_sensor, &mbed_client));
-    tman[FOTA_THREAD_THERMO].start(callback(thread_thermo, &mbed_client));
-    tman[FOTA_THREAD_DHT].start(callback(thread_dht, &mbed_client));
+
     return 0;
 }
 
@@ -429,6 +440,9 @@ int main()
     }
     printf("init factory configuration client: OK\n");
 
+    /* start sampling */
+    start_sensors(&mbed_client);
+
     /* start the mbed client. does not return */
     printf("starting mbed client\n");
     ret = run_mbed_client(net, mbed_client);
@@ -437,6 +451,7 @@ int main()
         return ret;
     }
 
+    stop_sensors();
     platform_shutdown();
     printf("exiting main\n");
     return 0;
