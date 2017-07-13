@@ -213,8 +213,9 @@ void mbed_client_on_update_authorize(int32_t request)
             printf("Authorization granted\r\n");
             stop_sensors();
             tman[FOTA_THREAD_DISPLAY].terminate();
-            mbed_client->update_authorize(request);
             led_set_color(IND_FWUP, IND_COLOR_IN_PROGRESS, true);
+            led_post();
+            mbed_client->update_authorize(request);
             break;
 
         /* Cloud Client wishes to reboot and apply the new firmware.
@@ -233,13 +234,15 @@ void mbed_client_on_update_authorize(int32_t request)
             lcd.printline(0, "Installing...    ");
             lcd.printline(1, "");
             printf("Authorization granted\r\n");
+            led_set_color(IND_FWUP, IND_COLOR_SUCCESS, false);
+            led_post();
             mbed_client->update_authorize(request);
-            led_set_color(IND_FWUP, IND_COLOR_IN_PROGRESS, true);
             break;
 
         default:
             printf("Error - unknown request\r\n");
             led_set_color(IND_FWUP, IND_COLOR_FAILED);
+            led_post();
             break;
     }
 }
@@ -254,6 +257,9 @@ void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
     /* Drive the LCD in the main thread to prevent network corruption */
     lcd_prog.set_progress(dl_message, progress, total);
 
+    /* Blink the LED */
+    led_post();
+
     if (last_percent < percent) {
         printf("Downloading: %lu\n", percent);
     }
@@ -262,6 +268,7 @@ void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
         printf("\r\nDownload completed\r\n");
         lcd_prog.set_progress(done_message, 0, 100);
         led_set_color(IND_FWUP, IND_COLOR_SUCCESS);
+        led_post();
     }
 
     last_percent = percent;
