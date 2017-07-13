@@ -10,6 +10,7 @@
 #include "GL5528.h"
 #include "displayman.h"
 #include "DHT.h"
+#include "lcdprogress.h"
 
 #include <errno.h>
 #include <factory_configurator_client.h>
@@ -45,6 +46,7 @@ extern SDBlockDevice sd;
 DisplayMan display;
 M2MClient *gmbed_client;
 NetworkInterface *gnet;
+LCDProgress lcd_prog(display.get_lcd());
 
 Thread tman[FOTA_THREAD_COUNT];
 
@@ -194,6 +196,7 @@ void mbed_client_on_update_authorize(int32_t request)
 {
     M2MClient *mbed_client = gmbed_client;
     int ret;
+    MultiAddrLCD& lcd = display.get_lcd();
 
     switch (request) {
         /* Cloud Client wishes to download new firmware. This can have a
@@ -227,6 +230,8 @@ void mbed_client_on_update_authorize(int32_t request)
             printf("Disconnecting network...\n");
             ret = gnet->disconnect();
             printf("Network disconnect returned with %d\n", ret);
+            lcd.printline(0, "Installing...    ");
+            lcd.printline(1, "");
             printf("Authorization granted\r\n");
             mbed_client->update_authorize(request);
             led_set_color(IND_FWUP, IND_COLOR_IN_PROGRESS, true);
@@ -241,71 +246,25 @@ void mbed_client_on_update_authorize(int32_t request)
 
 void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
 {
-    uint8_t percent = progress * 100 / total;
+    uint32_t percent = progress * 100 / total;
+    static uint32_t last_percent = 0;
+    const char dl_message[] = "Downloading...";
+    const char done_message[] = "Saving...";
 
-#ifdef MBED_APPLICATION_SHIELD
-    /* display progress */
-    uint8_t bar = progress * 90 / total;
+    /* Drive the LCD in the main thread to prevent network corruption */
+    lcd_prog.set_progress(dl_message, progress, total);
 
-    lcd->locate(0,3);
-    lcd->printf("Downloading: %d / %d KiB", progress / 1024, total / 1024);
-
-    lcd->rect(0, 15, 90, 22, 1);
-    lcd->fillrect(0, 15, bar, 22, 1);
-
-    lcd->locate(91, 15);
-    lcd->printf(" %d %%", percent);
-#endif
-
-/* only show progress bar if debug trace is disabled */
-#if !defined(MBED_CONF_MBED_TRACE_ENABLE) \
-    && !ARM_UC_ALL_TRACE_ENABLE \
-    && !ARM_UC_HUB_TRACE_ENABLE
-
-    printf("\rDownloading: [");
-    for (uint8_t index = 0; index < 50; index++) {
-        if (index < percent / 2) {
-            printf("+");
-        } else if (index == percent / 2) {
-            static uint8_t old_max = 0;
-            static uint8_t counter = 0;
-
-            if (index == old_max) {
-                counter++;
-            } else {
-                old_max = index;
-                counter = 0;
-            }
-
-            switch (counter % 4) {
-                case 0:
-                    printf("/");
-                    break;
-                case 1:
-                    printf("-");
-                    break;
-                case 2:
-                    printf("\\");
-                    break;
-                case 3:
-                default:
-                    printf("|");
-                    break;
-            }
-        } else {
-            printf(" ");
-        }
+    if (last_percent < percent) {
+        printf("Downloading: %lu\n", percent);
     }
-    printf("] %d %%", percent);
-    fflush(stdout);
-#else
-    printf("Downloading: %d %%\r\n", percent);
-#endif
 
     if (progress == total) {
         printf("\r\nDownload completed\r\n");
+        lcd_prog.set_progress(done_message, 0, 100);
         led_set_color(IND_FWUP, IND_COLOR_SUCCESS);
     }
+
+    last_percent = percent;
 }
 
 static void mbed_client_on_registered(void *context)
@@ -533,6 +492,21 @@ static void platform_shutdown()
     }
 }
 
+#if MBED_CONF_APP_SELF_TEST
+static void self_test()
+{
+    I2C i2c(I2C_SDA, I2C_SCL);
+    MultiAddrLCD lcd(&i2c);
+    lcd.setBacklight(TextLCD_I2C::LightOn);
+    lcd.setCursor(TextLCD_I2C::CurOff_BlkOff);
+    LCDProgress prog(lcd);
+    for (uint32_t i = 0; i <= 150; i++) {
+        prog.set_progress("Starting", i, 150);
+        Thread::wait(10);
+    }
+}
+#endif
+
 // ****************************************************************************
 // Main
 // main() runs in its own thread in the OS
@@ -540,9 +514,11 @@ static void platform_shutdown()
 int main()
 {
     int ret;
-    I2C i2c_lcd(I2C_SDA, I2C_SCL);
-    MultiAddrLCD lcd(&i2c_lcd);
     M2MClient *mbed_client;
+
+#if MBED_CONF_APP_SELF_TEST
+    self_test();
+#endif
 
     printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
     gmbed_client = new M2MClient();
@@ -558,7 +534,6 @@ int main()
 
     /* let the world know we're alive */
     display.set_power_on();
-
     display.set_version_string(MBED_CONF_APP_VERSION);
 
     /* bring up the network */

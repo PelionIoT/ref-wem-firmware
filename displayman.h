@@ -11,33 +11,13 @@
 #ifndef __DISPLAYMAN_H__
 #define __DISPLAYMAN_H__
 #include "ledman.h"
-#include <TextLCD.h>
+#include "multiaddrlcd.h"
 #include <string>
 #include <vector>
 
 class DisplayMan;
 
 void thread_display_update(DisplayMan *display);
-
-
-//LCD which can have I2C slave address of eith 0x4e or 0x7e
-class MultiAddrLCD
-{
-public:
-    MultiAddrLCD(I2C *i2c);
-
-    /*Only supporting 16x2 LCDs, so string will be truncated at 32
-      characters.*/
-    int printf(const char *format, ...);
-    /*Print on the given line (0 or 1)*/
-    int printline(int line, const char *format, ...);
-    void setBacklight(TextLCD_Base::LCDBacklight mode);
-    void setCursor(TextLCD_Base::LCDCursor mode);
-
-private:
-    TextLCD_I2C _lcd1;
-    TextLCD_I2C _lcd2;
-};
 
 struct SensorDisplay {
     std::string name;
@@ -63,6 +43,7 @@ public:
     int register_sensor(const char *name);
     void set_sensor_status(int sensor_id, char *status);
     void cycle_status();
+    MultiAddrLCD& get_lcd();
 
 private:
     I2C                        _i2c;

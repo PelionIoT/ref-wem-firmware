@@ -51,6 +51,13 @@
             "help": "Wipe the FCC credentials stored on the device",
             "value": "false"
         },
-        "version": "\"0.1.0\""
+        "version": {
+            "help": "Display this version string on the device",
+            "value": "\"1.0\""
+        },
+        "self-test": {
+            "help": "Run a self-test upon boot",
+            "value": "false"
+        }
     }
 }
