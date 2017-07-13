@@ -527,7 +527,12 @@ int main()
     self_test();
 #endif
 
+    /* let the world know we're alive */
+    display.set_power_on();
+
     printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
+    display.set_version_string(MBED_CONF_APP_VERSION);
+
     gmbed_client = new M2MClient();
     mbed_client = gmbed_client;
 
@@ -538,10 +543,6 @@ int main()
         return ret;
     }
     printf("init platform: OK\n");
-
-    /* let the world know we're alive */
-    display.set_power_on();
-    display.set_version_string(MBED_CONF_APP_VERSION);
 
     /* bring up the network */
     printf("init network\n");
