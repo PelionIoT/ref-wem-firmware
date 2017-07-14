@@ -82,7 +82,6 @@ static void thread_light_sensor(M2MClient *mbed_client)
 
         size = sprintf((char *)res_buffer,"%2.2f", flux);
 
-        printf("reading: %2.2f\r\n", flux);
         display.set_sensor_status(light_id, (char *)res_buffer);
         light_res->set_value(res_buffer, size);
         Thread::wait(5000);
