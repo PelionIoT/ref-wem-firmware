@@ -176,10 +176,10 @@ public:
             default:
                 error = "UNKNOWN";
         }
-        printf("Error occured : %s\r\n", error);
-        printf("Error code : %d\r\n", error_code);
-        printf("Error details : %s\r\n",_cloud_client.error_description());
-        _on_error_cb(_on_error_context);
+        _on_error_cb(_on_error_context,
+                     error_code,
+                     error,
+                     _cloud_client.error_description());
     }
 
     bool is_client_registered() {
@@ -204,7 +204,11 @@ public:
         _on_unregistered_context = context;
     }
 
-    void on_error(void *context, void (*callback)(void*)) {
+    void on_error(void *context,
+                  void (*callback)(void *context,
+                                   int err_code,
+                                   const char *err_name,
+                                   const char *err_desc)) {
         _on_error_cb = callback;
         _on_error_context = context;
     }
@@ -233,7 +237,7 @@ private:
     void (*_on_unregistered_cb)(void *context);
     void *_on_unregistered_context;
 
-    void (*_on_error_cb)(void *context);
+    void (*_on_error_cb)(void *context, int, const char *, const char *);
     void *_on_error_context;
 
     void (*_update_authorize_cb)(int32_t);

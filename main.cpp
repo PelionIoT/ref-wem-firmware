@@ -286,9 +286,13 @@ static void mbed_client_on_unregistered(void *context)
     display.set_cloud_unregistered();
 }
 
-static void mbed_client_on_error(void *context)
+static void mbed_client_on_error(void *context,
+                                 int err_code,
+                                 const char *err_name,
+                                 const char *err_desc)
 {
-    printf("mbed client ERROR\n");
+    printf("mbed client ERROR: (%d) %s\n", err_code, err_name);
+    printf("    Error details : %s\n", err_desc);
     display.set_cloud_error();
 }
 
@@ -297,7 +301,7 @@ static int run_mbed_client(NetworkInterface *iface,
 {
     mbed_client->on_registered(NULL, mbed_client_on_registered);
     mbed_client->on_unregistered(NULL, mbed_client_on_unregistered);
-    mbed_client->on_error(NULL, mbed_client_on_error);
+    mbed_client->on_error(mbed_client, mbed_client_on_error);
     mbed_client->on_update_authorize(mbed_client_on_update_authorize);
     mbed_client->on_update_progress(mbed_client_on_update_progress);
 
