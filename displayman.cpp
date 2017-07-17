@@ -27,7 +27,7 @@ void DisplayMan::set_power_on() {
 }
 
 void DisplayMan::set_version_string(const char *version) {
-    _lcd.printline(0, "Version: %s", version);
+    _version_string = version;
 }
 
 void DisplayMan::set_cloud_in_progress() {
@@ -54,7 +54,6 @@ void DisplayMan::set_network_in_progress() {
 
 void DisplayMan::set_network_fail() {
     led_set_color(IND_WIFI, IND_COLOR_FAILED);
-    _lcd.printline(1, "Fail: %s", MBED_CONF_APP_WIFI_SSID);
 }
 
 void DisplayMan::set_network_success() {
@@ -77,6 +76,11 @@ void DisplayMan::set_sensor_status(uint8_t sensor_id, const char *status) {
 
 void DisplayMan::cycle_status() {
     char line[17];
+
+    /* top line */
+    _lcd.printline(0, "Version: %s", _version_string.c_str());
+
+    /* bottom line */
     snprintf(line, 16, "%s: %s", _sensors[_active_sensor].name.c_str(),
              _sensors[_active_sensor].status.c_str());
     _lcd.printline(1, line);

@@ -52,6 +52,7 @@ private:
     uint8_t                    _next_sensor_id;
     uint8_t                    _network_sensor_id;
     uint8_t                    _active_sensor;
+    std::string                _version_string;
 };
 
 #endif
