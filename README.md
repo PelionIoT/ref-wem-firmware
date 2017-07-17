@@ -31,15 +31,6 @@ To build this project, you need to install the following:
 	pip install -r requirements.txt
 	```
 
-## Setting up mbed environment
-
-Need to make the current directory an mbed project and install the mbed-os library for the first time setup.
-
-```
-mbed config root .
-mbed deploy
-```
-
 ## Specifying a network configuration
 
 The network configuration is hard-coded into the project configuration file ``mbed_app.json``.
