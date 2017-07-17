@@ -40,8 +40,8 @@ public:
     void set_network_fail();
     void set_network_success();
     /*returns sesor id*/
-    int register_sensor(const char *name);
-    void set_sensor_status(int sensor_id, char *status);
+    uint8_t register_sensor(const char *name);
+    void set_sensor_status(uint8_t sensor_id, const char *status);
     void cycle_status();
     MultiAddrLCD& get_lcd();
 
@@ -49,9 +49,9 @@ private:
     I2C                        _i2c;
     MultiAddrLCD               _lcd;
     std::vector<SensorDisplay> _sensors;
-    int                        _next_sensor_id;
-    int                        _network_sensor_id;
-    int                        _active_sensor;
+    uint8_t                    _next_sensor_id;
+    uint8_t                    _network_sensor_id;
+    uint8_t                    _active_sensor;
 };
 
 #endif

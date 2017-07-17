@@ -62,14 +62,14 @@ void DisplayMan::set_network_success() {
     this->set_sensor_status(_network_sensor_id, "connected");
 }
 
-int DisplayMan::register_sensor(const char *name) {
+uint8_t DisplayMan::register_sensor(const char *name) {
     _sensors.push_back(SensorDisplay());
     _sensors[_next_sensor_id].name.assign(name);
     _sensors[_next_sensor_id].status.assign("");
     return _next_sensor_id++;
 }
 
-void DisplayMan::set_sensor_status(int sensor_id, char *status) {
+void DisplayMan::set_sensor_status(uint8_t sensor_id, const char *status) {
     if (sensor_id < _sensors.size()) {
         _sensors[sensor_id].status.assign(status);
     }
