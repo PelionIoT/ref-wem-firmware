@@ -410,8 +410,8 @@ static void mbed_client_on_error(void *context,
     display.set_cloud_error();
 }
 
-static int run_mbed_client(NetworkInterface *iface,
-                           M2MClient *mbed_client)
+static int register_mbed_client(NetworkInterface *iface,
+                                M2MClient *mbed_client)
 {
     mbed_client->on_registered(NULL, mbed_client_on_registered);
     mbed_client->on_unregistered(NULL, mbed_client_on_unregistered);
@@ -419,15 +419,8 @@ static int run_mbed_client(NetworkInterface *iface,
     mbed_client->on_update_authorize(mbed_client_on_update_authorize);
     mbed_client->on_update_progress(mbed_client_on_update_progress);
 
-    printf("mbed client: connecting\n");
     display.set_cloud_in_progress();
     mbed_client->call_register(iface);
-
-    printf("mbed client: entering run loop\n");
-    while (mbed_client->is_register_called()) {
-        Thread::wait(1000);
-    }
-    printf("mbed client: exited run loop\n");
 
     return 0;
 }
@@ -609,18 +602,24 @@ int main()
     }
     printf("init factory configuration client: OK\n");
 
+    /* connect to mbed cloud */
+    printf("init mbed client\n");
+    register_mbed_client(gnet, mbed_client);
+
     /* start sampling */
+    printf("start sampling the sensors\n");
     start_sensors(mbed_client);
 
-    /* start the mbed client. does not return */
-    printf("starting mbed client\n");
-    ret = run_mbed_client(gnet, mbed_client);
-    if (0 != ret) {
-        printf("failed to run mbed client: %d\n", ret);
-        return ret;
+    /* main run loop reads sensor samples and monitors connectivity */
+    printf("main run loop\n");
+    while (true) {
+        /* TODO: move sensor sampling here instead of in separate threads */
+        Thread::wait(1000);
     }
 
+    /* stop sampling */
     stop_sensors();
+
     platform_shutdown();
     printf("exiting main\n");
     return 0;
