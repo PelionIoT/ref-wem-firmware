@@ -189,12 +189,107 @@ static void stop_sensors()
 }
 
 // ****************************************************************************
+// Network
+// ****************************************************************************
+static void network_disconnect(NetworkInterface *net)
+{
+    net->disconnect();
+}
+
+#if MBED_CONF_APP_WIFI
+static nsapi_security_t wifi_security_str2sec(const char *security)
+{
+    if (0 == strcmp("WPA/WPA2", security)) {
+        return NSAPI_SECURITY_WPA_WPA2;
+
+    } else if (0 == strcmp("WPA2", security)) {
+        return NSAPI_SECURITY_WPA2;
+
+    } else if (0 == strcmp("WPA", security)) {
+        return NSAPI_SECURITY_WPA;
+
+    } else if (0 == strcmp("WEP", security)) {
+        return NSAPI_SECURITY_WEP;
+
+    } else if (0 == strcmp("NONE", security)) {
+        return NSAPI_SECURITY_NONE;
+
+    } else if (0 == strcmp("OPEN", security)) {
+        return NSAPI_SECURITY_NONE;
+    }
+
+    printf("warning: unknown wifi security type (%s), assuming NONE\n",
+           security);
+    return NSAPI_SECURITY_NONE;
+}
+
+/**
+ * brings up wifi
+ * */
+static NetworkInterface *network_init(void)
+{
+    int ret;
+
+    ESP8266Interface *net;
+
+    net = NULL;
+
+    net = new ESP8266Interface(MBED_CONF_APP_WIFI_TX,
+                               MBED_CONF_APP_WIFI_RX,
+                               MBED_CONF_APP_WIFI_DEBUG);
+
+    printf("[WIFI] connecting to: %s\n", MBED_CONF_APP_WIFI_SSID);
+    ret = net->connect(MBED_CONF_APP_WIFI_SSID,
+                       MBED_CONF_APP_WIFI_PASSWORD,
+                       wifi_security_str2sec(MBED_CONF_APP_WIFI_SECURITY));
+    if (0 != ret) {
+        printf("[WIFI] Failed to connect to: %s (%d)\n",
+               MBED_CONF_APP_WIFI_SSID, ret);
+        delete net;
+        return NULL;
+    }
+    printf("[WIFI] connected: ssid=%s, ip=%s, netmask=%s, gateway=%s\n",
+           MBED_CONF_APP_WIFI_SSID,
+           net->get_ip_address(),
+           net->get_netmask(),
+           net->get_gateway());
+
+    return net;
+}
+#else
+/**
+ * brings up Ethernet
+ * */
+static NetworkInterface *network_init(void)
+{
+    int ret;
+
+    EthernetInterface *net;
+
+    net = NULL;
+
+    net = new EthernetInterface();
+
+    printf("[ETH] obtaining IP adress\n");
+    ret = net->connect();
+    if (0 != ret) {
+        printf("[ETH] Failed to connect! %d\n", ret);
+        delete net;
+        return NULL;
+    }
+    printf("[ETH] connected: ip=%s, netmask=%s, gateway=%s\n",
+           net->get_ip_address(), net->get_netmask(), net->get_gateway());
+
+    return net;
+}
+#endif
+
+// ****************************************************************************
 // Cloud
 // ****************************************************************************
 void mbed_client_on_update_authorize(int32_t request)
 {
     M2MClient *mbed_client = gmbed_client;
-    int ret;
     MultiAddrLCD& lcd = display.get_lcd();
 
     switch (request) {
@@ -228,8 +323,7 @@ void mbed_client_on_update_authorize(int32_t request)
         case MbedCloudClient::UpdateRequestInstall:
             printf("Firmware install requested\r\n");
             printf("Disconnecting network...\n");
-            ret = gnet->disconnect();
-            printf("Network disconnect returned with %d\n", ret);
+            network_disconnect(gnet);
             lcd.printline(0, "Installing...    ");
             lcd.printline(1, "");
             printf("Authorization granted\r\n");
@@ -352,97 +446,6 @@ static int init_fcc(void)
 }
 
 // ****************************************************************************
-// Network
-// ****************************************************************************
-#if MBED_CONF_APP_WIFI
-static nsapi_security_t wifi_security_str2sec(const char *security)
-{
-    if (0 == strcmp("WPA/WPA2", security)) {
-        return NSAPI_SECURITY_WPA_WPA2;
-
-    } else if (0 == strcmp("WPA2", security)) {
-        return NSAPI_SECURITY_WPA2;
-
-    } else if (0 == strcmp("WPA", security)) {
-        return NSAPI_SECURITY_WPA;
-
-    } else if (0 == strcmp("WEP", security)) {
-        return NSAPI_SECURITY_WEP;
-
-    } else if (0 == strcmp("NONE", security)) {
-        return NSAPI_SECURITY_NONE;
-
-    } else if (0 == strcmp("OPEN", security)) {
-        return NSAPI_SECURITY_NONE;
-    }
-
-    printf("warning: unknown wifi security type (%s), assuming NONE\n",
-           security);
-    return NSAPI_SECURITY_NONE;
-}
-
-/**
- * brings up wifi
- * */
-static NetworkInterface *init_network(void)
-{
-    int ret;
-
-    ESP8266Interface *net;
-
-    net = NULL;
-
-    net = new ESP8266Interface(MBED_CONF_APP_WIFI_TX,
-                               MBED_CONF_APP_WIFI_RX,
-                               MBED_CONF_APP_WIFI_DEBUG);
-
-    printf("[WIFI] connecting to: %s\n", MBED_CONF_APP_WIFI_SSID);
-    ret = net->connect(MBED_CONF_APP_WIFI_SSID,
-                       MBED_CONF_APP_WIFI_PASSWORD,
-                       wifi_security_str2sec(MBED_CONF_APP_WIFI_SECURITY));
-    if (0 != ret) {
-        printf("[WIFI] Failed to connect to: %s (%d)\n",
-               MBED_CONF_APP_WIFI_SSID, ret);
-        delete net;
-        return NULL;
-    }
-    printf("[WIFI] connected: ssid=%s, ip=%s, netmask=%s, gateway=%s\n",
-           MBED_CONF_APP_WIFI_SSID,
-           net->get_ip_address(),
-           net->get_netmask(),
-           net->get_gateway());
-
-    return net;
-}
-#else
-/**
- * brings up Ethernet
- * */
-static NetworkInterface *init_network(void)
-{
-    int ret;
-
-    EthernetInterface *net;
-
-    net = NULL;
-
-    net = new EthernetInterface();
-
-    printf("[ETH] obtaining IP adress\n");
-    ret = net->connect();
-    if (0 != ret) {
-        printf("[ETH] Failed to connect! %d\n", ret);
-        delete net;
-        return NULL;
-    }
-    printf("[ETH] connected: ip=%s, netmask=%s, gateway=%s\n",
-           net->get_ip_address(), net->get_netmask(), net->get_gateway());
-
-    return net;
-}
-#endif
-
-// ****************************************************************************
 // Generic Helpers
 // ****************************************************************************
 static int platform_init(M2MClient *mbed_client)
@@ -550,7 +553,7 @@ int main()
     /* bring up the network */
     printf("init network\n");
     display.set_network_in_progress();
-    gnet = init_network();
+    gnet = network_init();
     if (NULL == gnet) {
         printf("failed to init network\n");
         display.set_network_fail();
