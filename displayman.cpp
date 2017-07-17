@@ -56,7 +56,6 @@ void DisplayMan::init_network(const char *type) {
 }
 
 void DisplayMan::set_network_in_progress() {
-    _network_sensor_id = this->register_sensor("Wifi");
     led_set_color(IND_WIFI, IND_COLOR_IN_PROGRESS, true);
 }
 

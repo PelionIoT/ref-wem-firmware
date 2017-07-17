@@ -234,28 +234,32 @@ static nsapi_security_t wifi_security_str2sec(const char *security)
 /**
  * brings up wifi
  * */
-static NetworkInterface *network_init(void)
+static NetworkInterface *network_create(void)
+{
+    display.init_network("WiFi");
+    return new ESP8266Interface(MBED_CONF_APP_WIFI_TX,
+                                MBED_CONF_APP_WIFI_RX,
+                                MBED_CONF_APP_WIFI_DEBUG);
+}
+
+static int network_connect(NetworkInterface *net)
 {
     int ret;
     char macaddr[MACADDR_STRLEN];
-    ESP8266Interface *net;
+    ESP8266Interface *wifi;
 
-    net = NULL;
-
-    net = new ESP8266Interface(MBED_CONF_APP_WIFI_TX,
-                               MBED_CONF_APP_WIFI_RX,
-                               MBED_CONF_APP_WIFI_DEBUG);
+    /* code is compiled -fno-rtti so we have to use C cast */
+    wifi = (ESP8266Interface*)net;
 
     printf("[WIFI] connecting: ssid=%s, mac=%s\n",
-           MBED_CONF_APP_WIFI_SSID, network_get_macaddr(net, macaddr));
-    ret = net->connect(MBED_CONF_APP_WIFI_SSID,
-                       MBED_CONF_APP_WIFI_PASSWORD,
-                       wifi_security_str2sec(MBED_CONF_APP_WIFI_SECURITY));
+           MBED_CONF_APP_WIFI_SSID, network_get_macaddr(wifi, macaddr));
+    ret = wifi->connect(MBED_CONF_APP_WIFI_SSID,
+                        MBED_CONF_APP_WIFI_PASSWORD,
+                        wifi_security_str2sec(MBED_CONF_APP_WIFI_SECURITY));
     if (0 != ret) {
         printf("[WIFI] Failed to connect to: %s (%d)\n",
                MBED_CONF_APP_WIFI_SSID, ret);
-        delete net;
-        return NULL;
+        return ret;
     }
     printf("[WIFI] connected: ssid=%s, mac=%s, ip=%s, netmask=%s, gateway=%s\n",
            MBED_CONF_APP_WIFI_SSID,
@@ -264,21 +268,22 @@ static NetworkInterface *network_init(void)
            net->get_netmask(),
            net->get_gateway());
 
-    return net;
+    return 0;
 }
 #else
 /**
  * brings up Ethernet
  * */
-static NetworkInterface *network_init(void)
+static NetworkInterface *network_create(void)
+{
+    display.init_network("Eth");
+    return new EthernetInterface();
+}
+
+static int network_connect(NetworkInterface *net)
 {
     int ret;
     char macaddr[MACADDR_STRLEN];
-    EthernetInterface *net;
-
-    net = NULL;
-
-    net = new EthernetInterface();
 
     /* note: Ethernet MAC isn't available until *after* a call to
      * EthernetInterface::connect(), so the first time we attempt to
@@ -288,8 +293,7 @@ static NetworkInterface *network_init(void)
     ret = net->connect();
     if (0 != ret) {
         printf("[ETH] Failed to connect! %d\n", ret);
-        delete net;
-        return NULL;
+        return ret;
     }
     printf("[ETH] connected: mac%s, ip=%s, netmask=%s, gateway=%s\n",
            network_get_macaddr(net, macaddr),
@@ -297,7 +301,7 @@ static NetworkInterface *network_init(void)
            net->get_netmask(),
            net->get_gateway());
 
-    return net;
+    return ret;
 }
 #endif
 
@@ -567,19 +571,36 @@ int main()
     }
     printf("init platform: OK\n");
 
-    /* bring up the network */
+    /* create the network */
     printf("init network\n");
-    display.set_network_in_progress();
-    gnet = network_init();
+    gnet = network_create();
     if (NULL == gnet) {
-        printf("failed to init network\n");
+        printf("failed to create network stack\n");
         display.set_network_fail();
         return -ENODEV;
     }
-    printf("init network: OK\n");
-    display.set_network_success();
 
-    /* initialize the factory configuration client */
+    /* workaround: go ahead and connect the network.  it doesn't like being
+     * polled for status before a connect() is attempted.
+     * in addition, the fcc code requires a connected network when generating
+     * creds the first time, so we need to spin here until we have an active
+     * network. */
+    do {
+        display.set_network_in_progress();
+        ret = network_connect(gnet);
+        if (0 != ret) {
+            display.set_network_fail();
+            printf("failed to init network, retrying...\n");
+            Thread::wait(2000);
+        }
+    } while (0 != ret);
+    display.set_network_success();
+    printf("init network: OK\n");
+
+    /* initialize the factory configuration client
+     * WARNING: the network must be connected first, otherwise this
+     * will not return if creds haven't been provisioned for the first time.
+     * */
     printf("init factory configuration client\n");
     ret = init_fcc();
     if (0 != ret) {
