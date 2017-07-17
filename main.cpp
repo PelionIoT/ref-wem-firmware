@@ -29,6 +29,8 @@
 // ****************************************************************************
 // DEFINEs and type definitions
 // ****************************************************************************
+#define MACADDR_STRLEN 18
+
 enum FOTA_THREADS {
     FOTA_THREAD_DISPLAY = 0,
     FOTA_THREAD_SENSOR_LIGHT,
@@ -196,6 +198,12 @@ static void network_disconnect(NetworkInterface *net)
     net->disconnect();
 }
 
+static char *network_get_macaddr(NetworkInterface *net, char *macstr)
+{
+    memcpy(macstr, net->get_mac_address(), MACADDR_STRLEN);
+    return macstr;
+}
+
 #if MBED_CONF_APP_WIFI
 static nsapi_security_t wifi_security_str2sec(const char *security)
 {
@@ -229,7 +237,7 @@ static nsapi_security_t wifi_security_str2sec(const char *security)
 static NetworkInterface *network_init(void)
 {
     int ret;
-
+    char macaddr[MACADDR_STRLEN];
     ESP8266Interface *net;
 
     net = NULL;
@@ -238,7 +246,8 @@ static NetworkInterface *network_init(void)
                                MBED_CONF_APP_WIFI_RX,
                                MBED_CONF_APP_WIFI_DEBUG);
 
-    printf("[WIFI] connecting to: %s\n", MBED_CONF_APP_WIFI_SSID);
+    printf("[WIFI] connecting: ssid=%s, mac=%s\n",
+           MBED_CONF_APP_WIFI_SSID, network_get_macaddr(net, macaddr));
     ret = net->connect(MBED_CONF_APP_WIFI_SSID,
                        MBED_CONF_APP_WIFI_PASSWORD,
                        wifi_security_str2sec(MBED_CONF_APP_WIFI_SECURITY));
@@ -248,8 +257,9 @@ static NetworkInterface *network_init(void)
         delete net;
         return NULL;
     }
-    printf("[WIFI] connected: ssid=%s, ip=%s, netmask=%s, gateway=%s\n",
+    printf("[WIFI] connected: ssid=%s, mac=%s, ip=%s, netmask=%s, gateway=%s\n",
            MBED_CONF_APP_WIFI_SSID,
+           network_get_macaddr(net, macaddr),
            net->get_ip_address(),
            net->get_netmask(),
            net->get_gateway());
@@ -263,22 +273,29 @@ static NetworkInterface *network_init(void)
 static NetworkInterface *network_init(void)
 {
     int ret;
-
+    char macaddr[MACADDR_STRLEN];
     EthernetInterface *net;
 
     net = NULL;
 
     net = new EthernetInterface();
 
-    printf("[ETH] obtaining IP adress\n");
+    /* note: Ethernet MAC isn't available until *after* a call to
+     * EthernetInterface::connect(), so the first time we attempt to
+     * connect this will print a NULL mac, but will work after a retry */
+    printf("[ETH] obtaining IP address: mac=%s\n",
+           network_get_macaddr(net, macaddr));
     ret = net->connect();
     if (0 != ret) {
         printf("[ETH] Failed to connect! %d\n", ret);
         delete net;
         return NULL;
     }
-    printf("[ETH] connected: ip=%s, netmask=%s, gateway=%s\n",
-           net->get_ip_address(), net->get_netmask(), net->get_gateway());
+    printf("[ETH] connected: mac%s, ip=%s, netmask=%s, gateway=%s\n",
+           network_get_macaddr(net, macaddr),
+           net->get_ip_address(),
+           net->get_netmask(),
+           net->get_gateway());
 
     return net;
 }
