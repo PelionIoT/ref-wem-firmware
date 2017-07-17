@@ -39,9 +39,11 @@ public:
     void set_network_in_progress();
     void set_network_fail();
     void set_network_success();
+    void init_network(const char *type);
     /*returns sesor id*/
     uint8_t register_sensor(const char *name);
     void set_sensor_status(uint8_t sensor_id, const char *status);
+    void set_sensor_name(uint8_t sensor_id, const char *name);
     void cycle_status();
     MultiAddrLCD& get_lcd();
 

@@ -47,6 +47,14 @@ void DisplayMan::set_cloud_error() {
     led_set_color(IND_CLOUD, IND_COLOR_FAILED);
 }
 
+void DisplayMan::init_network(const char *type) {
+    if (0 == _network_sensor_id) {
+        _network_sensor_id = register_sensor(type);
+    } else {
+        set_sensor_name(_network_sensor_id, type);
+    }
+}
+
 void DisplayMan::set_network_in_progress() {
     _network_sensor_id = this->register_sensor("Wifi");
     led_set_color(IND_WIFI, IND_COLOR_IN_PROGRESS, true);
@@ -71,6 +79,12 @@ uint8_t DisplayMan::register_sensor(const char *name) {
 void DisplayMan::set_sensor_status(uint8_t sensor_id, const char *status) {
     if (sensor_id < _sensors.size()) {
         _sensors[sensor_id].status.assign(status);
+    }
+}
+
+void DisplayMan::set_sensor_name(uint8_t sensor_id, const char *name) {
+    if (sensor_id < _sensors.size()) {
+        _sensors[sensor_id].name.assign(name);
     }
 }
 
