@@ -57,15 +57,17 @@ void DisplayMan::init_network(const char *type) {
 
 void DisplayMan::set_network_in_progress() {
     led_set_color(IND_WIFI, IND_COLOR_IN_PROGRESS, true);
+    set_sensor_status(_network_sensor_id, MBED_CONF_APP_WIFI_SSID);
 }
 
 void DisplayMan::set_network_fail() {
     led_set_color(IND_WIFI, IND_COLOR_FAILED);
+    set_sensor_status(_network_sensor_id, MBED_CONF_APP_WIFI_SSID);
 }
 
 void DisplayMan::set_network_success() {
     led_set_color(IND_WIFI, IND_COLOR_SUCCESS);
-    this->set_sensor_status(_network_sensor_id, "connected");
+    set_sensor_status(_network_sensor_id, MBED_CONF_APP_WIFI_SSID);
 }
 
 uint8_t DisplayMan::register_sensor(const char *name) {
