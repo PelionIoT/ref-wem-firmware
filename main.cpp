@@ -68,7 +68,7 @@ static void thread_light_sensor(M2MClient *mbed_client)
     int light_id = display.register_sensor("Light");
 
     /* register the m2m object */
-    light_obj = M2MInterfaceFactory::create_object("5002");
+    light_obj = M2MInterfaceFactory::create_object("3301");
     light_inst = light_obj->create_object_instance();
 
     light_res = light_inst->create_dynamic_resource("1", "light_resource",
@@ -107,10 +107,10 @@ static void thread_thermo(M2MClient *mbed_client)
     float val, resistance, temperature;
 
     /* register the m2m object */
-    thermo_obj = M2MInterfaceFactory::create_object("5005");
+    thermo_obj = M2MInterfaceFactory::create_object("3303");
     thermo_inst = thermo_obj->create_object_instance();
 
-    thermo_res = thermo_inst->create_dynamic_resource("1", "thermo_resource",
+    thermo_res = thermo_inst->create_dynamic_resource("1", "temperature_resource",
             M2MResourceInstance::FLOAT, true /* observable */);
     thermo_res->set_operation(M2MBase::GET_ALLOWED);
     thermo_res->set_value((uint8_t *)"0", 1);
@@ -150,7 +150,7 @@ static void thread_dht(M2MClient *mbed_client)
     float temperature, humidity;
 
     /* register the m2m object */
-    dht_obj = M2MInterfaceFactory::create_object("5006");
+    dht_obj = M2MInterfaceFactory::create_object("3304");
     dht_inst = dht_obj->create_object_instance();
 
     dht_res = dht_inst->create_dynamic_resource("1", "humidity_resource",
