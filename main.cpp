@@ -100,6 +100,7 @@ static void thread_thermo(M2MClient *mbed_client)
     int size = 0;
 
     AnalogIn thermistor(A1);
+    int thermo_id = display.register_sensor("Temp");
 
     /* Assuming Grove temperature sensor 1.2 is attached to A1 */
     float beta = 4275.0;
@@ -129,6 +130,7 @@ static void thread_thermo(M2MClient *mbed_client)
         tr_debug("thermistor: val = %f, temp = %f\n", val, temperature);
         size = sprintf((char *)res_buffer, "%.0f", temperature);
         thermo_res->set_value(res_buffer, size);
+        display.set_sensor_status(thermo_id, (char *)res_buffer);
         Thread::wait(1000);
     }
 }
