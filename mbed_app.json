@@ -1,63 +1,67 @@
 {
-    "macros": ["MBEDTLS_USER_CONFIG_FILE=\"mbedtls_mbed_client_config.h\"",
-               "MBED_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
-               "MBED_CLOUD_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
-               "PAL_USE_FATFS_SD=1",
-               "SA_PV_OS_MBEDOS"],
-    "target_overrides": {
-        "*": {
-            "target.features_add": ["COMMON_PAL"],
-            "platform.stdio-baud-rate": 115200,
-            "platform.stdio-convert-newlines": true,
-            "lwip.ipv4-enabled": true,
-            "lwip.ipv6-enabled": false,
-            "mbed-client.sn-coap-max-blockwise-payload-size": 1024,
-            "mbed-trace.enable": null
-        },
-        "K64F": {
-            "mbed-client-pal.update-active-metadata-header-offset": "0x00020000"
-        }
-    },
     "config": {
-        "wifi":{
-            "help": "Use the ESP8266 WiFi interface",
-            "value": "true"
-        },
-        "wifi-tx": {
-            "help": "TX pin for serial connection to external device",
-            "value": "D1"
-        },
-        "wifi-rx": {
-            "help": "RX pin for serial connection to external device",
-            "value": "D0"
-        },
-        "wifi-debug": {
-            "help": "Enable debug output for WiFi drivers",
-            "value": "false"
-        },
-        "wifi-ssid": {
-            "help": "The SSID to connect to if using a WiFi interface",
-            "value": "\"iotlab\""
-        },
-        "wifi-security": {
-            "help": "WPA, WPA2, WPA/WPA2, WEP, NONE, OPEN",
-            "value": "\"WPA2\""
-        },
-        "wifi-password": {
-            "help": "An optional password for wifi security authentication",
-            "value": "\"\""
-        },
         "fcc-wipe": {
             "help": "Wipe the FCC credentials stored on the device",
+            "value": "false"
+        },
+        "self-test": {
+            "help": "Run a self-test upon boot",
             "value": "false"
         },
         "version": {
             "help": "Display this version string on the device",
             "value": "\"1.0\""
         },
-        "self-test": {
-            "help": "Run a self-test upon boot",
+        "wifi": {
+            "help": "Use the ESP8266 WiFi interface",
+            "value": "true"
+        },
+        "wifi-debug": {
+            "help": "Enable debug output for WiFi drivers",
             "value": "false"
+        },
+        "wifi-password": {
+            "help": "An optional password for wifi security authentication",
+            "value": "\"\""
+        },
+        "wifi-rx": {
+            "help": "RX pin for serial connection to external device",
+            "value": "D0"
+        },
+        "wifi-security": {
+            "help": "WPA, WPA2, WPA/WPA2, WEP, NONE, OPEN",
+            "value": "\"WPA2\""
+        },
+        "wifi-ssid": {
+            "help": "The SSID to connect to if using a WiFi interface",
+            "value": "\"iotlab\""
+        },
+        "wifi-tx": {
+            "help": "TX pin for serial connection to external device",
+            "value": "D1"
+        }
+    },
+    "macros": [
+        "MBEDTLS_USER_CONFIG_FILE=\"mbedtls_mbed_client_config.h\"",
+        "MBED_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
+        "MBED_CLOUD_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
+        "PAL_USE_FATFS_SD=1",
+        "SA_PV_OS_MBEDOS"
+    ],
+    "target_overrides": {
+        "*": {
+            "lwip.ipv4-enabled": true,
+            "lwip.ipv6-enabled": false,
+            "mbed-client.sn-coap-max-blockwise-payload-size": 1024,
+            "mbed-trace.enable": null,
+            "platform.stdio-baud-rate": 115200,
+            "platform.stdio-convert-newlines": true,
+            "target.features_add": [
+                "COMMON_PAL"
+            ]
+        },
+        "K64F": {
+            "mbed-client-pal.update-active-metadata-header-offset": "0x00020000"
         }
     }
 }
