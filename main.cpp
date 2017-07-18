@@ -32,6 +32,10 @@
 #define xstr(s) str(s)
 #define str(s) #s
 
+#ifndef DEVTAG
+#error "No dev tag created"
+#endif
+
 // ****************************************************************************
 // DEFINEs and type definitions
 // ****************************************************************************

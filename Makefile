@@ -135,7 +135,7 @@ clean-build: .deps .patches update_default_resources.c
 
 .PHONY: build
 build: .deps .patches update_default_resources.c
-	@$(call Build/Compile)
+	@$(call Build/Compile,"-DDEVTAG=${DEVTAG}")
 
 ${COMBINED_BIN_FILE}: .deps .patches update_default_resources.c ${SRCS} ${HDRS} mbed_app.json
 	@$(call Build/Compile,"-DDEVTAG=${DEVTAG}")
