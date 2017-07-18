@@ -292,7 +292,7 @@ static int network_connect(NetworkInterface *net)
            network_get_macaddr(net, macaddr));
     ret = net->connect();
     if (0 != ret) {
-        printf("[ETH] Failed to connect! %d\n", ret);
+        printf("ERROR: [ETH] Failed to connect! %d\n", ret);
         return ret;
     }
     printf("[ETH] connected: mac%s, ip=%s, netmask=%s, gateway=%s\n",
@@ -354,7 +354,7 @@ void mbed_client_on_update_authorize(int32_t request)
             break;
 
         default:
-            printf("Error - unknown request\r\n");
+            printf("ERROR: unknown request\r\n");
             led_set_color(IND_FWUP, IND_COLOR_FAILED);
             led_post();
             break;
@@ -405,7 +405,7 @@ static void mbed_client_on_error(void *context,
                                  const char *err_name,
                                  const char *err_desc)
 {
-    printf("mbed client ERROR: (%d) %s\n", err_code, err_name);
+    printf("ERROR: mbed client (%d) %s\n", err_code, err_name);
     printf("    Error details : %s\n", err_desc);
     display.set_cloud_error();
 }
@@ -432,13 +432,13 @@ static int init_fcc(void)
 #if MBED_CONF_APP_FCC_WIPE
     ret = fcc_storage_delete();
     if (ret != FCC_STATUS_SUCCESS) {
-        printf("fcc: delete failed: %d\n", ret);
+        printf("ERROR: fcc delete failed: %d\n", ret);
     }
 #endif
 
     ret = fcc_init();
     if (ret != FCC_STATUS_SUCCESS) {
-        printf("fcc: init failed: %d\n", ret);
+        printf("ERROR: fcc init failed: %d\n", ret);
         return ret;
     }
 
@@ -446,13 +446,13 @@ static int init_fcc(void)
     if (ret == FCC_STATUS_KCM_FILE_EXIST_ERROR) {
         printf("fcc: developer credentials already exists\n");
     } else if (ret != FCC_STATUS_SUCCESS) {
-        printf("fcc: failed to load developer credentials\n");
+        printf("ERROR: fcc failed to load developer credentials\n");
         return ret;
     }
 
     ret = fcc_verify_device_configured_4mbed_cloud();
     if (ret != FCC_STATUS_SUCCESS) {
-        printf("fcc: device not configured for mbed cloud\n");
+        printf("ERROR: fcc device not configured for mbed cloud\n");
         return ret;
     }
 
@@ -469,7 +469,7 @@ static int platform_init(M2MClient *mbed_client)
 #if MBED_CONF_MBED_TRACE_ENABLE
     /* Create mutex for tracing to avoid broken lines in logs */
     if (!mbed_trace_helper_create_mutex()) {
-        printf("ERROR - Mutex creation for mbed_trace failed!\n");
+        printf("ERROR: Mutex creation for mbed_trace failed!\n");
         return -EACCES;
     }
 
@@ -482,7 +482,7 @@ static int platform_init(M2MClient *mbed_client)
     /* init the sd card */
     ret = sd.init();
     if (ret != BD_ERROR_OK) {
-        printf("sd init failed: %d\n", ret);
+        printf("ERROR: sd init failed: %d\n", ret);
         return ret;
     }
     printf("sd init OK\n");
@@ -568,7 +568,7 @@ int main()
     printf("init network\n");
     gnet = network_create();
     if (NULL == gnet) {
-        printf("failed to create network stack\n");
+        printf("ERROR: failed to create network stack\n");
         display.set_network_fail();
         return -ENODEV;
     }
@@ -583,7 +583,7 @@ int main()
         ret = network_connect(gnet);
         if (0 != ret) {
             display.set_network_fail();
-            printf("failed to init network, retrying...\n");
+            printf("WARN: failed to init network, retrying...\n");
             Thread::wait(2000);
         }
     } while (0 != ret);
@@ -597,7 +597,7 @@ int main()
     printf("init factory configuration client\n");
     ret = init_fcc();
     if (0 != ret) {
-        printf("failed to init factory configuration client: %d\n", ret);
+        printf("ERROR: failed to init factory configuration client: %d\n", ret);
         return ret;
     }
     printf("init factory configuration client: OK\n");

@@ -47,7 +47,7 @@ public:
         _cloud_client.on_error(this, &M2MClient::error);
         _register_called = true;
         if (!setup) {
-            printf("m2m client setup failed\n");
+            printf("ERROR: m2m client setup failed\n");
             return false;
         }
 
@@ -71,20 +71,20 @@ public:
 
     void client_registered() {
         _registered = true;
-        printf("\nClient registered\n\n");
+        printf("Client registered\n");
         static const ConnectorClientEndpointInfo* endpoint = NULL;
         if (endpoint == NULL) {
             endpoint = _cloud_client.endpoint_info();
             if (endpoint) {
-                printf("Cloud Client: Ready");
-                printf("Internal Endpoint Name: %s\r\n",
+                printf("Cloud Client: Ready\n");
+                printf("Internal Endpoint Name: %s\n",
                        endpoint->internal_endpoint_name.c_str());
-                printf("Endpoint Name: %s\r\n",
+                printf("Endpoint Name: %s\n",
                        endpoint->endpoint_name.c_str());
-                printf("Device Id: %s\r\n",
+                printf("Device Id: %s\n",
                        endpoint->internal_endpoint_name.c_str());
-                printf("Account Id: %s\r\n", endpoint->account_id.c_str());
-                printf("Security Mode (-1=not set, 0=psk, 1=<undef>, 2=cert, 3=none): %d\r\n",
+                printf("Account Id: %s\n", endpoint->account_id.c_str());
+                printf("Security Mode (-1=not set, 0=psk, 1=<undef>, 2=cert, 3=none): %d\n",
                        endpoint->mode);
             }
         }
