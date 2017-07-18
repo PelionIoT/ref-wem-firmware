@@ -1,6 +1,6 @@
 #include "lcdprogress.h"
 
-LCDProgress::LCDProgress(MultiAddrLCD &lcd) : _lcd(lcd)
+LCDProgress::LCDProgress(MultiAddrLCD &lcd) : _lcd(lcd), _buffer(""), _previous("")
 {
     char backslash[] = {0x10, 0x08, 0x04, 0x02, 0x01, 0x00, 0x00, 0x00};
     lcd.setUDC(7, backslash);
@@ -14,12 +14,12 @@ LCDProgress::LCDProgress(MultiAddrLCD &lcd) : _lcd(lcd)
     }
 }
 
-void LCDProgress::set_progress(const char *message, uint32_t progress,
+void LCDProgress::set_progress(const std::string &message, uint32_t progress,
                                uint32_t total)
 {
     static int spinner_counter = 0;
     char spinner;
-    char progressbar[17];
+    std::string progressbar(16, ' ');
     uint32_t i, lines, bars;
 
     switch (spinner_counter) {
@@ -54,11 +54,32 @@ void LCDProgress::set_progress(const char *message, uint32_t progress,
     for (; i < 16; i++) {
         progressbar[i] = ' ';
     }
-    progressbar[16] = 0;
 
-    _lcd.printline(0, "%-15s%c", message, spinner);
-    _lcd.printline(1, "%s", progressbar);
+    char buffer[33];
+    snprintf(buffer, 33, "%-15s%c%s", message.c_str(), spinner, progressbar.c_str());
+    _buffer = buffer;
 
     spinner_counter = (spinner_counter + 1) % 4;
 }
 
+void LCDProgress::refresh()
+{
+    if (_previous.length() == 0) {
+        /* No previous state, splat the whole thing. */
+        _lcd.printf("%s", _buffer.c_str());
+    } else {
+        /* Only change the characters that need changing to speed up update. */
+        for (int i = 0; i < 32; i++) {
+            if (_buffer[i] != _previous[i]) {
+                _lcd.locate(i % 16, i / 16);
+                _lcd.putc(_buffer[i]);
+            }
+        }
+    }
+    _previous = _buffer;
+}
+
+void LCDProgress::reset()
+{
+    _previous.clear();
+}

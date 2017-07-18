@@ -27,6 +27,9 @@ public:
     void setCursor(TextLCD_Base::LCDCursor mode);
     void setUDC(unsigned char c, char *udc_data);
 
+    void locate(int column, int row);
+    void putc(int c);
+
 private:
     TextLCD_I2C _lcd1;
     TextLCD_I2C _lcd2;

@@ -86,6 +86,10 @@ void led_post(void)
 
 void led_setup(void)
 {
+    for (int i = 0; i < IND_NO_TYPES; i++) {
+        LED_STATUS[i] = IND_COLOR_OFF;
+        LED_BLINK[i] = 0x0;
+    }
     led_strip.clear();
     led_strip.level(100);
 }

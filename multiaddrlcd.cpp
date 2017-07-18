@@ -49,3 +49,15 @@ void MultiAddrLCD::setUDC(unsigned char c, char *udc_data) {
     _lcd1.setUDC(c, udc_data);
     _lcd2.setUDC(c, udc_data);
 }
+
+void MultiAddrLCD::locate(int column, int row)
+{
+    _lcd1.locate(column, row);
+    _lcd2.locate(column, row);
+}
+
+void MultiAddrLCD::putc(int c)
+{
+    _lcd1.putc(c);
+    _lcd2.putc(c);
+}

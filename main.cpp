@@ -58,7 +58,6 @@ extern SDBlockDevice sd;
 DisplayMan display;
 M2MClient *gmbed_client;
 NetworkInterface *gnet;
-LCDProgress lcd_prog(display.get_lcd());
 
 Thread tman[FOTA_THREAD_COUNT];
 
@@ -323,7 +322,6 @@ static int network_connect(NetworkInterface *net)
 void mbed_client_on_update_authorize(int32_t request)
 {
     M2MClient *mbed_client = gmbed_client;
-    MultiAddrLCD& lcd = display.get_lcd();
 
     switch (request) {
         /* Cloud Client wishes to download new firmware. This can have a
@@ -340,8 +338,10 @@ void mbed_client_on_update_authorize(int32_t request)
             printf("Authorization granted\r\n");
             stop_sensors();
             tman[FOTA_THREAD_DISPLAY].terminate();
-            led_set_color(IND_FWUP, IND_COLOR_IN_PROGRESS, true);
-            led_post();
+            // From now on, display gets refreshed manually as the refresh
+            // thread is gone.
+            display.set_downloading();
+            display.refresh();
             mbed_client->update_authorize(request);
             break;
 
@@ -357,11 +357,9 @@ void mbed_client_on_update_authorize(int32_t request)
             printf("Firmware install requested\r\n");
             printf("Disconnecting network...\n");
             network_disconnect(gnet);
-            lcd.printline(0, "Installing...    ");
-            lcd.printline(1, "");
+            display.set_installing();
+            display.refresh();
             printf("Authorization granted\r\n");
-            led_set_color(IND_FWUP, IND_COLOR_SUCCESS, false);
-            led_post();
             mbed_client->update_authorize(request);
             break;
 
@@ -381,10 +379,9 @@ void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
     const char done_message[] = "Saving...";
 
     /* Drive the LCD in the main thread to prevent network corruption */
-    lcd_prog.set_progress(dl_message, progress, total);
-
-    /* Blink the LED */
-    led_post();
+    display.set_progress(dl_message, progress, total);
+    /* This lets the LED blink */
+    display.refresh();
 
     if (last_percent < percent) {
         printf("Downloading: %lu\n", percent);
@@ -392,9 +389,9 @@ void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
 
     if (progress == total) {
         printf("\r\nDownload completed\r\n");
-        lcd_prog.set_progress(done_message, 0, 100);
-        led_set_color(IND_FWUP, IND_COLOR_SUCCESS);
-        led_post();
+        display.set_progress(done_message, 0, 100);
+        display.set_download_complete();
+        display.refresh();
     }
 
     last_percent = percent;
@@ -531,21 +528,6 @@ static void platform_shutdown()
     }
 }
 
-#if MBED_CONF_APP_SELF_TEST
-static void self_test()
-{
-    I2C i2c(I2C_SDA, I2C_SCL);
-    MultiAddrLCD lcd(&i2c);
-    lcd.setBacklight(TextLCD_I2C::LightOn);
-    lcd.setCursor(TextLCD_I2C::CurOff_BlkOff);
-    LCDProgress prog(lcd);
-    for (uint32_t i = 0; i <= 150; i++) {
-        prog.set_progress("Starting", i, 150);
-        Thread::wait(10);
-    }
-}
-#endif
-
 // ****************************************************************************
 // Main
 // main() runs in its own thread in the OS
@@ -554,10 +536,6 @@ int main()
 {
     int ret;
     M2MClient *mbed_client;
-
-#if MBED_CONF_APP_SELF_TEST
-    self_test();
-#endif
 
     /* let the world know we're alive */
     display.set_power_on();
