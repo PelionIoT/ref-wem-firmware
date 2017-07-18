@@ -12,9 +12,9 @@ if [[ -z ${location} ]]; then
     exit 1
 fi
 
-rm -f ${OUTPUT_LOG}
+date > ${OUTPUT_LOG}
 # this mbed command returns a non-zero error code, but that is ok for our use case.
-mbedhtrun -p ${location} --serial-output-file ${OUTPUT_LOG} --skip-flashing --baud-rate=${BAUD_RATE}
+mbedhtrun --sync=0 -p ${location} --serial-output-file ${OUTPUT_LOG} --skip-flashing --baud-rate=${BAUD_RATE}
 # remove standard mbed boot lines
 grep -v BOOT ${OUTPUT_LOG} > temptemp.log
 mv temptemp.log ${OUTPUT_LOG}
