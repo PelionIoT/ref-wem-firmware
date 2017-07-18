@@ -23,6 +23,13 @@ else
 	BUILD_PROFILE:=mbed-os/tools/profiles/debug.json
 endif
 
+# Capture the GIT version that we are building from.  Later in the compile
+# phase, this value will get built into the code.
+DEVTAG:="$(shell git rev-parse --short HEAD)-$(shell git rev-parse --abbrev-ref HEAD)"
+ifneq ("$(shell git status -s)","")
+	DEVTAG:="${DEVTAG}-dev-${USER}"
+endif
+
 # Specifies the name of the target board to compile for
 #
 # The following methods are checked for a target board type, in order:
@@ -131,10 +138,10 @@ build: .deps .patches update_default_resources.c
 	@$(call Build/Compile)
 
 ${COMBINED_BIN_FILE}: .deps .patches update_default_resources.c ${SRCS} ${HDRS} mbed_app.json
-	@$(call Build/Compile)
+	@$(call Build/Compile,"-DDEVTAG=${DEVTAG}")
 
 ${MBED_BUILD_DIR}/${PROG}.bin: .deps .patches update_default_resources.c ${SRCS} ${HDRS} mbed_app.json
-	@$(call Build/Compile)
+	@$(call Build/Compile,"-DDEVTAG=${DEVTAG}")
 
 .PHONY: stats
 stats:

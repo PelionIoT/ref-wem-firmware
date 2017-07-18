@@ -26,6 +26,12 @@
 
 #define TRACE_GROUP  "main"
 
+// Convert the value of a C macro to a string that can be printed.  This trick
+// is straight out of the GNU C documentation.
+// (https://gcc.gnu.org/onlinedocs/gcc-4.9.0/cpp/Stringification.html)
+#define xstr(s) str(s)
+#define str(s) #s
+
 // ****************************************************************************
 // DEFINEs and type definitions
 // ****************************************************************************
@@ -553,6 +559,7 @@ int main()
     display.set_power_on();
 
     printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
+    printf("     code version: " xstr(DEVTAG) "\n");
     display.set_version_string(MBED_CONF_APP_VERSION);
 
     gmbed_client = new M2MClient();
@@ -626,4 +633,3 @@ int main()
     printf("exiting main\n");
     return 0;
 }
-
