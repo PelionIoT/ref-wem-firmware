@@ -12,9 +12,8 @@
 
 #include <TextLCD.h>
 
-//LCD which can have I2C slave address of eith 0x4e or 0x7e
-class MultiAddrLCD
-{
+// LCD which can have I2C slave address of eith 0x4e or 0x7e
+class MultiAddrLCD {
 public:
     MultiAddrLCD(I2C *i2c);
 

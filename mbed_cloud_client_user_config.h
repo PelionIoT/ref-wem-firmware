@@ -15,15 +15,15 @@
 #ifndef MBED_CLOUD_CLIENT_USER_CONFIG_H
 #define MBED_CLOUD_CLIENT_USER_CONFIG_H
 
-#define MBED_CLOUD_CLIENT_ENDPOINT_TYPE         "default"
+#define MBED_CLOUD_CLIENT_ENDPOINT_TYPE "default"
 #define MBED_CLOUD_CLIENT_TRANSPORT_MODE_TCP
-#define MBED_CLOUD_CLIENT_LIFETIME              600
-#define SN_COAP_MAX_BLOCKWISE_PAYLOAD_SIZE      1024
+#define MBED_CLOUD_CLIENT_LIFETIME 600
+#define SN_COAP_MAX_BLOCKWISE_PAYLOAD_SIZE 1024
 
 /* set flag to enable update support in mbed Cloud client */
 #define MBED_CLOUD_CLIENT_SUPPORT_UPDATE
 /* set download buffer size in bytes (min. 1024 bytes) */
-#define MBED_CLOUD_CLIENT_UPDATE_BUFFER          2048
+#define MBED_CLOUD_CLIENT_UPDATE_BUFFER 2048
 /* Developer flags for Update feature */
 #define MBED_CLOUD_DEV_UPDATE_CERT
 #define MBED_CLOUD_DEV_UPDATE_ID

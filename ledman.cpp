@@ -12,27 +12,13 @@
 static ws2801 led_strip(D3, D2, IND_NO_TYPES);
 
 static int LED_STATUS[IND_NO_TYPES] = {
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF,
-    IND_COLOR_OFF
-};
+    IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF,
+    IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF};
 /* really poor design, but we store the blinkind indicator in the upper 8-bits
  * and the old color in the lower 24-bits. Once blinking is disabled then we
  * just update the LED_STATUS field with the original color.
  */
-static int LED_BLINK[IND_NO_TYPES] = {
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0
-};
+static int LED_BLINK[IND_NO_TYPES] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 
 // ****************************************************************************
 // Functions
@@ -42,15 +28,9 @@ bool led_blink_is_enabled(int led_name)
     return LED_BLINK[led_name] & 0x01000000;
 }
 
-void led_blink_enable(int led_name)
-{
-    LED_BLINK[led_name] |= 0x01000000;
-}
+void led_blink_enable(int led_name) { LED_BLINK[led_name] |= 0x01000000; }
 
-void led_blink_disable(int led_name)
-{
-    LED_BLINK[led_name] &= 0x00FFFFFF;
-}
+void led_blink_disable(int led_name) { LED_BLINK[led_name] &= 0x00FFFFFF; }
 
 void led_set_color(enum INDICATOR_TYPES led_name, int led_color, bool blink)
 {
@@ -75,8 +55,9 @@ void led_post(void)
 
     for (idx = 0; idx < IND_NO_TYPES; ++idx) {
         if (led_blink_is_enabled(idx)) {
-            LED_STATUS[idx] = LED_STATUS[idx] == IND_COLOR_OFF ?
-                LED_BLINK[idx] & 0x00FFFFFF : IND_COLOR_OFF;
+            LED_STATUS[idx] = LED_STATUS[idx] == IND_COLOR_OFF
+                                  ? LED_BLINK[idx] & 0x00FFFFFF
+                                  : IND_COLOR_OFF;
         } else {
             LED_STATUS[idx] = LED_BLINK[idx] & 0x00FFFFFF;
         }

@@ -37,6 +37,7 @@ enum INDICATOR_COLORS {
 bool led_blink_is_enabled(int led_name);
 void led_blink_enable(int led_name);
 void led_blink_disable(int led_name);
-void led_set_color(enum INDICATOR_TYPES led_name, int led_color, bool blink = false);
+void led_set_color(enum INDICATOR_TYPES led_name, int led_color,
+                   bool blink = false);
 void led_post(void);
 void led_setup(void);

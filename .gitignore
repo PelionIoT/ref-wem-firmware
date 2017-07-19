@@ -20,6 +20,7 @@ tags
 combined.bin
 .patches
 update_default_resources.c
+mbed_config.h
 
 .firmware-url
 .manifest-id

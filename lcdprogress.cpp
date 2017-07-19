@@ -1,6 +1,7 @@
 #include "lcdprogress.h"
 
-LCDProgress::LCDProgress(MultiAddrLCD &lcd) : _lcd(lcd), _buffer(""), _previous("")
+LCDProgress::LCDProgress(MultiAddrLCD &lcd)
+    : _lcd(lcd), _buffer(""), _previous("")
 {
     char backslash[] = {0x10, 0x08, 0x04, 0x02, 0x01, 0x00, 0x00, 0x00};
     lcd.setUDC(7, backslash);
@@ -56,7 +57,8 @@ void LCDProgress::set_progress(const std::string &message, uint32_t progress,
     }
 
     char buffer[33];
-    snprintf(buffer, 33, "%-15s%c%s", message.c_str(), spinner, progressbar.c_str());
+    snprintf(buffer, 33, "%-15s%c%s", message.c_str(), spinner,
+             progressbar.c_str());
     _buffer = buffer;
 
     spinner_counter = (spinner_counter + 1) % 4;
@@ -79,7 +81,4 @@ void LCDProgress::refresh()
     _previous = _buffer;
 }
 
-void LCDProgress::reset()
-{
-    _previous.clear();
-}
+void LCDProgress::reset() { _previous.clear(); }

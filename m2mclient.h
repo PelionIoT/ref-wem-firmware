@@ -17,20 +17,18 @@
 #include "m2mresources.h"
 
 #include <MbedCloudClient.h>
-#include <m2mdevice.h>
 #include <NetworkInterface.h>
+#include <m2mdevice.h>
 
 #include <stdio.h>
 
 class M2MClient {
 
 public:
-    M2MClient() :
-        _registered(false),
-        _register_called(false) {
-    }
+    M2MClient() : _registered(false), _register_called(false) {}
 
-    void add_resource(M2MObject *obj) {
+    void add_resource(M2MObject *obj)
+    {
         if (NULL == obj) {
             return;
         }
@@ -40,7 +38,8 @@ public:
         _cloud_client.add_objects(_obj_list);
     }
 
-    bool call_register(NetworkInterface *iface) {
+    bool call_register(NetworkInterface *iface)
+    {
         bool setup = _cloud_client.setup(iface);
         _cloud_client.on_registered(this, &M2MClient::client_registered);
         _cloud_client.on_unregistered(this, &M2MClient::client_unregistered);
@@ -61,46 +60,45 @@ public:
         return true;
     }
 
-    void close() {
-        _cloud_client.close();
-    }
+    void close() { _cloud_client.close(); }
 
-    void keep_alive() {
-        _cloud_client.keep_alive();
-    }
+    void keep_alive() { _cloud_client.keep_alive(); }
 
-    void client_registered() {
+    void client_registered()
+    {
         _registered = true;
         printf("Client registered\n");
-        static const ConnectorClientEndpointInfo* endpoint = NULL;
+        static const ConnectorClientEndpointInfo *endpoint = NULL;
         if (endpoint == NULL) {
             endpoint = _cloud_client.endpoint_info();
             if (endpoint) {
                 printf("Cloud Client: Ready\n");
                 printf("Internal Endpoint Name: %s\n",
                        endpoint->internal_endpoint_name.c_str());
-                printf("Endpoint Name: %s\n",
-                       endpoint->endpoint_name.c_str());
+                printf("Endpoint Name: %s\n", endpoint->endpoint_name.c_str());
                 printf("Device Id: %s\n",
                        endpoint->internal_endpoint_name.c_str());
                 printf("Account Id: %s\n", endpoint->account_id.c_str());
-                printf("Security Mode (-1=not set, 0=psk, 1=<undef>, 2=cert, 3=none): %d\n",
+                printf("Security Mode (-1=not set, 0=psk, 1=<undef>, 2=cert, "
+                       "3=none): %d\n",
                        endpoint->mode);
             }
         }
         _on_registered_cb(_on_registered_context);
     }
 
-    void client_unregistered() {
+    void client_unregistered()
+    {
         _registered = false;
         _register_called = false;
         printf("\nClient unregistered\n\n");
         _on_unregistered_cb(_on_unregistered_context);
     }
 
-    void error(int error_code) {
+    void error(int error_code)
+    {
         const char *error;
-        switch(error_code) {
+        switch (error_code) {
             case MbedCloudClient::ConnectErrorNone:
                 error = "MbedCloudClient::ConnectErrorNone";
                 break;
@@ -176,60 +174,56 @@ public:
             default:
                 error = "UNKNOWN";
         }
-        _on_error_cb(_on_error_context,
-                     error_code,
-                     error,
+        _on_error_cb(_on_error_context, error_code, error,
                      _cloud_client.error_description());
     }
 
-    bool is_client_registered() {
-        return _registered;
-    }
+    bool is_client_registered() { return _registered; }
 
-    bool is_register_called() {
-        return _register_called;
-    }
+    bool is_register_called() { return _register_called; }
 
-    MbedCloudClient& get_cloud_client() {
-        return _cloud_client;
-    }
+    MbedCloudClient &get_cloud_client() { return _cloud_client; }
 
-    void on_registered(void *context, void (*callback)(void*)) {
+    void on_registered(void *context, void (*callback)(void *))
+    {
         _on_registered_cb = callback;
         _on_registered_context = context;
     }
 
-    void on_unregistered(void *context, void (*callback)(void*)) {
+    void on_unregistered(void *context, void (*callback)(void *))
+    {
         _on_unregistered_cb = callback;
         _on_unregistered_context = context;
     }
 
     void on_error(void *context,
-                  void (*callback)(void *context,
-                                   int err_code,
-                                   const char *err_name,
-                                   const char *err_desc)) {
+                  void (*callback)(void *context, int err_code,
+                                   const char *err_name, const char *err_desc))
+    {
         _on_error_cb = callback;
         _on_error_context = context;
     }
 
-    void on_update_authorize(void (*callback)(int32_t)) {
+    void on_update_authorize(void (*callback)(int32_t))
+    {
         _update_authorize_cb = callback;
     }
 
-    void on_update_progress(void (*callback)(uint32_t, uint32_t)) {
+    void on_update_progress(void (*callback)(uint32_t, uint32_t))
+    {
         _update_progress_cb = callback;
     }
 
-    void update_authorize(int32_t request) {
+    void update_authorize(int32_t request)
+    {
         _cloud_client.update_authorize(request);
     }
 
 private:
-    M2MObjectList       _obj_list;
-    MbedCloudClient     _cloud_client;
-    bool                _registered;
-    bool                _register_called;
+    M2MObjectList _obj_list;
+    MbedCloudClient _cloud_client;
+    bool _registered;
+    bool _register_called;
 
     void (*_on_registered_cb)(void *context);
     void *_on_registered_context;

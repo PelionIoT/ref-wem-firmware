@@ -7,24 +7,24 @@
 // ****************************************************************************
 #include "m2mclient.h"
 
+#include "DHT.h"
 #include "GL5528.h"
 #include "displayman.h"
-#include "DHT.h"
 #include "lcdprogress.h"
 
+#include <SDBlockDevice.h>
 #include <errno.h>
 #include <factory_configurator_client.h>
 #include <mbed-trace-helper.h>
 #include <mbed-trace/mbed_trace.h>
-#include <SDBlockDevice.h>
 
 #if MBED_CONF_APP_WIFI
-    #include <ESP8266Interface.h>
+#include <ESP8266Interface.h>
 #else
-    #include <EthernetInterface.h>
+#include <EthernetInterface.h>
 #endif
 
-#define TRACE_GROUP  "main"
+#define TRACE_GROUP "main"
 
 // Convert the value of a C macro to a string that can be printed.  This trick
 // is straight out of the GNU C documentation.
@@ -80,7 +80,8 @@ static void thread_light_sensor(M2MClient *mbed_client)
     light_inst = light_obj->create_object_instance();
 
     light_res = light_inst->create_dynamic_resource("1", "light_resource",
-            M2MResourceInstance::FLOAT, true /* observable */);
+                                                    M2MResourceInstance::FLOAT,
+                                                    true /* observable */);
     light_res->set_operation(M2MBase::GET_ALLOWED);
     light_res->set_value((uint8_t *)"0", 1);
 
@@ -90,7 +91,7 @@ static void thread_light_sensor(M2MClient *mbed_client)
         light.update();
         float flux = light.getFlux();
 
-        size = sprintf((char *)res_buffer,"%2.2f", flux);
+        size = sprintf((char *)res_buffer, "%2.2f", flux);
 
         display.set_sensor_status(light_id, (char *)res_buffer);
         light_res->set_value(res_buffer, size);
@@ -119,7 +120,8 @@ static void thread_dht(M2MClient *mbed_client)
     dht_t_inst = dht_t_obj->create_object_instance();
 
     dht_t_res = dht_t_inst->create_dynamic_resource("1", "temperature_resource",
-            M2MResourceInstance::FLOAT, true /* observable */);
+                                                    M2MResourceInstance::FLOAT,
+                                                    true /* observable */);
     dht_t_res->set_operation(M2MBase::GET_ALLOWED);
     dht_t_res->set_value((uint8_t *)"0", 1);
 
@@ -130,7 +132,8 @@ static void thread_dht(M2MClient *mbed_client)
     dht_h_inst = dht_h_obj->create_object_instance();
 
     dht_h_res = dht_h_inst->create_dynamic_resource("1", "humidity_resource",
-            M2MResourceInstance::FLOAT, true /* observable */);
+                                                    M2MResourceInstance::FLOAT,
+                                                    true /* observable */);
     dht_h_res->set_operation(M2MBase::GET_ALLOWED);
     dht_h_res->set_value((uint8_t *)"0", 1);
 
@@ -160,7 +163,8 @@ static void thread_dht(M2MClient *mbed_client)
 static void start_sensors(M2MClient *mbed_client)
 {
     printf("starting all sensors\n");
-    tman[FOTA_THREAD_SENSOR_LIGHT].start(callback(thread_light_sensor, mbed_client));
+    tman[FOTA_THREAD_SENSOR_LIGHT].start(
+        callback(thread_light_sensor, mbed_client));
     tman[FOTA_THREAD_DHT].start(callback(thread_dht, mbed_client));
 }
 
@@ -174,10 +178,7 @@ static void stop_sensors()
 // ****************************************************************************
 // Network
 // ****************************************************************************
-static void network_disconnect(NetworkInterface *net)
-{
-    net->disconnect();
-}
+static void network_disconnect(NetworkInterface *net) { net->disconnect(); }
 
 static char *network_get_macaddr(NetworkInterface *net, char *macstr)
 {
@@ -218,8 +219,7 @@ static nsapi_security_t wifi_security_str2sec(const char *security)
 static NetworkInterface *network_create(void)
 {
     display.init_network("WiFi");
-    return new ESP8266Interface(MBED_CONF_APP_WIFI_TX,
-                                MBED_CONF_APP_WIFI_RX,
+    return new ESP8266Interface(MBED_CONF_APP_WIFI_TX, MBED_CONF_APP_WIFI_RX,
                                 MBED_CONF_APP_WIFI_DEBUG);
 }
 
@@ -230,12 +230,11 @@ static int network_connect(NetworkInterface *net)
     ESP8266Interface *wifi;
 
     /* code is compiled -fno-rtti so we have to use C cast */
-    wifi = (ESP8266Interface*)net;
+    wifi = (ESP8266Interface *)net;
 
-    printf("[WIFI] connecting: ssid=%s, mac=%s\n",
-           MBED_CONF_APP_WIFI_SSID, network_get_macaddr(wifi, macaddr));
-    ret = wifi->connect(MBED_CONF_APP_WIFI_SSID,
-                        MBED_CONF_APP_WIFI_PASSWORD,
+    printf("[WIFI] connecting: ssid=%s, mac=%s\n", MBED_CONF_APP_WIFI_SSID,
+           network_get_macaddr(wifi, macaddr));
+    ret = wifi->connect(MBED_CONF_APP_WIFI_SSID, MBED_CONF_APP_WIFI_PASSWORD,
                         wifi_security_str2sec(MBED_CONF_APP_WIFI_SECURITY));
     if (0 != ret) {
         printf("[WIFI] Failed to connect to: %s (%d)\n",
@@ -243,11 +242,8 @@ static int network_connect(NetworkInterface *net)
         return ret;
     }
     printf("[WIFI] connected: ssid=%s, mac=%s, ip=%s, netmask=%s, gateway=%s\n",
-           MBED_CONF_APP_WIFI_SSID,
-           network_get_macaddr(net, macaddr),
-           net->get_ip_address(),
-           net->get_netmask(),
-           net->get_gateway());
+           MBED_CONF_APP_WIFI_SSID, network_get_macaddr(net, macaddr),
+           net->get_ip_address(), net->get_netmask(), net->get_gateway());
 
     return 0;
 }
@@ -277,10 +273,8 @@ static int network_connect(NetworkInterface *net)
         return ret;
     }
     printf("[ETH] connected: mac%s, ip=%s, netmask=%s, gateway=%s\n",
-           network_get_macaddr(net, macaddr),
-           net->get_ip_address(),
-           net->get_netmask(),
-           net->get_gateway());
+           network_get_macaddr(net, macaddr), net->get_ip_address(),
+           net->get_netmask(), net->get_gateway());
 
     return ret;
 }
@@ -379,18 +373,15 @@ static void mbed_client_on_unregistered(void *context)
     display.set_cloud_unregistered();
 }
 
-static void mbed_client_on_error(void *context,
-                                 int err_code,
-                                 const char *err_name,
-                                 const char *err_desc)
+static void mbed_client_on_error(void *context, int err_code,
+                                 const char *err_name, const char *err_desc)
 {
     printf("ERROR: mbed client (%d) %s\n", err_code, err_name);
     printf("    Error details : %s\n", err_desc);
     display.set_cloud_error();
 }
 
-static int register_mbed_client(NetworkInterface *iface,
-                                M2MClient *mbed_client)
+static int register_mbed_client(NetworkInterface *iface, M2MClient *mbed_client)
 {
     mbed_client->on_registered(NULL, mbed_client_on_registered);
     mbed_client->on_unregistered(NULL, mbed_client_on_unregistered);

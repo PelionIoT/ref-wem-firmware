@@ -55,7 +55,8 @@
 #define MBEDTLS_SSL_SRV_C
 #define MBEDTLS_SSL_TLS_C
 
-// XXX mbedclient needs these: mbedtls_x509_crt_free, mbedtls_x509_crt_init, mbedtls_x509_crt_parse
+// XXX mbedclient needs these: mbedtls_x509_crt_free, mbedtls_x509_crt_init,
+// mbedtls_x509_crt_parse
 #define MBEDTLS_X509_USE_C
 #define MBEDTLS_X509_CRT_PARSE_C
 // a bit wrong way to get mbedtls_ssl_conf_psk:
@@ -99,7 +100,9 @@
 #define MBEDTLS_AES_ROM_TABLES
 
 // Save ROM and a few bytes of RAM by specifying our own ciphersuite list
-#define MBEDTLS_SSL_CIPHERSUITES MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+#define MBEDTLS_SSL_CIPHERSUITES                                               \
+    MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,                           \
+        MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
 
 #include "mbedtls/check_config.h"
 

@@ -121,7 +121,8 @@ void DisplayMan::set_sensor_status(uint8_t sensor_id, const std::string status)
     }
 }
 
-void DisplayMan::set_sensor_name(uint8_t sensor_id, const std::string name) {
+void DisplayMan::set_sensor_name(uint8_t sensor_id, const std::string name)
+{
     if (sensor_id < _sensors.size()) {
         _sensors[sensor_id].name = name;
     }
@@ -165,14 +166,8 @@ void DisplayMan::refresh()
 void DisplayMan::self_test()
 {
     uint32_t i;
-    INDICATOR_TYPES indicators[] = {
-        IND_POWER,
-        IND_WIFI,
-        IND_CLOUD,
-        IND_FWUP,
-        IND_LIGHT,
-        IND_TEMP
-    };
+    INDICATOR_TYPES indicators[] = {IND_POWER, IND_WIFI,  IND_CLOUD,
+                                    IND_FWUP,  IND_LIGHT, IND_TEMP};
 
     for (i = 0; i < ARRAY_SIZE(indicators); i++) {
         led_set_color(indicators[i], IND_COLOR_IN_PROGRESS, false);

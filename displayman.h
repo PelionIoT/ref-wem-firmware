@@ -11,8 +11,8 @@
 #ifndef __DISPLAYMAN_H__
 #define __DISPLAYMAN_H__
 
-#include "ledman.h"
 #include "lcdprogress.h"
+#include "ledman.h"
 #include "multiaddrlcd.h"
 
 #include <string>
@@ -34,8 +34,7 @@ enum ViewMode {
     DISPLAY_VIEW_SELF_TEST
 };
 
-class DisplayMan
-{
+class DisplayMan {
 public:
     DisplayMan();
     int init(const std::string &version);
@@ -46,7 +45,8 @@ public:
     void set_downloading();
     void set_download_complete();
     void set_installing();
-    void set_progress(const std::string &message, uint32_t progress, uint32_t total);
+    void set_progress(const std::string &message, uint32_t progress,
+                      uint32_t total);
     void set_network_in_progress();
     void set_network_fail();
     void set_network_success();
@@ -60,15 +60,15 @@ public:
     void self_test();
 
 private:
-    I2C                         _i2c;
-    MultiAddrLCD                _lcd;
-    LCDProgress                 _lcd_prog;
+    I2C _i2c;
+    MultiAddrLCD _lcd;
+    LCDProgress _lcd_prog;
 
-    std::vector<SensorDisplay>  _sensors;
-    uint8_t                    _network_sensor_id;
-    uint8_t                    _active_sensor;
-    enum ViewMode               _view_mode;
-    std::string                 _version_string;
+    std::vector<SensorDisplay> _sensors;
+    uint8_t _network_sensor_id;
+    uint8_t _active_sensor;
+    enum ViewMode _view_mode;
+    std::string _version_string;
 
     uint64_t _cycle_count;
 };
