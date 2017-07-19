@@ -593,13 +593,16 @@ int main()
     }
     printf("init factory configuration client: OK\n");
 
+    /* start the sensors */
+    /* WARNING: the sensor resources must be added to the mbed client
+     * before the mbed client connects to the cloud, otherwise the
+     * sensor resources will not exist in the portal. */
+    printf("start sampling the sensors\n");
+    start_sensors(mbed_client);
+
     /* connect to mbed cloud */
     printf("init mbed client\n");
     register_mbed_client(gnet, mbed_client);
-
-    /* start sampling */
-    printf("start sampling the sensors\n");
-    start_sensors(mbed_client);
 
     /* main run loop reads sensor samples and monitors connectivity */
     printf("main run loop\n");
