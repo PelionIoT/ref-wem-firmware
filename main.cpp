@@ -475,6 +475,10 @@ static int platform_init(M2MClient *mbed_client)
 {
     int ret;
 
+    /* setup the display */
+    display.init(MBED_CONF_APP_VERSION);
+    tman[FOTA_THREAD_DISPLAY].start(callback(thread_display_update, &display));
+
 #if MBED_CONF_MBED_TRACE_ENABLE
     /* Create mutex for tracing to avoid broken lines in logs */
     if (!mbed_trace_helper_create_mutex()) {
@@ -495,10 +499,6 @@ static int platform_init(M2MClient *mbed_client)
         return ret;
     }
     printf("sd init OK\n");
-
-    /* setup the display */
-    display.init();
-    tman[FOTA_THREAD_DISPLAY].start(callback(thread_display_update, &display));
 
     return 0;
 }
@@ -542,7 +542,6 @@ int main()
 
     printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
     printf("     code version: " xstr(DEVTAG) "\n");
-    display.set_version_string(MBED_CONF_APP_VERSION);
 
     gmbed_client = new M2MClient();
     mbed_client = gmbed_client;

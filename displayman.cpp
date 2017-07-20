@@ -15,8 +15,9 @@ DisplayMan::DisplayMan() : _i2c(I2C_SDA, I2C_SCL), _lcd(&_i2c), _lcd_prog(_lcd)
     _view_mode = DISPLAY_VIEW_SENSOR;
 }
 
-int DisplayMan::init()
+int DisplayMan::init(const std::string &version)
 {
+    _version_string = version;
     led_setup();
     _lcd.setBacklight(TextLCD_I2C::LightOn);
     _lcd.setCursor(TextLCD_I2C::CurOff_BlkOff);
@@ -29,11 +30,6 @@ int DisplayMan::init()
 }
 
 void DisplayMan::set_power_on() { led_set_color(IND_POWER, IND_COLOR_ON); }
-
-void DisplayMan::set_version_string(const std::string &version)
-{
-    _version_string = version;
-}
 
 void DisplayMan::set_downloading()
 {
