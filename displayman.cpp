@@ -19,6 +19,7 @@ int DisplayMan::init(const std::string &version)
 {
     _version_string = version;
     led_setup();
+    led_set_color(IND_POWER, IND_COLOR_ON);
     _lcd.setBacklight(TextLCD_I2C::LightOn);
     _lcd.setCursor(TextLCD_I2C::CurOff_BlkOff);
 #if MBED_CONF_APP_SELF_TEST
@@ -28,8 +29,6 @@ int DisplayMan::init(const std::string &version)
     _view_mode = DISPLAY_VIEW_SENSOR;
     return 0;
 }
-
-void DisplayMan::set_power_on() { led_set_color(IND_POWER, IND_COLOR_ON); }
 
 void DisplayMan::set_downloading()
 {

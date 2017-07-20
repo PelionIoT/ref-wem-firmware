@@ -537,9 +537,6 @@ int main()
     int ret;
     M2MClient *mbed_client;
 
-    /* let the world know we're alive */
-    display.set_power_on();
-
     printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
     printf("     code version: " xstr(DEVTAG) "\n");
 

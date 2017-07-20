@@ -38,7 +38,6 @@ class DisplayMan
 {
 public:
     DisplayMan();
-    void set_power_on();
     int init(const std::string &version);
     void set_cloud_registered();
     void set_cloud_unregistered();
