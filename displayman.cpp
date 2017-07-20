@@ -11,7 +11,6 @@ void thread_display_update(DisplayMan *display)
 DisplayMan::DisplayMan() : _i2c(I2C_SDA, I2C_SCL), _lcd(&_i2c), _lcd_prog(_lcd)
 {
     _cycle_count = 0;
-    _next_sensor_id = 0;
     _view_mode = DISPLAY_VIEW_SENSOR;
 }
 
@@ -104,10 +103,14 @@ void DisplayMan::set_cloud_in_progress()
 
 uint8_t DisplayMan::register_sensor(const std::string &name)
 {
-    _sensors.push_back(SensorDisplay());
-    _sensors[_next_sensor_id].name = name;
-    _sensors[_next_sensor_id].status = "";
-    return _next_sensor_id++;
+    struct SensorDisplay s;
+
+    s.name = name;
+    s.status = "";
+
+    _sensors.push_back(s);
+
+    return _sensors.size() - 1;
 }
 
 void DisplayMan::set_sensor_status(uint8_t sensor_id, const std::string status)

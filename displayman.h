@@ -65,7 +65,6 @@ private:
     LCDProgress                 _lcd_prog;
 
     std::vector<SensorDisplay>  _sensors;
-    uint8_t                    _next_sensor_id;
     uint8_t                    _network_sensor_id;
     uint8_t                    _active_sensor;
     enum ViewMode               _view_mode;
