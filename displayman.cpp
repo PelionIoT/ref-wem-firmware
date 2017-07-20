@@ -12,6 +12,7 @@ DisplayMan::DisplayMan() : _i2c(I2C_SDA, I2C_SCL), _lcd(&_i2c), _lcd_prog(_lcd)
 {
     _cycle_count = 0;
     _view_mode = DISPLAY_VIEW_SENSOR;
+    _network_sensor_id = UINT8_MAX;
 }
 
 int DisplayMan::init(const std::string &version)
@@ -71,7 +72,7 @@ void DisplayMan::set_cloud_error()
 
 void DisplayMan::init_network(const char *type)
 {
-    if (0 == _network_sensor_id) {
+    if (UINT8_MAX == _network_sensor_id) {
         _network_sensor_id = register_sensor(type);
     } else {
         set_sensor_name(_network_sensor_id, type);
