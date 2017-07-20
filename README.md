@@ -33,9 +33,9 @@ To build this project, you need to install the following:
 
 ## Specifying a network configuration
 
-The network configuration is hard-coded into the project configuration file ``mbed_app.json``.
+The network configuration is hard-coded into the project configuration file ``config_global.json``. You can either change this global configuration file or create your own local configuration file which won't be committed.
 
-Open ``mbed_app.json`` and modify the following configuration values to suit the deployment environment:
+Create ``config_local.json`` and modify the following configuration values to suit the deployment environment:
 
 ```
     ...
