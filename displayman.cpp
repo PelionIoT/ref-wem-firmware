@@ -128,17 +128,20 @@ void DisplayMan::set_sensor_name(uint8_t sensor_id, const std::string name) {
     }
 }
 
-void DisplayMan::cycle_status() {
+void DisplayMan::cycle_status()
+{
     char line[17];
 
     /* top line */
     _lcd.printline(0, "Version: %s", _version_string.c_str());
 
     /* bottom line */
-    snprintf(line, 16, "%s: %s", _sensors[_active_sensor].name.c_str(),
-             _sensors[_active_sensor].status.c_str());
-    _lcd.printline(1, line);
-    _active_sensor = (_active_sensor + 1) % _sensors.size();
+    if (_sensors.size() > 0) {
+        snprintf(line, 16, "%s: %s", _sensors[_active_sensor].name.c_str(),
+                 _sensors[_active_sensor].status.c_str());
+        _lcd.printline(1, line);
+        _active_sensor = (_active_sensor + 1) % _sensors.size();
+    }
 }
 
 void DisplayMan::refresh()
