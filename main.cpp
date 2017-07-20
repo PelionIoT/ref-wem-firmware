@@ -471,7 +471,7 @@ static int init_fcc(void)
 // ****************************************************************************
 // Generic Helpers
 // ****************************************************************************
-static int platform_init(M2MClient *mbed_client)
+static int platform_init(void)
 {
     int ret;
 
@@ -540,16 +540,16 @@ int main()
     printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
     printf("     code version: " xstr(DEVTAG) "\n");
 
-    gmbed_client = new M2MClient();
-    mbed_client = gmbed_client;
-
     /* minimal init sequence */
     printf("init platform\n");
-    ret = platform_init(mbed_client);
+    ret = platform_init();
     if (0 != ret) {
         return ret;
     }
     printf("init platform: OK\n");
+
+    gmbed_client = new M2MClient();
+    mbed_client = gmbed_client;
 
     /* create the network */
     printf("init network\n");
