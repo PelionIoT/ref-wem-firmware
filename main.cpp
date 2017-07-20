@@ -471,9 +471,13 @@ static int init_fcc(void)
 // ****************************************************************************
 // Generic Helpers
 // ****************************************************************************
-static int platform_init(M2MClient *mbed_client)
+static int platform_init(void)
 {
     int ret;
+
+    /* setup the display */
+    display.init(MBED_CONF_APP_VERSION);
+    tman[FOTA_THREAD_DISPLAY].start(callback(thread_display_update, &display));
 
 #if MBED_CONF_MBED_TRACE_ENABLE
     /* Create mutex for tracing to avoid broken lines in logs */
@@ -495,10 +499,6 @@ static int platform_init(M2MClient *mbed_client)
         return ret;
     }
     printf("sd init OK\n");
-
-    /* setup the display */
-    display.init();
-    tman[FOTA_THREAD_DISPLAY].start(callback(thread_display_update, &display));
 
     return 0;
 }
@@ -537,23 +537,19 @@ int main()
     int ret;
     M2MClient *mbed_client;
 
-    /* let the world know we're alive */
-    display.set_power_on();
-
     printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
     printf("     code version: " xstr(DEVTAG) "\n");
-    display.set_version_string(MBED_CONF_APP_VERSION);
-
-    gmbed_client = new M2MClient();
-    mbed_client = gmbed_client;
 
     /* minimal init sequence */
     printf("init platform\n");
-    ret = platform_init(mbed_client);
+    ret = platform_init();
     if (0 != ret) {
         return ret;
     }
     printf("init platform: OK\n");
+
+    gmbed_client = new M2MClient();
+    mbed_client = gmbed_client;
 
     /* create the network */
     printf("init network\n");

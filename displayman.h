@@ -38,9 +38,7 @@ class DisplayMan
 {
 public:
     DisplayMan();
-    int init();
-    void set_version_string(const std::string &version);
-    void set_power_on();
+    int init(const std::string &version);
     void set_cloud_registered();
     void set_cloud_unregistered();
     void set_cloud_in_progress();
@@ -67,7 +65,6 @@ private:
     LCDProgress                 _lcd_prog;
 
     std::vector<SensorDisplay>  _sensors;
-    uint8_t                    _next_sensor_id;
     uint8_t                    _network_sensor_id;
     uint8_t                    _active_sensor;
     enum ViewMode               _view_mode;

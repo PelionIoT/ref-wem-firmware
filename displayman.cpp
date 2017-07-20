@@ -11,13 +11,15 @@ void thread_display_update(DisplayMan *display)
 DisplayMan::DisplayMan() : _i2c(I2C_SDA, I2C_SCL), _lcd(&_i2c), _lcd_prog(_lcd)
 {
     _cycle_count = 0;
-    _next_sensor_id = 0;
     _view_mode = DISPLAY_VIEW_SENSOR;
+    _network_sensor_id = UINT8_MAX;
 }
 
-int DisplayMan::init()
+int DisplayMan::init(const std::string &version)
 {
+    _version_string = version;
     led_setup();
+    led_set_color(IND_POWER, IND_COLOR_ON);
     _lcd.setBacklight(TextLCD_I2C::LightOn);
     _lcd.setCursor(TextLCD_I2C::CurOff_BlkOff);
 #if MBED_CONF_APP_SELF_TEST
@@ -26,13 +28,6 @@ int DisplayMan::init()
 #endif
     _view_mode = DISPLAY_VIEW_SENSOR;
     return 0;
-}
-
-void DisplayMan::set_power_on() { led_set_color(IND_POWER, IND_COLOR_ON); }
-
-void DisplayMan::set_version_string(const std::string &version)
-{
-    _version_string = version;
 }
 
 void DisplayMan::set_downloading()
@@ -77,7 +72,7 @@ void DisplayMan::set_cloud_error()
 
 void DisplayMan::init_network(const char *type)
 {
-    if (0 == _network_sensor_id) {
+    if (UINT8_MAX == _network_sensor_id) {
         _network_sensor_id = register_sensor(type);
     } else {
         set_sensor_name(_network_sensor_id, type);
@@ -109,10 +104,14 @@ void DisplayMan::set_cloud_in_progress()
 
 uint8_t DisplayMan::register_sensor(const std::string &name)
 {
-    _sensors.push_back(SensorDisplay());
-    _sensors[_next_sensor_id].name = name;
-    _sensors[_next_sensor_id].status = "";
-    return _next_sensor_id++;
+    struct SensorDisplay s;
+
+    s.name = name;
+    s.status = "";
+
+    _sensors.push_back(s);
+
+    return _sensors.size() - 1;
 }
 
 void DisplayMan::set_sensor_status(uint8_t sensor_id, const std::string status)
@@ -128,17 +127,20 @@ void DisplayMan::set_sensor_name(uint8_t sensor_id, const std::string name) {
     }
 }
 
-void DisplayMan::cycle_status() {
+void DisplayMan::cycle_status()
+{
     char line[17];
 
     /* top line */
     _lcd.printline(0, "Version: %s", _version_string.c_str());
 
     /* bottom line */
-    snprintf(line, 16, "%s: %s", _sensors[_active_sensor].name.c_str(),
-             _sensors[_active_sensor].status.c_str());
-    _lcd.printline(1, line);
-    _active_sensor = (_active_sensor + 1) % _sensors.size();
+    if (_sensors.size() > 0) {
+        snprintf(line, 16, "%s: %s", _sensors[_active_sensor].name.c_str(),
+                 _sensors[_active_sensor].status.c_str());
+        _lcd.printline(1, line);
+        _active_sensor = (_active_sensor + 1) % _sensors.size();
+    }
 }
 
 void DisplayMan::refresh()
