@@ -14,7 +14,6 @@ mbed-os/
 DHT/
 
 # generated files
-mbed_app.json
 .targetpath
 tags
 combined.bin
@@ -31,6 +30,3 @@ dev-manifest
 # credentials from the cloud
 .mbed-cloud-key
 mbed_cloud_dev_credentials.c
-
-# personal config settings
-config_local.json

@@ -137,11 +137,6 @@ clean-build: .deps .patches update_default_resources.c
 build: .deps .patches update_default_resources.c
 	@$(call Build/Compile,"-DDEVTAG=${DEVTAG}")
 
-# Update global config with local config if it exists,
-# or else it just copies the gobal config.
-mbed_app.json:
-	python merge_json.py config_global.json config_local.json > mbed_app.json
-
 ${COMBINED_BIN_FILE}: .deps .patches update_default_resources.c ${SRCS} ${HDRS} mbed_app.json
 	@$(call Build/Compile,"-DDEVTAG=${DEVTAG}")
 
@@ -166,7 +161,6 @@ tags: Makefile $(SRCS) $(HDRS)
 .PHONY: clean
 clean:
 	rm -rf BUILD
-	rm -f mbed_app.json
 
 .PHONY: distclean
 distclean: clean
@@ -191,7 +185,7 @@ distclean: clean
 .mbed:
 	mbed config ROOT .
 
-.deps: .mbed ${LIBS} mbed_app.json
+.deps: .mbed ${LIBS}
 	mbed deploy --protocol ssh && touch .deps
 
 # Acquire (and cache) the mount point of the board.
