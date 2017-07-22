@@ -1,13 +1,5 @@
 #include "displayman.h"
 
-void thread_display_update(DisplayMan *display)
-{
-    while (true) {
-        display->refresh();
-        Thread::wait(100);
-    }
-}
-
 DisplayMan::DisplayMan() : _i2c(I2C_SDA, I2C_SCL), _lcd(&_i2c), _lcd_prog(_lcd)
 {
     _cycle_count = 0;
@@ -149,7 +141,7 @@ void DisplayMan::refresh()
     led_post();
 
     if (_view_mode == DISPLAY_VIEW_SENSOR) {
-        if (_cycle_count % 20 == 0) {
+        if ((_cycle_count & 0x7) == 0) {
             cycle_status();
         }
     } else if (_view_mode == DISPLAY_VIEW_DOWNLOAD) {

@@ -50,131 +50,207 @@ enum FOTA_THREADS {
     FOTA_THREAD_COUNT
 };
 
+struct dht_sensor {
+    uint8_t h_id;
+    uint8_t t_id;
+
+    DHT *dev;
+
+    M2MObject *h_obj;
+    M2MObject *t_obj;
+
+    M2MResource *h_res;
+    M2MResource *t_res;
+
+    M2MObjectInstance *h_inst;
+    M2MObjectInstance *t_inst;
+};
+
+struct light_sensor {
+    uint8_t id;
+
+    AnalogIn *dev;
+
+    M2MObject *obj;
+    M2MObjectInstance *inst;
+    M2MResource *res;
+};
+
+struct sensors {
+    int event_queue_id;
+    struct dht_sensor dht;
+    struct light_sensor light;
+};
+
 // ****************************************************************************
 // Globals
 // ****************************************************************************
 /* declared in pal_plat_fileSystem.cpp, which is included because COMMON_PAL
  * is defined in mbed_app.json */
 extern SDBlockDevice sd;
-DisplayMan display;
-M2MClient *gmbed_client;
-NetworkInterface *gnet;
-
-Thread tman[FOTA_THREAD_COUNT];
+static DisplayMan display;
+static M2MClient *m2mclient;
+static NetworkInterface *net;
+static EventQueue evq;
+static struct sensors sensors;
+/* used to stop auto display refresh during firmware downloads */
+static int display_evq_id;
 
 // ****************************************************************************
-// Threads
+// Generic Helpers
 // ****************************************************************************
-static void thread_light_sensor(M2MClient *mbed_client)
+/**
+ * Processes an event queue callback for updating the display
+ */
+static void display_refresh(DisplayMan *display)
 {
-    M2MObject *light_obj;
-    M2MObjectInstance *light_inst;
-    M2MResource *light_res;
+    display->refresh();
+}
 
-    using namespace fota::sensor;
-    uint8_t res_buffer[33] = {0};
-    int size = 0;
-    light::LightSensor<light::BOARD_GROVE_GL5528> light(A0);
-    int light_id = display.register_sensor("Light");
+// ****************************************************************************
+// Sensors
+// ****************************************************************************
+/**
+ * Inits the light sensor object
+ */
+static void light_init(struct light_sensor *s, M2MClient *mbed_client)
+{
+    /* add to the display */
+    s->id = display.register_sensor("Light");
+
+    /* init the driver */
+    s->dev = new AnalogIn(A0);
 
     /* register the m2m object */
-    light_obj = M2MInterfaceFactory::create_object("3301");
-    light_inst = light_obj->create_object_instance();
+    s->obj = M2MInterfaceFactory::create_object("3301");
+    s->inst = s->obj->create_object_instance();
 
-    light_res = light_inst->create_dynamic_resource("1", "light_resource",
-                                                    M2MResourceInstance::FLOAT,
-                                                    true /* observable */);
-    light_res->set_operation(M2MBase::GET_ALLOWED);
-    light_res->set_value((uint8_t *)"0", 1);
+    s->res = s->inst->create_dynamic_resource("1", "light_resource",
+                                              M2MResourceInstance::FLOAT,
+                                              true /* observable */);
+    s->res->set_operation(M2MBase::GET_ALLOWED);
+    s->res->set_value((uint8_t *)"0", 1);
 
-    mbed_client->add_resource(light_obj);
-
-    while (true) {
-        light.update();
-        float flux = light.getFlux();
-
-        size = sprintf((char *)res_buffer, "%2.2f", flux);
-
-        display.set_sensor_status(light_id, (char *)res_buffer);
-        light_res->set_value(res_buffer, size);
-        Thread::wait(5000);
-    }
+    mbed_client->add_resource(s->obj);
 }
 
-static void thread_dht(M2MClient *mbed_client)
+/**
+ * Reads a value from the light sensor and publishes to the display
+ */
+static void light_read(struct light_sensor *s)
 {
-    M2MObject *dht_h_obj, *dht_t_obj;
-    M2MObjectInstance *dht_h_inst, *dht_t_inst;
-    M2MResource *dht_h_res, *dht_t_res;
-
-    uint8_t res_buffer[33] = {0};
     int size = 0;
+    uint8_t res_buffer[33] = {0};
 
-    DHT dht(D4, AM2302);
-    eError readError;
-    float temperature, humidity;
+    float flux = s->dev->read();
 
-    int thermo_id = display.register_sensor("Temp");
-    int humidity_id = display.register_sensor("Humidity");
+    size = sprintf((char *)res_buffer, "%2.2f", flux);
+
+    display.set_sensor_status(s->id, (char *)res_buffer);
+    s->res->set_value(res_buffer, size);
+}
+
+/**
+ * Inits the temp/humidity combo sensor
+ */
+static void dht_init(struct dht_sensor *s, M2MClient *mbed_client)
+{
+    /* add to the display */
+    s->t_id = display.register_sensor("Temp");
+    s->h_id = display.register_sensor("Humidity");
+
+    /* init the driver */
+    s->dev = new DHT(D4, AM2302);
 
     /* register the m2m temperature object */
-    dht_t_obj = M2MInterfaceFactory::create_object("3303");
-    dht_t_inst = dht_t_obj->create_object_instance();
+    s->t_obj = M2MInterfaceFactory::create_object("3303");
+    s->t_inst = s->t_obj->create_object_instance();
 
-    dht_t_res = dht_t_inst->create_dynamic_resource("1", "temperature_resource",
-                                                    M2MResourceInstance::FLOAT,
-                                                    true /* observable */);
-    dht_t_res->set_operation(M2MBase::GET_ALLOWED);
-    dht_t_res->set_value((uint8_t *)"0", 1);
+    s->t_res = s->t_inst->create_dynamic_resource("1", "temperature_resource",
+                                                  M2MResourceInstance::FLOAT,
+                                                  true /* observable */);
+    s->t_res->set_operation(M2MBase::GET_ALLOWED);
+    s->t_res->set_value((uint8_t *)"0", 1);
 
-    mbed_client->add_resource(dht_t_obj);
+    mbed_client->add_resource(s->t_obj);
 
     /* register the m2m humidity object */
-    dht_h_obj = M2MInterfaceFactory::create_object("3304");
-    dht_h_inst = dht_h_obj->create_object_instance();
+    s->h_obj = M2MInterfaceFactory::create_object("3304");
+    s->h_inst = s->h_obj->create_object_instance();
 
-    dht_h_res = dht_h_inst->create_dynamic_resource("1", "humidity_resource",
-                                                    M2MResourceInstance::FLOAT,
-                                                    true /* observable */);
-    dht_h_res->set_operation(M2MBase::GET_ALLOWED);
-    dht_h_res->set_value((uint8_t *)"0", 1);
+    s->h_res = s->h_inst->create_dynamic_resource("1", "humidity_resource",
+                                                  M2MResourceInstance::FLOAT,
+                                                  true /* observable */);
+    s->h_res->set_operation(M2MBase::GET_ALLOWED);
+    s->h_res->set_value((uint8_t *)"0", 1);
 
-    mbed_client->add_resource(dht_h_obj);
+    mbed_client->add_resource(s->h_obj);
+}
 
-    while (true) {
-        readError = dht.readData();
-        if (readError == ERROR_NONE) {
-            temperature = dht.ReadTemperature(CELCIUS);
-            humidity = dht.ReadHumidity();
-            tr_debug("DHT: temp = %fC, humi = %f%%\n", temperature, humidity);
+/**
+ * Reads temp and humidity values publishes to the display
+ */
+static void dht_read(struct dht_sensor *dht)
+{
+    int size = 0;
+    eError readError;
+    float temperature, humidity;
+    uint8_t res_buffer[33] = {0};
 
-            size = sprintf((char *)res_buffer, "%.1f", temperature);
-            dht_t_res->set_value(res_buffer, size);
-            display.set_sensor_status(thermo_id, (char *)res_buffer);
+    readError = dht->dev->readData();
+    if (readError == ERROR_NONE) {
+        temperature = dht->dev->ReadTemperature(CELCIUS);
+        humidity = dht->dev->ReadHumidity();
+        tr_debug("DHT: temp = %fC, humi = %f%%\n", temperature, humidity);
 
-            size = sprintf((char *)res_buffer, "%.0f", humidity);
-            dht_h_res->set_value(res_buffer, size);
-            display.set_sensor_status(humidity_id, (char *)res_buffer);
-        } else {
-            tr_error("DHT: readData() failed with %d\n", readError);
-        }
-        Thread::wait(5000);
+        size = sprintf((char *)res_buffer, "%.1f", temperature);
+        dht->t_res->set_value(res_buffer, size);
+        display.set_sensor_status(dht->t_id, (char *)res_buffer);
+
+        size = sprintf((char *)res_buffer, "%.0f", humidity);
+        dht->h_res->set_value(res_buffer, size);
+        display.set_sensor_status(dht->h_id, (char *)res_buffer);
+    } else {
+        tr_error("DHT: readData() failed with %d\n", readError);
     }
 }
 
-static void start_sensors(M2MClient *mbed_client)
+/**
+ * Processes an event queue callback for reading sensor data
+ */
+static void sensors_read(void *context)
 {
-    printf("starting all sensors\n");
-    tman[FOTA_THREAD_SENSOR_LIGHT].start(
-        callback(thread_light_sensor, mbed_client));
-    tman[FOTA_THREAD_DHT].start(callback(thread_dht, mbed_client));
+    struct sensors *s = (struct sensors *)context;
+    dht_read(&s->dht);
+    light_read(&s->light);
 }
 
-static void stop_sensors()
+/**
+ * Inits all sensors, making them ready to read
+ */
+static void sensors_init(struct sensors *sensors, M2MClient *mbed_client)
+{
+    dht_init(&sensors->dht, mbed_client);
+    light_init(&sensors->light, mbed_client);
+}
+
+/**
+ * Starts the periodic sampling of sensor data
+ */
+static void sensors_start(struct sensors *s, EventQueue *q)
+{
+    printf("starting all sensors\n");
+    s->event_queue_id = q->call_every(5000, sensors_read, s);
+}
+
+/**
+ * Stops the periodic sampling of sensor data
+ */
+static void sensors_stop(struct sensors *s, EventQueue *q)
 {
     printf("stopping all sensors\n");
-    tman[FOTA_THREAD_SENSOR_LIGHT].terminate();
-    tman[FOTA_THREAD_DHT].terminate();
+    q->cancel(s->event_queue_id);
+    s->event_queue_id = 0;
 }
 
 // ****************************************************************************
@@ -329,10 +405,50 @@ static int network_connect(NetworkInterface *net)
 // ****************************************************************************
 // Cloud
 // ****************************************************************************
+/**
+ * Readies the app for a firmware download
+ */
+void fota_auth_download(M2MClient *mbed_client)
+{
+    printf("Firmware download requested\r\n");
+
+    sensors_stop(&sensors, &evq);
+    /* we'll need to manually refresh the display until the firmware
+     * update is complete.  it seems that doing *anything* outside of
+     * the firmware download's thread context will result in a failed
+     * download. */
+    evq.cancel(display_evq_id);
+    display_evq_id = 0;
+    display.set_downloading();
+    display.refresh();
+    mbed_client->update_authorize(MbedCloudClient::UpdateRequestDownload);
+
+    printf("Authorization granted\r\n");
+}
+
+/**
+ * Readies the app for a firmware install
+ */
+void fota_auth_install(M2MClient *mbed_client)
+{
+    printf("Firmware install requested\r\n");
+
+    display.set_installing();
+    /* firmware download is complete, restart the auto display updates */
+    display_evq_id = evq.call_every(250, display_refresh, &display);
+
+    printf("Disconnecting network...\n");
+    network_disconnect(net);
+
+    mbed_client->update_authorize(MbedCloudClient::UpdateRequestInstall);
+    printf("Authorization granted\r\n");
+}
+
+/**
+ * Handles authorization requests from the mbed firmware updater
+ */
 void mbed_client_on_update_authorize(int32_t request)
 {
-    M2MClient *mbed_client = gmbed_client;
-
     switch (request) {
         /* Cloud Client wishes to download new firmware. This can have a
          * negative impact on the performance of the rest of the system.
@@ -344,15 +460,7 @@ void mbed_client_on_update_authorize(int32_t request)
          * This doesn't affect the performance of the Cloud Client.
          * */
         case MbedCloudClient::UpdateRequestDownload:
-            printf("Firmware download requested\r\n");
-            printf("Authorization granted\r\n");
-            stop_sensors();
-            tman[FOTA_THREAD_DISPLAY].terminate();
-            // From now on, display gets refreshed manually as the refresh
-            // thread is gone.
-            display.set_downloading();
-            display.refresh();
-            mbed_client->update_authorize(request);
+            evq.call(fota_auth_download, m2mclient);
             break;
 
         /* Cloud Client wishes to reboot and apply the new firmware.
@@ -364,13 +472,7 @@ void mbed_client_on_update_authorize(int32_t request)
          * This doesn't affect the performance of the Cloud Client.
          * */
         case MbedCloudClient::UpdateRequestInstall:
-            printf("Firmware install requested\r\n");
-            printf("Disconnecting network...\n");
-            network_disconnect(gnet);
-            display.set_installing();
-            display.refresh();
-            printf("Authorization granted\r\n");
-            mbed_client->update_authorize(request);
+            evq.call(fota_auth_install, m2mclient);
             break;
 
         default:
@@ -381,6 +483,9 @@ void mbed_client_on_update_authorize(int32_t request)
     }
 }
 
+/**
+ * Handles progress updates from the mbed firmware updater
+ */
 void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
 {
     uint32_t percent = progress * 100 / total;
@@ -388,10 +493,7 @@ void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
     const char dl_message[] = "Downloading...";
     const char done_message[] = "Saving...";
 
-    /* Drive the LCD in the main thread to prevent network corruption */
     display.set_progress(dl_message, progress, total);
-    /* This lets the LED blink */
-    display.refresh();
 
     if (last_percent < percent) {
         printf("Downloading: %lu\n", percent);
@@ -401,9 +503,9 @@ void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
         printf("\r\nDownload completed\r\n");
         display.set_progress(done_message, 0, 100);
         display.set_download_complete();
-        display.refresh();
     }
 
+    display.refresh();
     last_percent = percent;
 }
 
@@ -484,7 +586,7 @@ static int platform_init(void)
 
     /* setup the display */
     display.init(MBED_CONF_APP_VERSION);
-    tman[FOTA_THREAD_DISPLAY].start(callback(thread_display_update, &display));
+    display.refresh();
 
 #if MBED_CONF_MBED_TRACE_ENABLE
     /* Create mutex for tracing to avoid broken lines in logs */
@@ -512,22 +614,8 @@ static int platform_init(void)
 
 static void platform_shutdown()
 {
-    rtos::Thread::State state;
-
-    state = tman[FOTA_THREAD_DISPLAY].get_state();
-    if (rtos::Thread::Running == state) {
-        tman[FOTA_THREAD_DISPLAY].join();
-    }
-
-    state = tman[FOTA_THREAD_SENSOR_LIGHT].get_state();
-    if (rtos::Thread::Running == state) {
-        tman[FOTA_THREAD_SENSOR_LIGHT].join();
-    }
-
-    state = tman[FOTA_THREAD_DHT].get_state();
-    if (rtos::Thread::Running == state) {
-        tman[FOTA_THREAD_DHT].join();
-    }
+    /* stop the EventQueue */
+    evq.break_dispatch();
 }
 
 // ****************************************************************************
@@ -646,11 +734,23 @@ static void cmd_cb_flashything(vector<string>& params)
     k.kill_all();
 }
 
-/**
- * Wraps the prompt_interface with a loop for threading.
- */
-void run_prompt()
+static void cmd_pump(Commander *cmd)
 {
+    cmd->pump();
+}
+
+void cmd_on_ready(void)
+{
+    evq.call(cmd_pump, &cmd);
+}
+
+/**
+ * Sets up the command shell
+ */
+void init_commander(void)
+{
+    cmd.on_ready(cmd_on_ready);
+
     // add our callbacks
     cmd.add("get",
             "Get the value for the given key. Usage: get <key> defaults to *=all",
@@ -677,50 +777,23 @@ void run_prompt()
 
     //prime the serial
     cmd.init();
-
-    //infinity and beyond
-    while (true) {
-
-        //did the user press a key?
-        if (cmd.pump() == false) {
-
-            // only sleep on zero buffer
-            //slow down this tight loop please...
-            wait(0.033f);
-        }
-    }
 }
 
-// ****************************************************************************
-// Main
-// main() runs in its own thread in the OS
-// ****************************************************************************
-int main()
+static void init_app(EventQueue *queue)
 {
     int ret;
-    M2MClient *mbed_client;
 
-    printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
-    printf("     code version: " xstr(DEVTAG) "\n");
+    m2mclient = new M2MClient();
 
-    /* minimal init sequence */
-    printf("init platform\n");
-    ret = platform_init();
-    if (0 != ret) {
-        return ret;
-    }
-    printf("init platform: OK\n");
-
-    gmbed_client = new M2MClient();
-    mbed_client = gmbed_client;
+    init_commander();
 
     /* create the network */
     printf("init network\n");
-    gnet = network_create();
-    if (NULL == gnet) {
+    net = network_create();
+    if (NULL == net) {
         printf("ERROR: failed to create network stack\n");
         display.set_network_fail();
-        return -ENODEV;
+        return;
     }
 
     /* workaround: go ahead and connect the network.  it doesn't like being
@@ -730,7 +803,7 @@ int main()
      * network. */
     do {
         display.set_network_in_progress();
-        ret = network_connect(gnet);
+        ret = network_connect(net);
         if (0 != ret) {
             display.set_network_fail();
             printf("WARN: failed to init network, retrying...\n");
@@ -748,37 +821,68 @@ int main()
     ret = init_fcc();
     if (0 != ret) {
         printf("ERROR: failed to init factory configuration client: %d\n", ret);
-        return ret;
+        return;
     }
     printf("init factory configuration client: OK\n");
 
-    /* start the sensors */
-    /* WARNING: the sensor resources must be added to the mbed client
-     * before the mbed client connects to the cloud, otherwise the
-     * sensor resources will not exist in the portal. */
-    printf("start sampling the sensors\n");
-    start_sensors(mbed_client);
+    printf("init sensors\n");
+    sensors_init(&sensors, m2mclient);
+    sensors_start(&sensors, &evq);
 
     /* connect to mbed cloud */
     printf("init mbed client\n");
-    register_mbed_client(gnet, mbed_client);
+    /* WARNING: the sensor resources must be added to the mbed client
+     * before the mbed client connects to the cloud, otherwise the
+     * sensor resources will not exist in the portal. */
+    register_mbed_client(net, m2mclient);
+}
 
-    /* main run loop reads sensor samples and monitors connectivity */
-    printf("main run loop\n");
+// ****************************************************************************
+// Main
+// main() runs in its own thread in the OS
+//
+// Be aware of 3 threads of execution.
+// 1. The init thread is kicked off when the app first starts and is
+// responsible for bringing up the mbed client, the network, the sensors,
+// etc., and exits as soon as initialization is complete.
+// 2. The main thread dispatches the event queue and is where all normal
+// runtime operations are processed.
+// 3. The firmware update thread runs in the context of the mbed client and
+// executes callbacks in our app.  When a firmware update begins and a
+// download started, the event queue in the main thread must be halted until
+// the download completes.  Through a good deal of testing, it seems that
+// any work performed outside of the mbed client's context while a download
+// is in progress will cause the downloaded file to become corrupt and
+// therefore cause the firmware update to fail.
+// ****************************************************************************
+int main()
+{
+    int ret;
 
-    /*
-        create thread and start our prompt
-    */
-    Thread thread_prompt(osPriorityNormal);
-    thread_prompt.start(run_prompt);
+    /* stack size 2048 is too small for fcc_developer_flow() */
+    Thread thread(osPriorityNormal, 4096);
 
-    while (true) {
-        /* TODO: move sensor sampling here instead of in separate threads */
-        Thread::wait(1000);
+    printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
+    printf("     code version: " xstr(DEVTAG) "\n");
+
+    /* minimal init sequence */
+    printf("init platform\n");
+    ret = platform_init();
+    if (0 != ret) {
+        return ret;
     }
+    printf("init platform: OK\n");
 
-    /* stop sampling */
-    stop_sensors();
+    /* set the refresh rate of the display. */
+    display_evq_id = evq.call_every(250, display_refresh, &display);
+
+    /* use a separate thread to init the remaining components so that we
+     * can continue to refresh the display */
+    thread.start(callback(init_app, &evq));
+
+    printf("entering run loop\n");
+    evq.dispatch();
+    printf("exited run loop\n");
 
     platform_shutdown();
     printf("exiting main\n");
