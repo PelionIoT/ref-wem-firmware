@@ -7,9 +7,11 @@
 // ****************************************************************************
 #include "m2mclient.h"
 
+#include "commander.h"
 #include "DHT.h"
-#include "GL5528.h"
 #include "displayman.h"
+#include "GL5528.h"
+#include "keystore.h"
 #include "lcdprogress.h"
 
 #include <SDBlockDevice.h>
@@ -232,18 +234,62 @@ static int network_connect(NetworkInterface *net)
     /* code is compiled -fno-rtti so we have to use C cast */
     wifi = (ESP8266Interface *)net;
 
-    printf("[WIFI] connecting: ssid=%s, mac=%s\n", MBED_CONF_APP_WIFI_SSID,
-           network_get_macaddr(wifi, macaddr));
-    ret = wifi->connect(MBED_CONF_APP_WIFI_SSID, MBED_CONF_APP_WIFI_PASSWORD,
-                        wifi_security_str2sec(MBED_CONF_APP_WIFI_SECURITY));
+    //wifi login info set to default values
+    string ssid     = MBED_CONF_APP_WIFI_SSID;
+    string pass     = MBED_CONF_APP_WIFI_PASSWORD;
+    string security = MBED_CONF_APP_WIFI_SECURITY;
+
+    //keystore db access
+    Keystore k;
+
+    //read the current state
+    k.open();
+
+    //use the keystore for ssid?
+    if (k.exists("ssid")) {
+        printf("Using SSID from keystore.\r\n");
+
+        ssid = k.get("ssid");
+    } else {
+        printf("Using default SSID.\r\n");
+    }
+
+    //use the keystore for pass?
+    if (k.exists("pass")) {
+        printf("Using pass from keystore.\r\n");
+
+        pass = k.get("pass");
+    } else {
+        printf("Using default pass.\r\n");
+    }
+
+    //use the keystor for security?
+    if (k.exists("security")) {
+        printf("Using security from keystore.\r\n");
+
+        security = k.get("security");
+    } else {
+        printf("Using default security.\r\n");
+    }
+
+    printf("[WIFI] connecting: ssid=%s, mac=%s\n",
+           ssid.c_str(), network_get_macaddr(wifi, macaddr));
+
+    ret = wifi->connect(ssid.c_str(),
+                        pass.c_str(),
+                        wifi_security_str2sec(security.c_str()));
     if (0 != ret) {
         printf("[WIFI] Failed to connect to: %s (%d)\n",
-               MBED_CONF_APP_WIFI_SSID, ret);
+               ssid.c_str(), ret);
         return ret;
     }
+
     printf("[WIFI] connected: ssid=%s, mac=%s, ip=%s, netmask=%s, gateway=%s\n",
-           MBED_CONF_APP_WIFI_SSID, network_get_macaddr(net, macaddr),
-           net->get_ip_address(), net->get_netmask(), net->get_gateway());
+           ssid.c_str(),
+           network_get_macaddr(net, macaddr),
+           net->get_ip_address(),
+           net->get_netmask(),
+           net->get_gateway());
 
     return 0;
 }
@@ -485,6 +531,167 @@ static void platform_shutdown()
 }
 
 // ****************************************************************************
+// call back handlers for commandline interface
+// ****************************************************************************
+static void cmd_cb_del(vector<string>& params)
+{
+    //check params
+    if (params.size() >= 2) {
+        //the db
+        Keystore k;
+
+        //read the file
+        k.open();
+
+        //delete the given key
+        k.del(params[1]);
+
+        //write the changes back out
+        k.close();
+
+        //let user know
+        cmd.printf("Deleted key %s\r\n",
+                   params[1].c_str());
+    } else {
+        cmd.printf("Not enough arguments!\r\n");
+    }
+}
+
+static void cmd_cb_get(vector<string>& params)
+{
+    //check params
+    if (params.size() >= 1) {
+        //database
+        Keystore k;
+
+        //don't show all keys by default
+        bool ball = false;
+
+        //read current values
+        k.open();
+
+        //if no param set to *
+        if (params.size() == 1) {
+            ball = true;
+        } else if (params[1] == "*") {
+            ball = true;
+        }
+
+        //show all keys?
+        if (ball) {
+            //get all keys
+            vector<string> keys = k.keys();
+
+            //walk the keys
+            for (unsigned int n = 0; n < keys.size(); n++) {
+                //get value
+                string val = k.get(keys[n]);
+
+                //format for display
+                cmd.printf("%s=%s\r\n",
+                           keys[n].c_str(),
+                           val.c_str());
+            }
+        } else {
+
+            // if not get one key
+            string val = k.get(params[1]);
+
+            //return just the value
+            cmd.printf("%s\r\n",
+                       val.c_str());
+        }
+    } else {
+        cmd.printf("Not enough arguments!\r\n");
+    }
+}
+
+static void cmd_cb_set(vector<string>& params)
+{
+    //check params
+    if (params.size() >= 3) {
+
+        //db
+        Keystore k;
+
+        //read the file into db
+        k.open();
+
+        //make the change
+        k.set(params[1],params[2]);
+
+        //write the file back out
+        k.close();
+
+        //return just the value
+        cmd.printf("%s=%s\r\n",
+                   params[1].c_str(),
+                   params[2].c_str());
+
+    } else {
+        cmd.printf("Not enough arguments!\r\n");
+    }
+}
+
+static void cmd_cb_reboot(vector<string>& params)
+{
+    cmd.printf("\r\nRebooting...");
+    NVIC_SystemReset();
+}
+
+static void cmd_cb_flashything(vector<string>& params)
+{
+    Keystore k;
+
+    k.kill_all();
+}
+
+/**
+ * Wraps the prompt_interface with a loop for threading.
+ */
+void run_prompt()
+{
+    // add our callbacks
+    cmd.add("get",
+            "Get the value for the given key. Usage: get <key> defaults to *=all",
+            cmd_cb_get);
+
+    cmd.add("set",
+            "Set a key to a the given value. Usage: set <key> <value>",
+            cmd_cb_set);
+
+    cmd.add("del",
+            "Delete a key from the store. Usage: del <key> <value>",
+            cmd_cb_del);
+
+    cmd.add("reboot",
+            "Reboot the device. Usage: reboot",
+            cmd_cb_reboot);
+
+    cmd.add("flashything",
+            "Delete all user data. Usage: flashything",
+            cmd_cb_flashything);
+
+    //display the banner
+    cmd.banner();
+
+    //prime the serial
+    cmd.init();
+
+    //infinity and beyond
+    while (true) {
+
+        //did the user press a key?
+        if (cmd.pump() == false) {
+
+            // only sleep on zero buffer
+            //slow down this tight loop please...
+            wait(0.033f);
+        }
+    }
+}
+
+// ****************************************************************************
 // Main
 // main() runs in its own thread in the OS
 // ****************************************************************************
@@ -558,6 +765,13 @@ int main()
 
     /* main run loop reads sensor samples and monitors connectivity */
     printf("main run loop\n");
+
+    /*
+        create thread and start our prompt
+    */
+    Thread thread_prompt(osPriorityNormal);
+    thread_prompt.start(run_prompt);
+
     while (true) {
         /* TODO: move sensor sampling here instead of in separate threads */
         Thread::wait(1000);
