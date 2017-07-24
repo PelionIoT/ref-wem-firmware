@@ -22,19 +22,8 @@ class DisplayMan;
 
 void thread_display_update(DisplayMan *display);
 
-struct SensorDisplay {
-    std::string name;
-    std::string status;
-};
-
-enum ViewMode {
-    DISPLAY_VIEW_SENSOR,
-    DISPLAY_VIEW_DOWNLOAD,
-    DISPLAY_VIEW_INSTALL,
-    DISPLAY_VIEW_SELF_TEST
-};
-
-class DisplayMan {
+class DisplayMan
+{
 public:
     DisplayMan();
     int init(const std::string &version);
@@ -53,7 +42,7 @@ public:
     void set_network_success();
     void init_network(const char *type);
     /*returns sesor id*/
-    uint8_t register_sensor(const std::string &name);
+    uint8_t register_sensor(const std::string &name, enum INDICATOR_TYPES indicator = IND_NO_TYPES);
     void set_sensor_status(uint8_t sensor_id, const std::string status);
     void set_sensor_name(uint8_t sensor_id, const std::string name);
     void cycle_status();
@@ -61,6 +50,19 @@ public:
     void self_test();
 
 private:
+    struct SensorDisplay {
+        std::string name;
+        std::string status;
+        INDICATOR_TYPES indicator;
+    };
+
+    enum ViewMode {
+        DISPLAY_VIEW_SENSOR,
+        DISPLAY_VIEW_DOWNLOAD,
+        DISPLAY_VIEW_INSTALL,
+        DISPLAY_VIEW_SELF_TEST
+    };
+
     I2C _i2c;
     MultiAddrLCD _lcd;
     LCDProgress _lcd_prog;
@@ -71,6 +73,7 @@ private:
     enum ViewMode _view_mode;
     std::string _version_string;
     std::string _network_ssid;
+    bool _cloud_registered;
 
     uint64_t _cycle_count;
 };

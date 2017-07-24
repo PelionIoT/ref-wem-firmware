@@ -120,7 +120,7 @@ static void display_refresh(DisplayMan *display)
 static void light_init(struct light_sensor *s, M2MClient *mbed_client)
 {
     /* add to the display */
-    s->id = display.register_sensor("Light");
+    s->id = display.register_sensor("Light", IND_LIGHT);
 
     /* init the driver */
     s->dev = new AnalogIn(A0);
@@ -160,8 +160,8 @@ static void light_read(struct light_sensor *s)
 static void dht_init(struct dht_sensor *s, M2MClient *mbed_client)
 {
     /* add to the display */
-    s->t_id = display.register_sensor("Temp");
-    s->h_id = display.register_sensor("Humidity");
+    s->t_id = display.register_sensor("Temp", IND_TEMP);
+    s->h_id = display.register_sensor("Humidity", IND_HUMIDITY);
 
     /* init the driver */
     s->dev = new DHT(D4, AM2302);

@@ -5,6 +5,7 @@ DisplayMan::DisplayMan() : _i2c(I2C_SDA, I2C_SCL), _lcd(&_i2c), _lcd_prog(_lcd)
     _cycle_count = 0;
     _view_mode = DISPLAY_VIEW_SENSOR;
     _network_sensor_id = UINT8_MAX;
+    _cloud_registered = false;
 }
 
 int DisplayMan::init(const std::string &version)
@@ -25,7 +26,7 @@ int DisplayMan::init(const std::string &version)
 void DisplayMan::set_downloading()
 {
     _view_mode = DISPLAY_VIEW_DOWNLOAD;
-    led_set_color(IND_FWUP, IND_COLOR_IN_PROGRESS, true);
+    led_set_color(IND_FWUP, IND_COLOR_IN_PROGRESS, IND_FLAG_BLINK);
 }
 
 void DisplayMan::set_download_complete()
@@ -42,11 +43,13 @@ void DisplayMan::set_progress(const std::string &message, uint32_t progress,
 void DisplayMan::set_cloud_registered()
 {
     led_set_color(IND_CLOUD, IND_COLOR_SUCCESS);
+    _cloud_registered = true;
 }
 
 void DisplayMan::set_cloud_unregistered()
 {
     led_set_color(IND_CLOUD, IND_COLOR_OFF);
+    _cloud_registered = false;
 }
 
 void DisplayMan::set_installing()
@@ -54,12 +57,13 @@ void DisplayMan::set_installing()
     _view_mode = DISPLAY_VIEW_INSTALL;
     _lcd.printline(0, "Installing...    ");
     _lcd.printline(1, "");
-    led_set_color(IND_FWUP, IND_COLOR_SUCCESS, false);
+    led_set_color(IND_FWUP, IND_COLOR_SUCCESS);
 }
 
 void DisplayMan::set_cloud_error()
 {
     led_set_color(IND_CLOUD, IND_COLOR_FAILED);
+    _cloud_registered = false;
 }
 
 void DisplayMan::init_network(const char *type)
@@ -78,7 +82,7 @@ void DisplayMan::set_network_ssid(std::string &ssid)
 
 void DisplayMan::set_network_in_progress()
 {
-    led_set_color(IND_WIFI, IND_COLOR_IN_PROGRESS, true);
+    led_set_color(IND_WIFI, IND_COLOR_IN_PROGRESS, IND_FLAG_BLINK);
     set_sensor_status(_network_sensor_id, _network_ssid);
 }
 
@@ -96,15 +100,21 @@ void DisplayMan::set_network_success()
 
 void DisplayMan::set_cloud_in_progress()
 {
-    led_set_color(IND_CLOUD, IND_COLOR_IN_PROGRESS, true);
+    led_set_color(IND_CLOUD, IND_COLOR_IN_PROGRESS, IND_FLAG_BLINK);
+    _cloud_registered = false;
 }
 
-uint8_t DisplayMan::register_sensor(const std::string &name)
+uint8_t DisplayMan::register_sensor(const std::string &name, enum INDICATOR_TYPES indicator)
 {
     struct SensorDisplay s;
 
     s.name = name;
     s.status = "";
+    s.indicator = indicator;
+
+    if (indicator < IND_NO_TYPES) {
+        led_set_color(indicator, IND_COLOR_SUCCESS_DIM);
+    }
 
     _sensors.push_back(s);
 
@@ -115,6 +125,10 @@ void DisplayMan::set_sensor_status(uint8_t sensor_id, const std::string status)
 {
     if (sensor_id < _sensors.size()) {
         _sensors[sensor_id].status = status;
+        if (_cloud_registered && _sensors[sensor_id].indicator < IND_NO_TYPES) {
+            led_set_color(_sensors[sensor_id].indicator, IND_COLOR_SENSOR_DATA, IND_FLAG_ONCE);
+            led_set_color(IND_CLOUD, IND_COLOR_SENSOR_DATA, IND_FLAG_ONCE | IND_FLAG_LATER);
+        }
     }
 }
 
@@ -167,7 +181,7 @@ void DisplayMan::self_test()
                                     IND_FWUP,  IND_LIGHT, IND_TEMP};
 
     for (i = 0; i < ARRAY_SIZE(indicators); i++) {
-        led_set_color(indicators[i], IND_COLOR_IN_PROGRESS, false);
+        led_set_color(indicators[i], IND_COLOR_IN_PROGRESS);
     }
     for (i = 0; i <= 90; i++) {
         _view_mode = DISPLAY_VIEW_SELF_TEST;

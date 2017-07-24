@@ -11,28 +11,46 @@
 
 static ws2801 led_strip(D3, D2, IND_NO_TYPES);
 
-static int LED_STATUS[IND_NO_TYPES] = {
+// colors being displayed
+static int LED_HARDWARE[IND_NO_TYPES] = {
     IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF,
     IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF};
-/* really poor design, but we store the blinkind indicator in the upper 8-bits
- * and the old color in the lower 24-bits. Once blinking is disabled then we
- * just update the LED_STATUS field with the original color.
+/* really poor design, but we store the indicator flags in the upper 8-bits
+ * and the color in the lower 24-bits. Once blinking is disabled then we
+ * just update the LED_HARDWARE field with the original color.
  */
-static int LED_BLINK[IND_NO_TYPES] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+static int LED_COLOR[IND_NO_TYPES] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+// temporary color
+static int LED_COLOR_TEMP[IND_NO_TYPES] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 
 // ****************************************************************************
 // Functions
 // ****************************************************************************
-bool led_blink_is_enabled(int led_name)
+void led_flags_set(int led_name, int flags)
 {
-    return LED_BLINK[led_name] & 0x01000000;
+    LED_COLOR[led_name] &= 0x00FFFFFF;
+    LED_COLOR[led_name] |= flags << 24;
+    LED_COLOR_TEMP[led_name] &= 0x00FFFFFF;
+    LED_COLOR_TEMP[led_name] |= flags << 24;
 }
 
-void led_blink_enable(int led_name) { LED_BLINK[led_name] |= 0x01000000; }
+int led_flags_get(int led_name)
+{
+    return LED_COLOR[led_name] >> 24;
+}
 
-void led_blink_disable(int led_name) { LED_BLINK[led_name] &= 0x00FFFFFF; }
+bool led_flag_is_set(int led_name, int flag)
+{
+    return led_flags_get(led_name) & flag;
+}
 
-void led_set_color(enum INDICATOR_TYPES led_name, int led_color, bool blink)
+void led_clear_flag(int led_name, int flag)
+{
+    LED_COLOR[led_name] &= ~(flag << 24);
+    LED_COLOR_TEMP[led_name] &= ~(flag << 24);
+}
+
+void led_set_color(enum INDICATOR_TYPES led_name, int led_color, int flags)
 {
     /* colors are only 24-bits */
     int color = led_color & 0x00FFFFFF;
@@ -41,12 +59,12 @@ void led_set_color(enum INDICATOR_TYPES led_name, int led_color, bool blink)
         return;
     }
 
-    LED_STATUS[led_name] = color;
-
-    /* save the blink state and only update the color */
-    LED_BLINK[led_name] &= 0xFF000000;
-    LED_BLINK[led_name] |= color;
-    blink ? led_blink_enable(led_name) : led_blink_disable(led_name);
+    if ((flags & IND_FLAG_ONCE) || (flags & IND_FLAG_LATER)) {
+        LED_COLOR_TEMP[led_name] = color;
+    } else {
+        LED_COLOR[led_name] = color;
+    }
+    led_flags_set(led_name, flags);
 }
 
 void led_post(void)
@@ -54,22 +72,30 @@ void led_post(void)
     int idx;
 
     for (idx = 0; idx < IND_NO_TYPES; ++idx) {
-        if (led_blink_is_enabled(idx)) {
-            LED_STATUS[idx] = LED_STATUS[idx] == IND_COLOR_OFF
-                                  ? LED_BLINK[idx] & 0x00FFFFFF
-                                  : IND_COLOR_OFF;
-        } else {
-            LED_STATUS[idx] = LED_BLINK[idx] & 0x00FFFFFF;
+        int color = LED_COLOR[idx];
+        if (led_flag_is_set(idx, IND_FLAG_BLINK) && LED_HARDWARE[idx] != IND_COLOR_OFF) {
+            color = IND_COLOR_OFF;
         }
+        if (led_flag_is_set(idx, IND_FLAG_LATER)) {
+            if (!led_flag_is_set(idx, IND_FLAG_ONCE)) {
+                LED_COLOR[idx] = LED_COLOR_TEMP[idx];
+            }
+            led_clear_flag(idx, IND_FLAG_LATER);
+        } else if (led_flag_is_set(idx, IND_FLAG_ONCE)) {
+            color = LED_COLOR_TEMP[idx];
+            led_clear_flag(idx, IND_FLAG_ONCE);
+        }
+        LED_HARDWARE[idx] = color & 0x00FFFFFF;
     }
-    led_strip.post(LED_STATUS);
+    led_strip.post(LED_HARDWARE);
 }
 
 void led_setup(void)
 {
     for (int i = 0; i < IND_NO_TYPES; i++) {
-        LED_STATUS[i] = IND_COLOR_OFF;
-        LED_BLINK[i] = 0x0;
+        LED_HARDWARE[i] = IND_COLOR_OFF;
+        LED_COLOR[i] = 0x0;
+        LED_COLOR_TEMP[i] = 0x0;
     }
     led_strip.clear();
     led_strip.level(100);
