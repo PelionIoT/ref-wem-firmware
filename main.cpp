@@ -156,7 +156,7 @@ static void thread_dht(M2MClient *mbed_client)
         } else {
             tr_error("DHT: readData() failed with %d\n", readError);
         }
-        Thread::wait(1000);
+        Thread::wait(5000);
     }
 }
 
