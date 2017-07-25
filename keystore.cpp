@@ -48,13 +48,10 @@ void Keystore::open()
         for (;;) {
 
             //clear our buffer
-            memset(&buffer, 0, sizeof(buffer));
+            memset(buffer, 0, sizeof(buffer));
 
             //Read a chunk of the database
-            rt = pal_fsFread(&fd, buffer, sizeof(buffer), &bytes_read);
-
-            //append the read to the file string
-            strfile += buffer;
+            rt = pal_fsFread(&fd, buffer, sizeof(buffer) - 1, &bytes_read);
 
             //are we done reading?
             if (rt || bytes_read == 0) {
@@ -64,6 +61,9 @@ void Keystore::open()
                 //exit the loop
                 break;
             }
+
+            //append the read to the file string
+            strfile += buffer;
         }
     }
 
