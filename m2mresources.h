@@ -51,13 +51,13 @@ public:
 
     void unregister(void *)
     {
-        printf("Unregister resource executed\r\n");
+        printf("Unregister resource executed\n");
         _cloud_client.close();
     }
 
     void factory_reset(void *)
     {
-        printf("Factory reset resource executed\r\n");
+        printf("Factory reset resource executed\n");
         _cloud_client.close();
         kcm_status_e kcm_status = kcm_factory_reset();
         if (kcm_status != KCM_STATUS_SUCCESS) {

@@ -23,17 +23,17 @@ Commander::Commander(PinName tx,
     _prompt = "> ";
 
     //create our banner
-    _banner += "\r\n\r\n\r\n";
-    _banner += "\r\n";
+    _banner += "\n\n\n";
+    _banner += "\n";
     _banner += ".___  ___. .______    _______  _______  \n";
     _banner += "|   \\/   | |   _  \\  |   ____||       \\ \n";
     _banner += "|  \\  /  | |  |_)  | |  |__   |  .--.  |\n";
     _banner += "|  |\\/|  | |   _  <  |   __|  |  |  |  |\n";
     _banner += "|  |  |  | |  |_)  | |  |____ |  '--'  |\n";
     _banner += "|__|  |__| |______/  |_______||_______/ \n";
-    _banner += "\r\n";
-    _banner += "    Created by: The ARM Red Team\r\n";
-    _banner += "\r\n\r\n\r\n";
+    _banner += "\n";
+    _banner += "    Created by: The ARM Red Team\n";
+    _banner += "\n\n\n";
 
     //set the line rate of the serial
     _serial.baud(115200);

@@ -334,29 +334,29 @@ static int network_connect(NetworkInterface *net)
 
     //use the keystore for ssid?
     if (k.exists(SSID_KEY)) {
-        printf("Using SSID from keystore.\r\n");
+        printf("Using SSID from keystore.\n");
 
         ssid = k.get(SSID_KEY);
     } else {
-        printf("Using default %s.\r\n", SSID_KEY);
+        printf("Using default %s.\n", SSID_KEY);
     }
 
     //use the keystore for pass?
     if (k.exists(PASSWORD_KEY)) {
-        printf("Using pass from keystore.\r\n");
+        printf("Using pass from keystore.\n");
 
         pass = k.get(PASSWORD_KEY);
     } else {
-        printf("Using default %s.\r\n", PASSWORD_KEY);
+        printf("Using default %s.\n", PASSWORD_KEY);
     }
 
     //use the keystor for security?
     if (k.exists(SECURITY_KEY)) {
-        printf("Using security from keystore.\r\n");
+        printf("Using security from keystore.\n");
 
         security = k.get(SECURITY_KEY);
     } else {
-        printf("Using default %s.\r\n", SECURITY_KEY);
+        printf("Using default %s.\n", SECURITY_KEY);
     }
 
     display.set_network_ssid(ssid);
@@ -422,7 +422,7 @@ static int network_connect(NetworkInterface *net)
  */
 void fota_auth_download(M2MClient *mbed_client)
 {
-    printf("Firmware download requested\r\n");
+    printf("Firmware download requested\n");
 
     sensors_stop(&sensors, &evq);
     /* we'll need to manually refresh the display until the firmware
@@ -435,7 +435,7 @@ void fota_auth_download(M2MClient *mbed_client)
     display.refresh();
     mbed_client->update_authorize(MbedCloudClient::UpdateRequestDownload);
 
-    printf("Authorization granted\r\n");
+    printf("Authorization granted\n");
 }
 
 /**
@@ -443,7 +443,7 @@ void fota_auth_download(M2MClient *mbed_client)
  */
 void fota_auth_install(M2MClient *mbed_client)
 {
-    printf("Firmware install requested\r\n");
+    printf("Firmware install requested\n");
 
     display.set_installing();
     /* firmware download is complete, restart the auto display updates */
@@ -453,7 +453,7 @@ void fota_auth_install(M2MClient *mbed_client)
     network_disconnect(net);
 
     mbed_client->update_authorize(MbedCloudClient::UpdateRequestInstall);
-    printf("Authorization granted\r\n");
+    printf("Authorization granted\n");
 }
 
 /**
@@ -488,7 +488,7 @@ void mbed_client_on_update_authorize(int32_t request)
             break;
 
         default:
-            printf("ERROR: unknown request\r\n");
+            printf("ERROR: unknown request\n");
             led_set_color(IND_FWUP, IND_COLOR_FAILED);
             led_post();
             break;
@@ -512,7 +512,7 @@ void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
     }
 
     if (progress == total) {
-        printf("\r\nDownload completed\r\n");
+        printf("\nDownload completed\n");
         display.set_progress(done_message, 0, 100);
         display.set_download_complete();
     }
@@ -650,10 +650,10 @@ static void cmd_cb_del(vector<string>& params)
         k.close();
 
         //let user know
-        cmd.printf("Deleted key %s\r\n",
+        cmd.printf("Deleted key %s\n",
                    params[1].c_str());
     } else {
-        cmd.printf("Not enough arguments!\r\n");
+        cmd.printf("Not enough arguments!\n");
     }
 }
 
@@ -688,7 +688,7 @@ static void cmd_cb_get(vector<string>& params)
                 string val = k.get(keys[n]);
 
                 //format for display
-                cmd.printf("%s=%s\r\n",
+                cmd.printf("%s=%s\n",
                            keys[n].c_str(),
                            val.c_str());
             }
@@ -698,11 +698,11 @@ static void cmd_cb_get(vector<string>& params)
             string val = k.get(params[1]);
 
             //return just the value
-            cmd.printf("%s\r\n",
+            cmd.printf("%s\n",
                        val.c_str());
         }
     } else {
-        cmd.printf("Not enough arguments!\r\n");
+        cmd.printf("Not enough arguments!\n");
     }
 }
 
@@ -730,18 +730,18 @@ static void cmd_cb_set(vector<string>& params)
         k.close();
 
         //return just the value
-        cmd.printf("%s=%s\r\n",
+        cmd.printf("%s=%s\n",
                    params[1].c_str(),
                    strValue.c_str());
 
     } else {
-        cmd.printf("Not enough arguments!\r\n");
+        cmd.printf("Not enough arguments!\n");
     }
 }
 
 static void cmd_cb_reboot(vector<string>& params)
 {
-    cmd.printf("\r\nRebooting...");
+    cmd.printf("\nRebooting...");
     NVIC_SystemReset();
 }
 
