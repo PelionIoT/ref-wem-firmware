@@ -749,7 +749,42 @@ static void cmd_cb_reset(vector<string>& params)
 {
     Keystore k;
 
-    k.kill_all();
+    //default to delete nothing
+    bool bcerts   = false;
+    bool boptions = false;
+
+    //check params
+    if (params.size() >= 1) {
+
+        //set up the users options
+        if (params[1] == "certs") {
+            bcerts = true;
+        } else if (params[1] == "options") {
+            boptions = true;
+        } else if (params[1] == "all") {
+            bcerts = true;
+            boptions = true;
+        } else {
+            cmd.printf("Unknown parameters.\n");
+        }
+    } else {
+        //no params defaults options
+        boptions = true;
+    }
+
+    //delete fcc certifications?
+    if (bcerts) {
+        int ret = fcc_storage_delete();
+
+        if (ret != FCC_STATUS_SUCCESS) {
+            cmd.printf("ERROR: fcc delete failed: %d\n", ret);
+        }
+    }
+
+    //delete from keystore?
+    if (boptions) {
+        k.kill_all();
+    }
 }
 
 static void cmd_pump(Commander *cmd)
