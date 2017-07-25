@@ -43,6 +43,10 @@
 // ****************************************************************************
 #define MACADDR_STRLEN 18
 
+#define SSID_KEY "wifi.ssid"
+#define PASSWORD_KEY "wifi.key"
+#define SECURITY_KEY "wifi.encryption"
+
 enum FOTA_THREADS {
     FOTA_THREAD_DISPLAY = 0,
     FOTA_THREAD_SENSOR_LIGHT,
@@ -322,30 +326,30 @@ static int network_connect(NetworkInterface *net)
     k.open();
 
     //use the keystore for ssid?
-    if (k.exists("ssid")) {
+    if (k.exists(SSID_KEY)) {
         printf("Using SSID from keystore.\r\n");
 
-        ssid = k.get("ssid");
+        ssid = k.get(SSID_KEY);
     } else {
-        printf("Using default SSID.\r\n");
+        printf("Using default %s.\r\n", SSID_KEY);
     }
 
     //use the keystore for pass?
-    if (k.exists("pass")) {
+    if (k.exists(PASSWORD_KEY)) {
         printf("Using pass from keystore.\r\n");
 
-        pass = k.get("pass");
+        pass = k.get(PASSWORD_KEY);
     } else {
-        printf("Using default pass.\r\n");
+        printf("Using default %s.\r\n", PASSWORD_KEY);
     }
 
     //use the keystor for security?
-    if (k.exists("security")) {
+    if (k.exists(SECURITY_KEY)) {
         printf("Using security from keystore.\r\n");
 
-        security = k.get("security");
+        security = k.get(SECURITY_KEY);
     } else {
-        printf("Using default security.\r\n");
+        printf("Using default %s.\r\n", SECURITY_KEY);
     }
 
     printf("[WIFI] connecting: ssid=%s, mac=%s\n",
