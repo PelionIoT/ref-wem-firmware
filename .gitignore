@@ -30,3 +30,6 @@ dev-manifest
 # credentials from the cloud
 .mbed-cloud-key
 mbed_cloud_dev_credentials.c
+
+.DS_Store
+.vscode
