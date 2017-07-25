@@ -116,3 +116,91 @@ make install
 ```
 make campaign
 ```
+
+## Serial Command Help
+
+Press enter at any time to get a command prompt.
+
+```
+>
+```
+
+Typing `help` at the prompt provides a list of the commands and a brief set of usage instructions.
+
+```
+> help
+Help:
+del          - Delete a configuration option from the store. Usage: del <option>
+get          - Get the value for the given configuration option. Usage: get [option] defaults to *=all
+help         - Get help about the available commands.
+reboot       - Reboot the device. Usage: reboot
+reset        - Reset configuration options and/or certificates. Usage: reset [options|certs|all] defaults to options
+set          - Set a configuration option to a the given value. Usage: set <option> <value>
+```
+
+## Option Keystore
+
+The keystore is a simple name value pair database used to store configuration parameters, for example Wi-Fi credentials.
+
+The following commands are provided to manipulate the keystore:
+
+1. `get` get a key and print its value.
+
+
+```
+> get wifi.ssid
+
+wifi.ssid=iotlab
+```
+
+2. `set` set a key to the given value.
+
+```
+> set wifi.ssid iotlab
+
+wifi.ssid=iotlab
+```
+
+3. `del` delete a key and it's value.
+
+```
+> del wifi.ssid
+
+Deleted key wifi.ssid
+```
+
+## Wi-Fi Commissioning
+
+To configure Wi-Fi set the following key options:
+
+```
+> set wifi.ssid yourssid
+wifi.ssid=yourssid
+
+> set wifi.key passphrase
+wifi.key=passphrase
+
+> set wifi.encryption WPA2
+wifi.encryption=WPA2
+```
+
+After setting the Wi-Fi credentials reset the device.
+
+```
+> reboot
+```
+
+## Reset
+
+To delete all stored options and their values:
+
+```
+> reset           deletes the options keystore
+
+> reset options   deletes the options keystore
+
+> reset certs     deletes the fcc certs
+
+> reset all       deletes fcc certs and options keystore
+```
+
