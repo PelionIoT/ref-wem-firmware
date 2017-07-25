@@ -53,13 +53,11 @@ void Commander::help()
 {
     map<string, Command>::const_iterator it;
 
-    _serial.printf("\r\n");
-
-    _serial.printf("Help:\r\n\r\n");
+    _serial.printf("Help:\n");
 
     //walk our commands and print the cmd and it's description for help
     for (it = _cmds.begin(); it != _cmds.end(); ++it) {
-        _serial.printf("%-12s - %s\r\n",
+        _serial.printf("%-12s - %s\n",
                         it->second.strname.c_str(),
                         it->second.strdesc.c_str());
     }
@@ -145,7 +143,7 @@ bool Commander::pump()
         if (nInput == 13) {
             //do we have a blank command?
             if (_strcommand == "") {
-                _serial.printf("\r\n");
+                _serial.printf("\n");
             } else {
                 process(_strcommand);
             }
@@ -190,7 +188,7 @@ int Commander::process(string& strcommand)
 
     //if we got anything
     if (lsresults.size() > 0) {
-        _serial.printf("\r\n\r\n");
+        _serial.printf("\n");
 
         //get our element
         it = _cmds.find(lsresults[0]);
@@ -199,16 +197,14 @@ int Commander::process(string& strcommand)
             it->second.pCB(lsresults);
         } else {
             //we have an unknown command
-            _serial.printf("Error Unknown Command!\r\n");
+            _serial.printf("Error Unknown Command!\n");
             for (vector<string>::iterator it = lsresults.begin();
                  it != lsresults.end();
                  ++it) {
                 _serial.printf(it->c_str());
-                _serial.printf("\r\n");
+                _serial.printf("\n");
             }
         }
-
-        _serial.printf("\r\n\r\n");
     }
 
     return nreturn;
