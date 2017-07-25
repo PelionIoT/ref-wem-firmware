@@ -105,12 +105,9 @@ void Commander::input_handler()
     //push our input into the buffer
     cmd._buffer.push_back(nkey);
 
-    //if the user hit enter
-    if (nkey == 13) {
-        //walk the callbacks and call them one at a time
-        for (size_t n = 0; n<cmd._vready.size();n++) {
-            cmd._vready[n]();
-        }
+    //walk the callbacks and call them one at a time
+    for (size_t n = 0; n < cmd._vready.size(); n++) {
+        cmd._vready[n]();
     }
 }
 
