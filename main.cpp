@@ -81,7 +81,7 @@ struct light_sensor {
 };
 
 struct sensors {
-    int event_queue_id;
+    int event_queue_id_light, event_queue_id_dht;
     struct dht_sensor dht;
     struct light_sensor light;
 };
@@ -220,16 +220,6 @@ static void dht_read(struct dht_sensor *dht)
 }
 
 /**
- * Processes an event queue callback for reading sensor data
- */
-static void sensors_read(void *context)
-{
-    struct sensors *s = (struct sensors *)context;
-    dht_read(&s->dht);
-    light_read(&s->light);
-}
-
-/**
  * Inits all sensors, making them ready to read
  */
 static void sensors_init(struct sensors *sensors, M2MClient *mbed_client)
@@ -244,7 +234,9 @@ static void sensors_init(struct sensors *sensors, M2MClient *mbed_client)
 static void sensors_start(struct sensors *s, EventQueue *q)
 {
     printf("starting all sensors\n");
-    s->event_queue_id = q->call_every(5000, sensors_read, s);
+    // the periods are prime number multiples so that the LED flashing is more appealing
+    s->event_queue_id_light = q->call_every(4700, light_read, &s->light);
+    s->event_queue_id_dht = q->call_every(5300, dht_read, &s->dht);
 }
 
 /**
@@ -253,8 +245,10 @@ static void sensors_start(struct sensors *s, EventQueue *q)
 static void sensors_stop(struct sensors *s, EventQueue *q)
 {
     printf("stopping all sensors\n");
-    q->cancel(s->event_queue_id);
-    s->event_queue_id = 0;
+    q->cancel(s->event_queue_id_light);
+    q->cancel(s->event_queue_id_dht);
+    s->event_queue_id_light = 0;
+    s->event_queue_id_dht = 0;
 }
 
 // ****************************************************************************
