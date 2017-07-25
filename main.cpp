@@ -800,7 +800,7 @@ void init_commander(void)
 
     // add our callbacks
     cmd.add("get",
-            "Get the value for the given configuration option. Usage: get <option> defaults to *=all",
+            "Get the value for the given configuration option. Usage: get [option] defaults to *=all",
             cmd_cb_get);
 
     cmd.add("set",
@@ -808,7 +808,7 @@ void init_commander(void)
             cmd_cb_set);
 
     cmd.add("del",
-            "Delete a configuration option from the store. Usage: del <option> <value>",
+            "Delete a configuration option from the store. Usage: del <option>",
             cmd_cb_del);
 
     cmd.add("reboot",
@@ -816,7 +816,7 @@ void init_commander(void)
             cmd_cb_reboot);
 
     cmd.add("reset",
-            "Reset configuration options and/or certificates. Usage: reset <options|certs|all> defaults to options",
+            "Reset configuration options and/or certificates. Usage: reset [options|certs|all] defaults to options",
             cmd_cb_reset);
 
     //display the banner
