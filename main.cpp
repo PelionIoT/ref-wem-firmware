@@ -717,8 +717,14 @@ static void cmd_cb_set(vector<string>& params)
         //read the file into db
         k.open();
 
+        string strValue = params[2];
+
+        for (int x = 3; x < params.size(); x++) {
+            strValue += " " + params[x];
+        }
+
         //make the change
-        k.set(params[1],params[2]);
+        k.set(params[1], strValue);
 
         //write the file back out
         k.close();
@@ -726,7 +732,7 @@ static void cmd_cb_set(vector<string>& params)
         //return just the value
         cmd.printf("%s=%s\r\n",
                    params[1].c_str(),
-                   params[2].c_str());
+                   strValue.c_str());
 
     } else {
         cmd.printf("Not enough arguments!\r\n");
