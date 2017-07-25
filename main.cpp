@@ -745,7 +745,7 @@ static void cmd_cb_reboot(vector<string>& params)
     NVIC_SystemReset();
 }
 
-static void cmd_cb_flashything(vector<string>& params)
+static void cmd_cb_reset(vector<string>& params)
 {
     Keystore k;
 
@@ -771,24 +771,24 @@ void init_commander(void)
 
     // add our callbacks
     cmd.add("get",
-            "Get the value for the given key. Usage: get <key> defaults to *=all",
+            "Get the value for the given configuration option. Usage: get <option> defaults to *=all",
             cmd_cb_get);
 
     cmd.add("set",
-            "Set a key to a the given value. Usage: set <key> <value>",
+            "Set a configuration option to a the given value. Usage: set <option> <value>",
             cmd_cb_set);
 
     cmd.add("del",
-            "Delete a key from the store. Usage: del <key> <value>",
+            "Delete a configuration option from the store. Usage: del <option> <value>",
             cmd_cb_del);
 
     cmd.add("reboot",
             "Reboot the device. Usage: reboot",
             cmd_cb_reboot);
 
-    cmd.add("flashything",
-            "Delete all user data. Usage: flashything",
-            cmd_cb_flashything);
+    cmd.add("reset",
+            "Reset configuration options and/or certificates. Usage: reset <options|certs|all> defaults to options",
+            cmd_cb_reset);
 
     //display the banner
     cmd.banner();

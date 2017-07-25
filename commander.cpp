@@ -20,30 +20,19 @@ Commander::Commander(PinName tx,
                      int baud) : _serial(tx,rx)
 {
     //set the prompt up
-    _prompt = "rash> ";
+    _prompt = "> ";
 
     //create our banner
     _banner += "\r\n\r\n\r\n";
     _banner += "\r\n";
-    _banner += "     _______  ______    _______      ___  _______  _______  _______ \r\n";
-    _banner += "    |       ||    _ |  |       |    |   ||       ||       ||       |\r\n";
-    _banner += "    |    _  ||   | ||  |   _   |    |   ||    ___||       ||_     _|\r\n";
-    _banner += "    |   |_| ||   |_||_ |  | |  |    |   ||   |___ |       |  |   |\r\n";
-    _banner += "    |    ___||    __  ||  |_|  | ___|   ||    ___||      _|  |   |\r\n";
-    _banner += "    |   |    |   |  | ||       ||       ||   |___ |     |_   |   |\r\n";
-    _banner += "    |___|    |___|  |_||_______||_______||_______||_______|  |___|\r\n";
-    _banner += " ______    _______  ______   _______  __   __  ___   ______    _______\r\n";
-    _banner += "|    _ |  |       ||      | |       ||  | |  ||   | |    _ |  |       |\r\n";
-    _banner += "|   | ||  |    ___||  _    ||  _____||  |_|  ||   | |   | ||  |_     _|\r\n";
-    _banner += "|   |_||_ |   |___ | | |   || |_____ |       ||   | |   |_||_   |   |\r\n";
-    _banner += "|    __  ||    ___|| |_|   ||_____  ||       ||   | |    __  |  |   |\r\n";
-    _banner += "|   |  | ||   |___ |       | _____| ||   _   ||   | |   |  | |  |   |\r\n";
-    _banner += "|___|  |_||_______||______| |_______||__| |__||___| |___|  |_|  |___|\r\n";
+    _banner += ".___  ___. .______    _______  _______  \n";
+    _banner += "|   \\/   | |   _  \\  |   ____||       \\ \n";
+    _banner += "|  \\  /  | |  |_)  | |  |__   |  .--.  |\n";
+    _banner += "|  |\\/|  | |   _  <  |   __|  |  |  |  |\n";
+    _banner += "|  |  |  | |  |_)  | |  |____ |  '--'  |\n";
+    _banner += "|__|  |__| |______/  |_______||_______/ \n";
     _banner += "\r\n";
-    _banner += "                   Created by: The ARM Red Team\r\n";
-    _banner += "   Michael Anderson, Mo Chen, Nic Costa, Earl Manning, Ben Menchaca,\r\n";
-    _banner += "    Ryan Nowakowski, Cristian Prundeanu, Ryan Sherlock, Kyle Stein,\r\n";
-    _banner += "                   J. Michael Welsh, Yixin Zhang\r\n";
+    _banner += "    Created by: The ARM Red Team\r\n";
     _banner += "\r\n\r\n\r\n";
 
     //set the line rate of the serial
@@ -51,7 +40,7 @@ Commander::Commander(PinName tx,
 
     //hook up our help
     add("help",
-        "Get help direct from the RASH!",
+        "Get help about the available commands.",
         commander_cb_help);
 }
 
@@ -66,7 +55,7 @@ void Commander::help()
 
     _serial.printf("\r\n");
 
-    _serial.printf("RASH Help:\r\n\r\n");
+    _serial.printf("Help:\r\n\r\n");
 
     //walk our commands and print the cmd and it's description for help
     for (it = _cmds.begin(); it != _cmds.end(); ++it) {
