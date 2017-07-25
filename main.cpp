@@ -748,7 +748,7 @@ static void cmd_cb_reset(vector<string>& params)
     bool boptions = false;
 
     //check params
-    if (params.size() >= 1) {
+    if (params.size() > 1) {
 
         //set up the users options
         if (params[1] == "certs") {
