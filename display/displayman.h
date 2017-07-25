@@ -18,6 +18,9 @@
 #include <string>
 #include <vector>
 
+#define DISPLAY_UPDATE_PERIOD_MS 180
+#define DISPLAY_PAGING_UPDATE_PERIOD_MS 1980 // this should be a multiple of the LED update period
+
 class DisplayMan;
 
 void thread_display_update(DisplayMan *display);

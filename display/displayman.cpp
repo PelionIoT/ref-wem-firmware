@@ -160,7 +160,8 @@ void DisplayMan::refresh()
     led_post();
 
     if (_view_mode == DISPLAY_VIEW_SENSOR) {
-        if ((_cycle_count & 0x7) == 0) {
+        if (_cycle_count >= (DISPLAY_PAGING_UPDATE_PERIOD_MS - 1)/DISPLAY_UPDATE_PERIOD_MS) {
+            _cycle_count = 0;
             cycle_status();
         }
     } else if (_view_mode == DISPLAY_VIEW_DOWNLOAD) {

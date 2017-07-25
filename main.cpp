@@ -453,7 +453,7 @@ void fota_auth_install(M2MClient *mbed_client)
 
     display.set_installing();
     /* firmware download is complete, restart the auto display updates */
-    display_evq_id = evq.call_every(250, display_refresh, &display);
+    display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);
 
     printf("Disconnecting network...\n");
     network_disconnect(net);
@@ -927,7 +927,7 @@ int main()
     printf("init platform: OK\n");
 
     /* set the refresh rate of the display. */
-    display_evq_id = evq.call_every(250, display_refresh, &display);
+    display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);
 
     /* use a separate thread to init the remaining components so that we
      * can continue to refresh the display */
