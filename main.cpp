@@ -300,7 +300,20 @@ static nsapi_security_t wifi_security_str2sec(const char *security)
  * */
 static NetworkInterface *network_create(void)
 {
+    Keystore k;
+    string ssid;
+
+    ssid = MBED_CONF_APP_WIFI_SSID;
+
+    k.open();
+    if (k.exists("wifi.ssid")) {
+        ssid = k.get("wifi.ssid");
+    }
+    k.close();
+
     display.init_network("WiFi");
+    display.set_network_ssid(ssid);
+
     return new ESP8266Interface(MBED_CONF_APP_WIFI_TX, MBED_CONF_APP_WIFI_RX,
                                 MBED_CONF_APP_WIFI_DEBUG);
 }
@@ -352,6 +365,7 @@ static int network_connect(NetworkInterface *net)
         printf("Using default %s.\r\n", SECURITY_KEY);
     }
 
+    display.set_network_ssid(ssid);
     printf("[WIFI] connecting: ssid=%s, mac=%s\n",
            ssid.c_str(), network_get_macaddr(wifi, macaddr));
 
