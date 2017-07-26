@@ -334,34 +334,31 @@ static int network_connect(NetworkInterface *net)
 
     //use the keystore for ssid?
     if (k.exists(SSID_KEY)) {
-        printf("Using SSID from keystore.\n");
-
+        printf("Using %s from keystore\n", SSID_KEY);
         ssid = k.get(SSID_KEY);
     } else {
-        printf("Using default %s.\n", SSID_KEY);
+        printf("Using default %s\n", SSID_KEY);
     }
 
     //use the keystore for pass?
     if (k.exists(PASSWORD_KEY)) {
-        printf("Using pass from keystore.\n");
-
+        printf("Using %s from keystore\n", PASSWORD_KEY);
         pass = k.get(PASSWORD_KEY);
     } else {
-        printf("Using default %s.\n", PASSWORD_KEY);
+        printf("Using default %s\n", PASSWORD_KEY);
     }
 
     //use the keystor for security?
     if (k.exists(SECURITY_KEY)) {
-        printf("Using security from keystore.\n");
-
+        printf("Using %s from keystore\n", SECURITY_KEY);
         security = k.get(SECURITY_KEY);
     } else {
-        printf("Using default %s.\n", SECURITY_KEY);
+        printf("Using default %s\n", SECURITY_KEY);
     }
 
     display.set_network_ssid(ssid);
-    printf("[WIFI] connecting: ssid=%s, mac=%s\n",
-           ssid.c_str(), network_get_macaddr(wifi, macaddr));
+    printf("[WIFI] connecting: mac=%s, ssid=%s, encryption=%s\n",
+           network_get_macaddr(wifi, macaddr), ssid.c_str(), security.c_str());
 
     ret = wifi->connect(ssid.c_str(),
                         pass.c_str(),
@@ -372,9 +369,9 @@ static int network_connect(NetworkInterface *net)
         return ret;
     }
 
-    printf("[WIFI] connected: ssid=%s, mac=%s, ip=%s, netmask=%s, gateway=%s\n",
-           ssid.c_str(),
+    printf("[WIFI] connected: mac=%s, ssid=%s, ip=%s, netmask=%s, gateway=%s\n",
            network_get_macaddr(net, macaddr),
+           ssid.c_str(),
            net->get_ip_address(),
            net->get_netmask(),
            net->get_gateway());
