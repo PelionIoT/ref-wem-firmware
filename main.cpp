@@ -706,7 +706,7 @@ static void cmd_cb_get(vector<string>& params)
 static void cmd_cb_set(vector<string>& params)
 {
     //check params
-    if (params.size() >= 3) {
+    if (params.size() >= 2) {
 
         //db
         Keystore k;
@@ -714,14 +714,20 @@ static void cmd_cb_set(vector<string>& params)
         //read the file into db
         k.open();
 
-        string strValue = params[2];
+        //default to empty
+        string strvalue = "";
 
-        for (size_t x = 3; x < params.size(); x++) {
-            strValue += " " + params[x];
+        //create our value
+        for (size_t x = 2; x < params.size(); x++) {
+            //don't prepend space on 1st word
+            if (x != 2) {
+                strvalue += " ";
+            }
+            strvalue += params[x];
         }
 
         //make the change
-        k.set(params[1], strValue);
+        k.set(params[1], strvalue);
 
         //write the file back out
         k.close();
@@ -729,7 +735,7 @@ static void cmd_cb_set(vector<string>& params)
         //return just the value
         cmd.printf("%s=%s\n",
                    params[1].c_str(),
-                   strValue.c_str());
+                   strvalue.c_str());
 
     } else {
         cmd.printf("Not enough arguments!\n");
