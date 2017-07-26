@@ -719,7 +719,7 @@ static void cmd_cb_set(vector<string>& params)
 
         string strValue = params[2];
 
-        for (int x = 3; x < params.size(); x++) {
+        for (size_t x = 3; x < params.size(); x++) {
             strValue += " " + params[x];
         }
 
