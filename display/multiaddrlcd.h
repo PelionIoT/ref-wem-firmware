@@ -21,7 +21,8 @@ public:
       characters.*/
     int printf(const char *format, ...);
     /*Print on the given line (0 or 1)*/
-    int printline(int line, const char *format, ...);
+    int printline(int line, const char *msg);
+    int printlinef(int line, const char *format, ...);
     void setBacklight(TextLCD_Base::LCDBacklight mode);
     void setCursor(TextLCD_Base::LCDCursor mode);
     void setUDC(unsigned char c, char *udc_data);

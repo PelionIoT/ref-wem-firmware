@@ -23,7 +23,19 @@ int MultiAddrLCD::printf(const char *format, ...)
 
 /*Only supporting 16x2 LCDs, so string will be truncated at 16
   characters.*/
-int MultiAddrLCD::printline(int line, const char *format, ...)
+int MultiAddrLCD::printline(int line, const char *msg)
+{
+    int rc;
+    char buf[17];
+    snprintf(buf, 17, "%s", msg);
+    _lcd1.locate(0, line);
+    _lcd1.printf("%16s", buf);
+    _lcd2.locate(0, line);
+    rc = _lcd2.printf("%16s", buf);
+    return rc;
+}
+
+int MultiAddrLCD::printlinef(int line, const char *format, ...)
 {
     int rc;
     char buf[17];

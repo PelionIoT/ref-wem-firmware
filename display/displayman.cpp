@@ -144,7 +144,7 @@ void DisplayMan::cycle_status()
     char line[17];
 
     /* top line */
-    _lcd.printline(0, "Version: %s", _version_string.c_str());
+    _lcd.printlinef(0, "Version: %s", _version_string.c_str());
 
     /* bottom line */
     if (_sensors.size() > 0) {
