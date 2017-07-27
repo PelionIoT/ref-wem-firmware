@@ -148,7 +148,7 @@ static void light_read(struct light_sensor *s)
 
     float flux = s->dev->read();
 
-    size = sprintf((char *)res_buffer, "%2.2f", flux);
+    size = sprintf((char *)res_buffer, "%2.2f lm", flux);
 
     display.set_sensor_status(s->id, (char *)res_buffer);
     s->res->set_value(res_buffer, size);
@@ -207,11 +207,11 @@ static void dht_read(struct dht_sensor *dht)
         humidity = dht->dev->ReadHumidity();
         tr_debug("DHT: temp = %fC, humi = %f%%\n", temperature, humidity);
 
-        size = sprintf((char *)res_buffer, "%.1f", temperature);
+        size = sprintf((char *)res_buffer, "%.1f C", temperature);
         dht->t_res->set_value(res_buffer, size);
         display.set_sensor_status(dht->t_id, (char *)res_buffer);
 
-        size = sprintf((char *)res_buffer, "%.0f", humidity);
+        size = sprintf((char *)res_buffer, "%.0f%%", humidity);
         dht->h_res->set_value(res_buffer, size);
         display.set_sensor_status(dht->h_id, (char *)res_buffer);
     } else {
