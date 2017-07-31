@@ -1,5 +1,4 @@
 PROG:=fota-demo
-CURDIR:=$(shell pwd)
 
 # We use some bashisms like pipefail.  The default GNU Make SHELL is /bin/sh
 # which is bash on MacOS but not necessarily on Linux.  Explicitly set bash as
@@ -15,11 +14,6 @@ SRCDIR:=.
 SRCS:=$(wildcard $(SRCDIR)/*.cpp)
 HDRS:=$(wildcard $(SRCDIR)/*.h)
 LIBS:=$(wildcard $(SRCDIR)/*.lib)
-
-# The bootloader type and name
-BOOTLDR_TYPE:=restricted
-BOOTLDR_DIR:=mbed-bootloader-${BOOTLDR_TYPE}
-BOOTLDR_PROG:=${BOOTLDR_DIR}.bin
 
 # Specify the path to the build profile.  If empty, the --profile option will
 # not be provided to 'mbed compile' which causes it to use the builtin default.
@@ -95,7 +89,7 @@ COMBINED_BIN_FILE:=${MBED_BUILD_DIR}/combined.bin
 # The linker script patch allows the compiled application to run after the mbed bootloader.
 # The ram patch gives us more than 130k of ram to use
 ifeq (${MBED_TARGET},K64F)
-  BOOTLOADER:=${CURDIR}/tools/${BOOTLDR_PROG}
+  BOOTLOADER:=tools/mbed-bootloader-k64f.bin
   APP_OFFSET:=0x20400
   HEADER_OFFSET:=0x20000
   ifeq (${MBED_TOOLCHAIN},GCC_ARM)
@@ -129,54 +123,25 @@ define Build/Compile
 	cmd="mbed compile $${opts}"; \
 	echo "$${cmd}"; \
 	$${cmd}
-endef
-
-define Build/Bootloader/Compile
-	opts=""; \
-	extra_opts=${1}; \
-	force_opts=${2}; \
-	opts="$${opts} -t ${MBED_TOOLCHAIN}"; \
-	opts="$${opts} -m ${MBED_TARGET}"; \
-	[ -n "${MBED_PROFILE}" ] && { \
-		opts="$${opts} --profile ${MBED_PROFILE}"; \
-	}; \
-	[ -n "$${extra_opts}" ] && { \
-		opts="$${opts} $${extra_opts}"; \
-	}; \
-	[ -n "$${force_opts}" ] && { \
-		opts="$${force_opts}"; \
-	}; \
-	cd ${BOOTLDR_DIR}; \
-	BOOTLDR_DEVTAG="$$(git rev-parse --short HEAD)-$$(git rev-parse --abbrev-ref HEAD)"; \
-	[ -n "$$(git status -s)" ] && { \
-		BOOTLDR_DEVTAG="$${BOOTLDR_DEVTAG}-dev-${USER}"; \
-	}; \
-	opts="$${opts} -DDEVTAG=$${BOOTLDR_DEVTAG}"; \
-	ln -fs ../display ; \
-	ln -fs ../TextLCD ; \
-	ln -fs ../ws2801  ; \
-	ln -fs ../.mbed ; \
-	cmd="mbed compile $${opts}"; \
-	echo "$${cmd}"; \
-	$${cmd}; \
-	mv ${MBED_BUILD_DIR}/${BOOTLDR_PROG} ${BOOTLOADER};
+	tools/combine_bootloader_with_app.py -b ${BOOTLOADER} -a ${MBED_BUILD_DIR}/${PROG}.bin --app-offset ${APP_OFFSET} --header-offset ${HEADER_OFFSET} -o ${COMBINED_BIN_FILE}
 endef
 
 .PHONY: all
 all: build
 
+.PHONY: clean-build
+clean-build: .deps .patches update_default_resources.c
+	@$(call Build/Compile,"--clean")
+
 .PHONY: build
-build: .deps ${COMBINED_BIN_FILE}
-
-${COMBINED_BIN_FILE}: bootloader ${MBED_BUILD_DIR}/${PROG}.bin
-	tools/combine_bootloader_with_app.py -b ${BOOTLOADER} -a ${MBED_BUILD_DIR}/${PROG}.bin --app-offset ${APP_OFFSET} --header-offset ${HEADER_OFFSET} -o ${COMBINED_BIN_FILE}
-
-${MBED_BUILD_DIR}/${PROG}.bin: .patches update_default_resources.c ${SRCS} ${HDRS} mbed_app.json
+build: .deps .patches update_default_resources.c
 	@$(call Build/Compile,"-DDEVTAG=${DEVTAG}")
 
-.PHONY: bootloader
-bootloader:
-	@$(call Build/Bootloader/Compile)
+${COMBINED_BIN_FILE}: .deps .patches update_default_resources.c ${SRCS} ${HDRS} mbed_app.json
+	@$(call Build/Compile,"-DDEVTAG=${DEVTAG}")
+
+${MBED_BUILD_DIR}/${PROG}.bin: .deps .patches update_default_resources.c ${SRCS} ${HDRS} mbed_app.json
+	@$(call Build/Compile,"-DDEVTAG=${DEVTAG}")
 
 .PHONY: stats
 stats:
@@ -196,7 +161,6 @@ tags: Makefile $(SRCS) $(HDRS)
 .PHONY: clean
 clean:
 	rm -rf BUILD
-	rm -fr ${BOOTLDR_DIR}/BUILD
 
 .PHONY: distclean
 distclean: clean
@@ -209,8 +173,6 @@ distclean: clean
 	rm -rf mbed-cloud-client-internal
 	rm -rf TextLCD
 	rm -rf manifest-tool-restricted
-	rm -fr ${BOOTLDR_DIR}
-	rm -f ${BOOTLOADER}
 	rm -f update_default_resources.c
 	rm -f .deps
 	rm -f .targetpath
