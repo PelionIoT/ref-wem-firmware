@@ -48,7 +48,7 @@ endif
 # returns a "helpful" string instead of an empty string if no value is set.
 MBED_TARGET:=$(shell cat .mbed 2>/dev/null | grep TARGET | awk -F'=' '{print $$2}')
 ifeq (${MBED_TARGET},)
-  MBED_TARGET:=$(shell mbed detect | grep "Detected" | awk '{ print $$3 }' | sed 's/,//')
+  MBED_TARGET:=$(shell mbed detect 2>/dev/null | grep "Detected" | awk '{ print $$3 }' | sed 's/[,"]//g')
   ifeq (${MBED_TARGET},)
     MBED_TARGET:=${DEFAULT_TARGET}
   else
@@ -71,16 +71,6 @@ endif
 MBED_TOOLCHAIN:=$(shell cat .mbed 2>/dev/null | grep TOOLCHAIN | awk -F'=' '{print $$2}')
 ifeq (${MBED_TOOLCHAIN},)
   MBED_TOOLCHAIN:=${DEFAULT_TOOLCHAIN}
-endif
-
-# Specifies the name of the build profile
-#
-# This simply copies the value of the BUILD_PROFILE variable
-# if the variable is not empty and the file exists.
-ifeq ($(wildcard ${BUILD_PROFILE}),)
-	MBED_PROFILE:=
-else
-	MBED_PROFILE:=${BUILD_PROFILE}
 endif
 
 # Specifies the path to the directory containing build output files
@@ -116,8 +106,8 @@ define Build/Compile
 	force_opts=${2}; \
 	opts="$${opts} -t ${MBED_TOOLCHAIN}"; \
 	opts="$${opts} -m ${MBED_TARGET}"; \
-	[ -n "${MBED_PROFILE}" ] && { \
-		opts="$${opts} --profile ${MBED_PROFILE}"; \
+	[ -n "${BUILD_PROFILE}" ] && { \
+		opts="$${opts} --profile ${BUILD_PROFILE}"; \
 	}; \
 	[ -n "$${extra_opts}" ] && { \
 		opts="$${opts} $${extra_opts}"; \
@@ -137,8 +127,8 @@ define Build/Bootloader/Compile
 	force_opts=${2}; \
 	opts="$${opts} -t ${MBED_TOOLCHAIN}"; \
 	opts="$${opts} -m ${MBED_TARGET}"; \
-	[ -n "${MBED_PROFILE}" ] && { \
-		opts="$${opts} --profile ${MBED_PROFILE}"; \
+	[ -n "${BUILD_PROFILE}" ] && { \
+		opts="$${opts} --profile ${BUILD_PROFILE}"; \
 	}; \
 	[ -n "$${extra_opts}" ] && { \
 		opts="$${opts} $${extra_opts}"; \
@@ -166,16 +156,16 @@ endef
 all: build
 
 .PHONY: build
-build: .deps ${COMBINED_BIN_FILE}
+build: prepare ${COMBINED_BIN_FILE}
 
 ${COMBINED_BIN_FILE}: bootloader ${MBED_BUILD_DIR}/${PROG}.bin
 	tools/combine_bootloader_with_app.py -b ${BOOTLOADER} -a ${MBED_BUILD_DIR}/${PROG}.bin --app-offset ${APP_OFFSET} --header-offset ${HEADER_OFFSET} -o ${COMBINED_BIN_FILE}
 
-${MBED_BUILD_DIR}/${PROG}.bin: .patches update_default_resources.c ${SRCS} ${HDRS} mbed_app.json
+${MBED_BUILD_DIR}/${PROG}.bin: prepare ${SRCS} ${HDRS} mbed_app.json
 	@$(call Build/Compile,"-DDEVTAG=${DEVTAG}")
 
 .PHONY: bootloader
-bootloader:
+bootloader: .deps
 	@$(call Build/Bootloader/Compile)
 
 .PHONY: stats
@@ -197,6 +187,13 @@ tags: Makefile $(SRCS) $(HDRS)
 clean:
 	rm -rf BUILD
 	rm -fr ${BOOTLDR_DIR}/BUILD
+
+.PHONY: patchclean
+patchclean:
+	@if [ -d mbed-os ]; then \
+		cd mbed-os && git apply -R ../tools/${PATCHES}; \
+	fi;
+	rm -f .patches
 
 .PHONY: distclean
 distclean: clean
@@ -220,8 +217,13 @@ distclean: clean
 	rm -f .manifest_tool.json
 	rm -f ${MANIFEST_FILE}
 
+.PHONY: prepare
+prepare: .mbed .deps update_default_resources.c .patches
+
 .mbed:
 	mbed config ROOT .
+	mbed target ${MBED_TARGET}
+	mbed toolchain ${MBED_TOOLCHAIN}
 
 .deps: .mbed ${LIBS}
 	mbed deploy --protocol ssh && touch .deps
