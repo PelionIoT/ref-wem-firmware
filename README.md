@@ -2,7 +2,8 @@
 
 ## Purpose
 
-This is an mbed application for a sales tool that demonstrates firmware updates using the Firmware Over The Air (fota) capabilities of mbed and mbed Cloud 1.2.
+This is an mbed application for a sales tool that demonstrates firmware updates using the Firmware Over The Air (fota) capabilities of mbed and mbed Cloud 1.2. The tool contains environmental sensors for light temperature and humidity.  The sensor values are uploaded to the mbed cloud.  The sales tool is contained in a desktop plastic case.  It is battery powered and has LED indicators and an LCD display.
+![photo](docs/photo.png)
 
 ## Getting fota-demo
 
@@ -21,15 +22,15 @@ To import fota-demo, from the command line:
 	cd fota-demo
 	```
 
-fota-demo is now under ``~/workspace/fota-demo``.  You can look at ``main.cpp`` to familiarize yourself with the code.
+    fota-demo is now under ``~/workspace/fota-demo``.  You can look at ``main.cpp`` to familiarize yourself with the code.
 
 ## Prerequisites
 
 To build this project, you need to install the following:
 
-	```
+```
 	pip install -r requirements.txt
-	```
+```
 
 ## Specifying a network configuration
 
@@ -118,6 +119,8 @@ make campaign
 ```
 
 ## Serial Command Help
+
+A serial terminal can be connected to the device for the purpose of viewing diagnostic output and issuing serial commands.  Serial connection is a at a baud rate of 115200.
 
 Press enter at any time to get a command prompt.
 
