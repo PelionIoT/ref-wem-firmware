@@ -1,5 +1,7 @@
 # Hardware
 
+## Parts
+
 Order the following off-the-shelf items:
 
 1. Main board FRDM-K64F
@@ -32,4 +34,24 @@ Order the following off-the-shelf items:
    * Info/Buy: https://www.seeedstudio.com/Grove-Light-Sensor-%28P%29-v1.1-p-2693.html
 1. Grove Temperature&Humidity Sensor Pro
    * Info/Buy: https://www.seeedstudio.com/grove-temperaturehumidity-sensor-pro-p-838.html
+
+## Basic Connections
+
+1. Plug the SD Card into the Main Board.
+1. Connect the "Base Shield" to the top of the Main Board.
+1. Plug the light sensor into port "A0" on the Base Shield.
+1. Plug the Temp/Humidity sensor into "D4" on the Base Shield.
+1. Plug the Wifi into "UART" on the Base Shield.
+1. Plug the LCD into "IC2" on the Base Shield.
+1. Plug the LED lights into "D2" on the Base Shield.
+
+## The Case
+
+The case can be 3D Printed using CAD files at https://github.com/ARMmbed/fota-hardware
+
+The case consists of 3 parts:
+
+1. A top which holds LEDs and the LCD display.
+1. A bottom which holds batteries.
+1. A mid section which holds the base board and most parts.
 
