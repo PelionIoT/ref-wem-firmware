@@ -47,6 +47,7 @@ public:
     /*returns sesor id*/
     uint8_t register_sensor(const std::string &name, enum INDICATOR_TYPES indicator = IND_NO_TYPES);
     void set_sensor_status(uint8_t sensor_id, const std::string status);
+    void set_sensor_status(const std::string name, const std::string status);
     void set_sensor_name(uint8_t sensor_id, const std::string name);
     void cycle_status();
     void refresh();
@@ -79,6 +80,9 @@ private:
     bool _cloud_registered;
 
     uint64_t _cycle_count;
+
+    struct SensorDisplay *find_sensor(const std::string &name);
+    void set_sensor_status(struct SensorDisplay *s, const std::string);
 };
 
 #endif
