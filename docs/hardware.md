@@ -2,7 +2,7 @@
 
 ## Parts
 
-Order the following off-the-shelf items:
+Order the following off-the-shelf items, total cost is roughly 110 USD:
 
 1. Main board FRDM-K64F
    * Buy: http://www.mouser.com/ProductDetail/NXP/FRDM-K64F/
@@ -10,20 +10,20 @@ Order the following off-the-shelf items:
 1. Base Shield V2
    * Info/Buy: https://www.seeedstudio.com/Base%20Shield%20V2-p-1378.html
 1. Storage, MicroSD card
-   * Info: https://www.sandisk.com/home/memory-cards/microsd-cards/sandisk-microsd
    * Buy: https://www.amazon.com/SanDisk-Memory-Frustration-Free-Packaging-SDSDQ-008G-AFFP/dp/B007KFXICK
+   * Info: https://www.sandisk.com/home/memory-cards/microsd-cards/sandisk-microsd
 1. WiFi ESP8266
    * Info/Buy: https://www.seeedstudio.com/Grove-Uart-Wifi-p-2495.html
 1. LED  WS2801 string (7x LEDs)
+   * Buy: https://www.amazon.com/WS2801-Module-Without-individually-Addressable/dp/B0192VUDNG/ref=sr_1_2
    * Info: https://cdn-shop.adafruit.com/datasheets/WS2801.pdf
-   * Buy: https://www.amazon.com/dp/B073QLVTB9
 1. LCD  16x2 I2C character display
+   * Buy: https://www.amazon.com/gp/product/B01LC7ECAS
    * Info:
      * LCD DM-LCD1602-402: https://drive.google.com/file/d/0B5lkVYnewKTGalhWazNhOGxVbUE/view?usp=sharing
      * display driver SPLC780D: https://drive.google.com/file/d/0BxCL-uXywP6wQXlvMnRIaFN6UVU/view?usp=sharing
      * cross ref product info: https://www.displaymodule.com/products/dm-lcd1602-402
      * cross ref product info: https://www.amazon.com/Qunqi-Serial-Backlight-Arduino-MEGA2560/dp/B01E4YUT3K
-   * Buy: https://www.amazon.com/gp/product/B01LC7ECAS
    * Note: This component requires the Grove Shield to be set to VCC=5V
 1. Low profile angled microUSB cable
    * Buy: https://www.amazon.com/CablesOnline-Micro-B-Position-Extension-AD-U44/dp/B00JSXUJ7Y/
@@ -36,6 +36,8 @@ Order the following off-the-shelf items:
    * Info/Buy: https://www.seeedstudio.com/grove-temperaturehumidity-sensor-pro-p-838.html
 
 ## Basic Connections
+
+![](basic_connections.jpg)
 
 1. Plug the SD Card into the Main Board.
 1. Connect the "Base Shield" to the top of the Main Board.
