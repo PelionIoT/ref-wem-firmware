@@ -148,7 +148,7 @@ void DisplayMan::cycle_status()
 
     /* bottom line */
     if (_sensors.size() > 0) {
-        snprintf(line, 16, "%s: %s", _sensors[_active_sensor].name.c_str(),
+        snprintf(line, 17, "%s: %s", _sensors[_active_sensor].name.c_str(),
                  _sensors[_active_sensor].status.c_str());
         _lcd.printline(1, line);
         _active_sensor = (_active_sensor + 1) % _sensors.size();
