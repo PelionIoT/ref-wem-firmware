@@ -44,7 +44,7 @@ Order the following off-the-shelf items, total cost is roughly 110 USD:
 1. Plug the light sensor into port "A0" on the Base Shield.
 1. Plug the Temp/Humidity sensor into "D4" on the Base Shield.
 1. Plug the Wifi into "UART" on the Base Shield.
-1. Plug the LCD into "IC2" on the Base Shield.
+1. Plug the LCD into "I2C" on the Base Shield.
 1. Plug the LED lights into "D2" on the Base Shield.
 
 ## The Case
