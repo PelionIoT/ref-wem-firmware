@@ -39,7 +39,7 @@ public:
     void set_installing();
     void set_progress(const std::string &message, uint32_t progress,
                       uint32_t total);
-    void set_network_ssid(std::string &ssid);
+    void set_network_status(const std::string &status);
     void set_network_in_progress();
     void set_network_fail();
     void set_network_success();
@@ -75,7 +75,7 @@ private:
     uint8_t _active_sensor;
     enum ViewMode _view_mode;
     std::string _version_string;
-    std::string _network_ssid;
+    std::string _network_status;
     bool _cloud_registered;
 
     uint64_t _cycle_count;

@@ -75,27 +75,27 @@ void DisplayMan::init_network(const char *type)
     }
 }
 
-void DisplayMan::set_network_ssid(std::string &ssid)
+void DisplayMan::set_network_status(const std::string &status)
 {
-    _network_ssid = ssid;
+    _network_status = status;
 }
 
 void DisplayMan::set_network_in_progress()
 {
     led_set_color(IND_WIFI, IND_COLOR_IN_PROGRESS, IND_FLAG_BLINK);
-    set_sensor_status(_network_sensor_id, _network_ssid);
+    set_sensor_status(_network_sensor_id, _network_status);
 }
 
 void DisplayMan::set_network_fail()
 {
     led_set_color(IND_WIFI, IND_COLOR_FAILED);
-    set_sensor_status(_network_sensor_id, _network_ssid);
+    set_sensor_status(_network_sensor_id, _network_status);
 }
 
 void DisplayMan::set_network_success()
 {
     led_set_color(IND_WIFI, IND_COLOR_SUCCESS);
-    set_sensor_status(_network_sensor_id, _network_ssid);
+    set_sensor_status(_network_sensor_id, _network_status);
 }
 
 void DisplayMan::set_cloud_in_progress()

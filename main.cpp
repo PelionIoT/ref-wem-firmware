@@ -306,7 +306,7 @@ static NetworkInterface *network_create(void)
     k.close();
 
     display.init_network("WiFi");
-    display.set_network_ssid(ssid);
+    display.set_network_status(ssid);
 
     return new ESP8266Interface(MBED_CONF_APP_WIFI_TX, MBED_CONF_APP_WIFI_RX,
                                 MBED_CONF_APP_WIFI_DEBUG);
@@ -356,7 +356,7 @@ static int network_connect(NetworkInterface *net)
         printf("Using default %s\n", SECURITY_KEY);
     }
 
-    display.set_network_ssid(ssid);
+    display.set_network_status(ssid);
     printf("[WIFI] connecting: mac=%s, ssid=%s, encryption=%s\n",
            network_get_macaddr(wifi, macaddr), ssid.c_str(), security.c_str());
 
