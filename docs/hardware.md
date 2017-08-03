@@ -48,6 +48,13 @@ The wires on the LED must be modified to connect to the Base Shield. The LEDs ha
 
 On the base shield, the slot "D2" has those 4 pins: "GND", "VCC", "D3", and "D2".
 
+## Adjust LCD
+
+![](lcd.jpg)
+
+1. Put a jumper on the two pins next to the "LED" label. This is needed to turn on the bright led light.
+1. You may have to slightly adjust the screw in the blue box to adjust the brightness of the display. If it is too dim, people won't be able to read the words.
+
 ## Basic Connections
 
 ![](basic_connections.jpg)
