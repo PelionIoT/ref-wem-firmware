@@ -137,6 +137,40 @@ static void light_init(struct light_sensor *s, M2MClient *mbed_client)
 }
 
 /**
+ * Converts light sensor reading to Lux units
+ *
+ * Empirical measurement against a light meter under 17
+ * different lighting conditions led to the following
+ * conversion table
+ * Reading     Lux
+ * 0.128          392
+ * 0.211          767
+ * 0.264         1145
+ * 0.292         1294
+ * 0.317         1407
+ * 0.349         1665
+ * 0.402         1959
+ * 0.457         2580
+ * 0.517         2690
+ * 0.570         3540
+ * 0.592         3770
+ * 0.628         4310
+ * 0.702         5040
+ * 0.816         5880
+ * 0.856         6150
+ * 0.917         7610
+ * 0.958         8330
+ *
+ * This data is best fit by the power equation
+ * Lux = 8251*(reading)^1.5108
+ * This equation fits with an R^2 value of 0.9962
+ */
+
+unsigned int light_sensor_to_lux(float reading) {
+    return lroundf(8250.0 * pow(reading, 1.51));
+}
+
+/**
  * Reads a value from the light sensor and publishes to the display
  */
 static void light_read(struct light_sensor *s)
@@ -144,9 +178,13 @@ static void light_read(struct light_sensor *s)
     size_t size;
     char res_buffer[33] = {0};
 
-    float flux = s->dev->read();
+    float reading = s->dev->read();
 
-    size = snprintf(res_buffer, sizeof(res_buffer), "%2.2f lm", flux);
+    unsigned int lux = light_sensor_to_lux(reading);
+
+    tr_debug("light: %5.4f --> %u\n",  reading, lux);
+
+    size = snprintf(res_buffer, sizeof(res_buffer), "%u lx", lux);
 
     display.set_sensor_status(s->id, res_buffer);
     m2mclient->set_resource_value(s->res, res_buffer, size);
