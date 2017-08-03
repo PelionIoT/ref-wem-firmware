@@ -35,6 +35,19 @@ Order the following off-the-shelf items, total cost is roughly 110 USD:
 1. Grove Temperature&Humidity Sensor Pro
    * Info/Buy: https://www.seeedstudio.com/grove-temperaturehumidity-sensor-pro-p-838.html
 
+## Modify LEDs
+
+![](led_wires.jpg)
+
+The wires on the LED must be modified to connect to the Base Shield. The LEDs have 4 wires:
+
+1. Ground (GND), blue, must connect to pin "GND" on the base shield.
+1. Clock (CO), green, must connect to pin "D3" on the base shield.
+1. Data (DO), white, must connect to pin "D2" on the base shield.
+1. Power (+5V), red, must connect to pin "VCC" on the base shield.
+
+On the base shield, the slot "D2" has those 4 pins: "GND", "VCC", "D3", and "D2".
+
 ## Basic Connections
 
 ![](basic_connections.jpg)
