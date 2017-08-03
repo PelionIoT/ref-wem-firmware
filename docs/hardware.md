@@ -69,11 +69,14 @@ On the base shield, the slot "D2" has those 4 pins: "GND", "VCC", "D3", and "D2"
 
 ## The Case
 
-The case can be 3D Printed using CAD files at https://github.com/ARMmbed/fota-hardware
+![](case_parts.jpg)
 
-The case consists of 3 parts:
+The case can be 3D printed using files at https://github.com/ARMmbed/fota-hardware
 
-1. A top which holds LEDs and the LCD display.
-1. A bottom which holds batteries.
-1. A mid section which holds the base board and most parts.
+There are 7 "STL" files in the directory "CAD/STL/" that can be used by 3D printers or other manufacturing processes to create those parts. (If you wish to edit the design, you'll need to use the software "SolidWorks" to modify the files in the "CAD" directory.)
 
+## Gluing LEDs into the case
+
+![](leds.jpg)
+
+The piece created by the file `Enclosure LED-round plate.stl` holds the LEDs. Super-glue the LEDs into the plate in order from closest (1) to furthest (7) from the board.
