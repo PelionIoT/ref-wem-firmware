@@ -90,3 +90,23 @@ The remaining five STL files can be printed separately. The "body" takes the lon
 ![](leds.jpg)
 
 The piece created by the file `Enclosure LED-round plate.stl` holds the LEDs. Super-glue the LEDs into the plate in order from closest (1) to furthest (7) from the board.
+
+## Power switch
+
+![](power.jpg)
+
+This contains a switch that allows the user to choose either battery or USB power. The USB wire contains has four wires that must be soldered to the correct place: white to pin 2, green to pin 3, black to ground, red to +5 V.
+
+## Battery
+
+![](battery.jpg)
+
+Both the battery and the power switch are installed in the bottom of the case as shown in the image.
+
+## Top display
+
+![](leds_ready.jpg)
+![](lcd_display.jpg)
+
+1. Put LCD display into the top first. Use hot glue in the corners to keep it in place.
+1. Push the two LED holders into the top.
