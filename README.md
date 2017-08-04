@@ -28,6 +28,16 @@ To import fota-demo, from the command line:
 
 To build this project, you need to install the following:
 
+1. arm-none-eabi-gcc version 6.3.1.20170215 or greater
+
+Here is an example showing how to install on a Mac:
+```
+brew tap https://github.com/ARMmbed/homebrew-formulae
+brew install arm-none-eabi-gcc
+```
+
+2. Python dependencies
+
 ```
 	pip install -r requirements.txt
 ```
