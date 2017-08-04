@@ -23,10 +23,12 @@
 #include <map>
 #include <stdio.h>
 
-class M2MClient {
+class M2MClient : public MbedCloudClientCallback {
 
 public:
     enum M2MClientResource {
+        M2MClientResourceAppLabel,
+        M2MClientResourceAppVersion,
         M2MClientResourceTempSensor,
         M2MClientResourceHumiditySensor,
         M2MClientResourceLightSensor,
@@ -40,15 +42,33 @@ public:
     int init() {
         int ret;
 
-        ret = add_sensor_resources();
+        ret = add_app_resources();
+        if (0 != ret) {
+            return ret;
+        }
 
-        return ret;
+        ret = add_sensor_resources();
+        if (0 != ret) {
+            return ret;
+        }
+
+        return 0;
     }
+
+    /* handles PUT callbacks from MbedCloudClient
+     *
+     * this callback was registered by calling set_update_callback(this)
+     * in the M2MClient constructor.  the MbedCloucClient.set_update_callback()
+     * method expects *this to be a subclass of MbedCloudClientCallback,
+     * which is true for M2MClient.
+     */
+    void value_updated(M2MBase *base, M2MBase::BaseType type);
 
     bool call_register(NetworkInterface *iface)
     {
         register_objects();
         bool setup = _cloud_client.setup(iface);
+        _cloud_client.set_update_callback(this);
         _cloud_client.on_registered(this, &M2MClient::client_registered);
         _cloud_client.on_unregistered(this, &M2MClient::client_unregistered);
         _cloud_client.on_error(this, &M2MClient::error);
@@ -222,6 +242,15 @@ public:
         _update_progress_cb = callback;
     }
 
+    void on_resource_updated(void *context,
+                             void (*callback)(
+                                    void *context,
+                                    M2MClient::M2MClientResource resource))
+    {
+        _on_resource_updated_cb = callback;
+        _on_resource_updated_context = context;
+    }
+
     void update_authorize(int32_t request)
     {
         _cloud_client.update_authorize(request);
@@ -268,8 +297,15 @@ private:
     void (*_update_authorize_cb)(int32_t);
     void (*_update_progress_cb)(uint32_t, uint32_t);
 
+    void (*_on_resource_updated_cb)(void *context,
+                                    M2MClient::M2MClientResource resource);
+    void *_on_resource_updated_context;
+
     /* adds a resource to the internal object map */
     void add_resource(M2MResource *res, enum M2MClientResource type);
+
+    /* adds the M2M app resources to the internal object map */
+    int add_app_resources();
 
     /* adds the M2M sensor resources to the internal object map */
     int add_sensor_resources();

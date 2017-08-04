@@ -219,3 +219,60 @@ int M2MClient::add_sensor_resources()
     add_humidity_sensor();
     return 0;
 }
+
+void M2MClient::value_updated(M2MBase *base, M2MBase::BaseType type)
+{
+    struct resource_entry *entry;
+
+    if (NULL == base || NULL == base->uri_path()) {
+        return;
+    }
+
+    entry = get_resource_entry(base->uri_path());
+    if (NULL == entry) {
+        printf("WARN: PUT called on unknown uri_path=%s\n", base->uri_path());
+        return;
+    }
+    
+    _on_resource_updated_cb(_on_resource_updated_context, entry->type);
+}
+
+int M2MClient::add_app_resources()
+{
+    M2MObject *obj;
+    M2MResource *res;
+    M2MObjectInstance *inst;
+
+    /*
+     * create an instance of the top level object for fota-demo custom
+     * app resources
+     * */
+    obj = M2MInterfaceFactory::create_object("26241");
+    inst = obj->create_object_instance();
+
+    /*
+     * attach resources to the App object instance
+     * */
+
+    /* add the user-friendly app label */
+    res = inst->create_dynamic_resource("1",
+                                        "Label",
+                                        M2MResourceInstance::STRING,
+                                        false /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceAppLabel);
+    res = NULL;
+
+    /* add the app version */
+    res = inst->create_dynamic_resource("2",
+                                        "Version",
+                                        M2MResourceInstance::STRING,
+                                        false /* observable */);
+    res->set_operation(M2MBase::GET_ALLOWED);
+    res->set_value((const uint8_t *)MBED_CONF_APP_VERSION,
+                   strlen(MBED_CONF_APP_VERSION));
+    add_resource(res, M2MClientResourceAppVersion);
+    res = NULL;
+
+    return 0;
+}

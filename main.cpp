@@ -46,6 +46,12 @@
 #define SSID_KEY "wifi.ssid"
 #define PASSWORD_KEY "wifi.key"
 #define SECURITY_KEY "wifi.encryption"
+#define APP_LABEL_KEY "app.label"
+
+#define APP_LABEL_SENSOR_NAME "Label"
+#ifndef MBED_CONF_APP_APP_LABEL
+#define MBED_CONF_APP_APP_LABEL "dragonfly"
+#endif
 
 enum FOTA_THREADS {
     FOTA_THREAD_DISPLAY = 0,
@@ -101,6 +107,15 @@ static int display_evq_id;
 static void display_refresh(DisplayMan *display)
 {
     display->refresh();
+}
+
+/**
+ * Sets the app label on the LCD and Mbed Client
+ */
+static void set_app_label(M2MClient *m2m, const char *label)
+{
+    display.set_sensor_status(APP_LABEL_SENSOR_NAME, label);
+    m2m->set_resource_value(M2MClient::M2MClientResourceAppLabel, label);
 }
 
 // ****************************************************************************
@@ -388,6 +403,26 @@ static int network_connect(NetworkInterface *net)
 // Cloud
 // ****************************************************************************
 /**
+ * Handles a M2M PUT request on the app label resource
+ */
+static void mbed_client_handle_put_app_label(M2MClient *m2m)
+{
+    Keystore k;
+    std::string label;
+
+    label = m2m->get_resource_value_str(M2MClient::M2MClientResourceAppLabel);
+    if (label.length() == 0) {
+        return;
+    }
+
+    k.open();
+    k.set(APP_LABEL_KEY, label);
+    k.close();
+
+    set_app_label(m2m, label.c_str());
+}
+
+/**
  * Readies the app for a firmware download
  */
 void fota_auth_download(M2MClient *mbed_client)
@@ -511,6 +546,32 @@ static void mbed_client_on_error(void *context, int err_code,
     display.set_cloud_error();
 }
 
+static void
+mbed_client_on_resource_updated(void *context,
+                                M2MClient::M2MClientResource resource)
+{
+    M2MClient *m2m;
+    M2MResource *res;
+
+    m2m = (M2MClient *)context;
+
+    switch (resource) {
+    case M2MClient::M2MClientResourceAppLabel:
+        evq.call(mbed_client_handle_put_app_label, m2m);
+        break;
+    default:
+        res = m2m->get_resource(resource);
+        if (NULL != res) {
+            printf("WARN: unsupported PUT request: resource=%d, uri_path=%s\n",
+                   resource, res->uri_path());
+        } else {
+            printf("WARN: unsupported PUT request on unregistered resource=%d\n",
+                   resource);
+        }
+        break;
+    }
+}
+
 static int register_mbed_client(NetworkInterface *iface, M2MClient *mbed_client)
 {
     mbed_client->on_registered(NULL, mbed_client_on_registered);
@@ -518,6 +579,8 @@ static int register_mbed_client(NetworkInterface *iface, M2MClient *mbed_client)
     mbed_client->on_error(mbed_client, mbed_client_on_error);
     mbed_client->on_update_authorize(mbed_client_on_update_authorize);
     mbed_client->on_update_progress(mbed_client_on_update_progress);
+    mbed_client->on_resource_updated(mbed_client,
+                                     mbed_client_on_resource_updated);
 
     display.set_cloud_in_progress();
     mbed_client->call_register(iface);
@@ -808,6 +871,24 @@ void init_commander(void)
     cmd.init();
 }
 
+static void init_app_label(M2MClient *m2m)
+{
+    Keystore k;
+    string label;
+
+    display.register_sensor(APP_LABEL_SENSOR_NAME);
+
+    k.open();
+    if (k.exists(APP_LABEL_KEY)) {
+        label = k.get(APP_LABEL_KEY);
+    } else {
+        label = MBED_CONF_APP_APP_LABEL;
+    }
+    k.close();
+
+    set_app_label(m2m, label.c_str());
+}
+
 static void init_app(EventQueue *queue)
 {
     int ret;
@@ -815,6 +896,7 @@ static void init_app(EventQueue *queue)
     m2mclient = new M2MClient();
     m2mclient->init();
 
+    init_app_label(m2mclient);
     init_commander();
 
     /* create the network */
