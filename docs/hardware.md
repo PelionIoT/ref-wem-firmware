@@ -75,6 +75,16 @@ The case can be 3D printed using files at https://github.com/ARMmbed/fota-hardwa
 
 There are 7 "STL" files in the directory "CAD/STL/" that can be used by 3D printers or other manufacturing processes to create those parts. (If you wish to edit the design, you'll need to use the software "SolidWorks" to modify the files in the "CAD" directory.)
 
+### If using a 3D printer
+
+Open your printer software, then:
+
+1. Open two files together `Enclosure top.stl` and `Enclosure light pipes.stl`. Right-click and select "merge". These two parts will be printed with different materials. The "top" is opaque, while the "light pipes" are transparent to allow light to shine through.
+1. Select print.
+1. Wait several hours!
+
+The remaining five STL files can be printed separately. The "body" takes the longest amount of time to print.
+
 ## Gluing LEDs into the case
 
 ![](leds.jpg)
