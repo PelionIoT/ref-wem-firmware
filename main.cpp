@@ -60,14 +60,8 @@ struct dht_sensor {
 
     DHT *dev;
 
-    M2MObject *h_obj;
-    M2MObject *t_obj;
-
     M2MResource *h_res;
     M2MResource *t_res;
-
-    M2MObjectInstance *h_inst;
-    M2MObjectInstance *t_inst;
 };
 
 struct light_sensor {
@@ -75,8 +69,6 @@ struct light_sensor {
 
     AnalogIn *dev;
 
-    M2MObject *obj;
-    M2MObjectInstance *inst;
     M2MResource *res;
 };
 
@@ -125,17 +117,8 @@ static void light_init(struct light_sensor *s, M2MClient *mbed_client)
     /* init the driver */
     s->dev = new AnalogIn(A0);
 
-    /* register the m2m object */
-    s->obj = M2MInterfaceFactory::create_object("3301");
-    s->inst = s->obj->create_object_instance();
-
-    s->res = s->inst->create_dynamic_resource("1", "light_resource",
-                                              M2MResourceInstance::FLOAT,
-                                              true /* observable */);
-    s->res->set_operation(M2MBase::GET_ALLOWED);
-    s->res->set_value((uint8_t *)"0", 1);
-
-    mbed_client->add_resource(s->obj);
+    s->res = m2mclient->get_resource(M2MClient::M2MClientResourceLightSensor);
+    m2mclient->set_resource_value(s->res, "0", 1);
 }
 
 /**
@@ -143,15 +126,15 @@ static void light_init(struct light_sensor *s, M2MClient *mbed_client)
  */
 static void light_read(struct light_sensor *s)
 {
-    int size = 0;
-    uint8_t res_buffer[33] = {0};
+    size_t size;
+    char res_buffer[33] = {0};
 
     float flux = s->dev->read();
 
-    size = sprintf((char *)res_buffer, "%2.2f lm", flux);
+    size = snprintf(res_buffer, sizeof(res_buffer), "%2.2f lm", flux);
 
-    display.set_sensor_status(s->id, (char *)res_buffer);
-    s->res->set_value(res_buffer, size);
+    display.set_sensor_status(s->id, res_buffer);
+    m2mclient->set_resource_value(s->res, res_buffer, size);
 }
 
 /**
@@ -166,29 +149,17 @@ static void dht_init(struct dht_sensor *s, M2MClient *mbed_client)
     /* init the driver */
     s->dev = new DHT(D4, AM2302);
 
-    /* register the m2m temperature object */
-    s->t_obj = M2MInterfaceFactory::create_object("3303");
-    s->t_inst = s->t_obj->create_object_instance();
+    s->t_res = mbed_client->get_resource(
+                    M2MClient::M2MClientResourceTempSensor);
+    s->h_res = mbed_client->get_resource(
+                    M2MClient::M2MClientResourceHumiditySensor);
 
-    s->t_res = s->t_inst->create_dynamic_resource("1", "temperature_resource",
-                                                  M2MResourceInstance::FLOAT,
-                                                  true /* observable */);
-    s->t_res->set_operation(M2MBase::GET_ALLOWED);
-    s->t_res->set_value((uint8_t *)"0", 1);
+    /* set default values */
+    display.set_sensor_status(s->t_id, "0");
+    mbed_client->set_resource_value(s->t_res, "0", 1);
 
-    mbed_client->add_resource(s->t_obj);
-
-    /* register the m2m humidity object */
-    s->h_obj = M2MInterfaceFactory::create_object("3304");
-    s->h_inst = s->h_obj->create_object_instance();
-
-    s->h_res = s->h_inst->create_dynamic_resource("1", "humidity_resource",
-                                                  M2MResourceInstance::FLOAT,
-                                                  true /* observable */);
-    s->h_res->set_operation(M2MBase::GET_ALLOWED);
-    s->h_res->set_value((uint8_t *)"0", 1);
-
-    mbed_client->add_resource(s->h_obj);
+    display.set_sensor_status(s->h_id, "0");
+    mbed_client->set_resource_value(s->h_res, "0", 1);
 }
 
 /**
@@ -199,7 +170,7 @@ static void dht_read(struct dht_sensor *dht)
     int size = 0;
     eError readError;
     float temperature, humidity;
-    uint8_t res_buffer[33] = {0};
+    char res_buffer[33] = {0};
 
     readError = dht->dev->readData();
     if (readError == ERROR_NONE) {
@@ -207,12 +178,12 @@ static void dht_read(struct dht_sensor *dht)
         humidity = dht->dev->ReadHumidity();
         tr_debug("DHT: temp = %fC, humi = %f%%\n", temperature, humidity);
 
-        size = sprintf((char *)res_buffer, "%.1f C", temperature);
-        dht->t_res->set_value(res_buffer, size);
+        size = snprintf(res_buffer, sizeof(res_buffer), "%.1f C", temperature);
+        m2mclient->set_resource_value(dht->t_res, res_buffer, size);
         display.set_sensor_status(dht->t_id, (char *)res_buffer);
 
-        size = sprintf((char *)res_buffer, "%.0f%%", humidity);
-        dht->h_res->set_value(res_buffer, size);
+        size = snprintf(res_buffer, sizeof(res_buffer), "%.0f%%", humidity);
+        m2mclient->set_resource_value(dht->h_res, res_buffer, size);
         display.set_sensor_status(dht->h_id, (char *)res_buffer);
     } else {
         tr_error("DHT: readData() failed with %d\n", readError);
@@ -842,6 +813,7 @@ static void init_app(EventQueue *queue)
     int ret;
 
     m2mclient = new M2MClient();
+    m2mclient->init();
 
     init_commander();
 

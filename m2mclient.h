@@ -20,26 +20,34 @@
 #include <NetworkInterface.h>
 #include <m2mdevice.h>
 
+#include <map>
 #include <stdio.h>
 
 class M2MClient {
 
 public:
-    M2MClient() : _registered(false), _register_called(false) {}
+    enum M2MClientResource {
+        M2MClientResourceTempSensor,
+        M2MClientResourceHumiditySensor,
+        M2MClientResourceLightSensor,
+        /* must be last */
+        M2MClientResourceCount
+    };
 
-    void add_resource(M2MObject *obj)
-    {
-        if (NULL == obj) {
-            return;
-        }
+    M2MClient() : _registered(false), _register_called(false) {
+    }
 
-        _obj_list.clear();
-        _obj_list.push_back(obj);
-        _cloud_client.add_objects(_obj_list);
+    int init() {
+        int ret;
+
+        ret = add_sensor_resources();
+
+        return ret;
     }
 
     bool call_register(NetworkInterface *iface)
     {
+        register_objects();
         bool setup = _cloud_client.setup(iface);
         _cloud_client.on_registered(this, &M2MClient::client_registered);
         _cloud_client.on_unregistered(this, &M2MClient::client_unregistered);
@@ -219,9 +227,32 @@ public:
         _cloud_client.update_authorize(request);
     }
 
+    /* retrieves a resource object tracked by the M2MClient class */
+    M2MResource *get_resource(const char *uri_path);
+    M2MResource *get_resource(enum M2MClientResource resource);
+
+    std::string get_resource_value_str(enum M2MClientResource resource);
+    std::string get_resource_value_str(M2MResource *res);
+
+    void set_resource_value(M2MResource *res, const char *val, size_t len);
+
+    void set_resource_value(enum M2MClientResource resource,
+                            const char *val, size_t len);
+
+    void set_resource_value(enum M2MClientResource resource,
+                            const std::string &val);
+
 private:
-    M2MObjectList _obj_list;
+    struct resource_entry {
+        M2MResource *res;
+        enum M2MClientResource type;
+    };
+
+    /* our objects */
+    std::map<std::string, struct resource_entry> _res_map;
+
     MbedCloudClient _cloud_client;
+
     bool _registered;
     bool _register_called;
 
@@ -236,6 +267,23 @@ private:
 
     void (*_update_authorize_cb)(int32_t);
     void (*_update_progress_cb)(uint32_t, uint32_t);
+
+    /* adds a resource to the internal object map */
+    void add_resource(M2MResource *res, enum M2MClientResource type);
+
+    /* adds the M2M sensor resources to the internal object map */
+    int add_sensor_resources();
+
+    /* resource adders for each supported sensor type */
+    void add_light_sensor();
+    void add_temp_sensor();
+    void add_humidity_sensor();
+
+    /* registers all objects with the underlying MbedCloudClient */
+    void register_objects();
+
+    struct resource_entry *get_resource_entry(const char *uri_path);
+    struct resource_entry *get_resource_entry(enum M2MClientResource type);
 };
 
 #endif /* M2MCLIENT_H */
