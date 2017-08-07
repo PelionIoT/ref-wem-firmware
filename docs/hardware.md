@@ -1,8 +1,10 @@
 # Hardware
 
+This device demonstrates features of mbed cloud including firmware updates and sensor data uploads. It is built out of about a dozen off-the-shelf parts, for a total cost of roughly 110 USD. The enclosure can be 3D printed, or manufactured in other ways. If the enclosure is 3D printed, sanding and painting is required to give it a nice finished look.
+
 ## Parts
 
-Order the following off-the-shelf items, total cost is roughly 110 USD:
+Order the following off-the-shelf items:
 
 1. Main board FRDM-K64F
    * Buy: http://www.mouser.com/ProductDetail/NXP/FRDM-K64F/
@@ -34,6 +36,12 @@ Order the following off-the-shelf items, total cost is roughly 110 USD:
    * Info/Buy: https://www.seeedstudio.com/Grove-Light-Sensor-%28P%29-v1.1-p-2693.html
 1. Grove Temperature&Humidity Sensor Pro
    * Info/Buy: https://www.seeedstudio.com/grove-temperaturehumidity-sensor-pro-p-838.html
+1. Battery Pack (LiPo 3.7V/2500mAh)
+   * Buy: https://www.adafruit.com/product/328
+1. Power Charger (5V/1A LiPo USB)
+   * Buy: https://www.adafruit.com/product/2465
+1. Power Switch (1P2T SPDT slide switch)
+   * Buy: https://www.amazon.com/gp/product/B007QAJMHO
 
 ## Modify LEDs
 
@@ -97,16 +105,34 @@ The piece created by the file `Enclosure LED-round plate.stl` holds the LEDs. Su
 
 This contains a switch that allows the user to choose either battery or USB power. The USB wire contains has four wires that must be soldered to the correct place: white to pin 2, green to pin 3, black to ground, red to +5 V.
 
-## Battery
+## Bottom with battery and power
 
 ![](battery.jpg)
 
-Both the battery and the power switch are installed in the bottom of the case as shown in the image.
+The bottom holds the battery, power switch, and USB charger.
 
-## Top display
+## Top with displays
 
 ![](leds_ready.jpg)
 ![](lcd_display.jpg)
 
 1. Put LCD display into the top first. Use hot glue in the corners to keep it in place.
 1. Push the two LED holders into the top.
+
+## Middle with main board and sensors
+
+![](middle.jpg)
+
+1. Verify the switch on the shield is set to 5V, this is required. Use hot glue to keep it in place.
+1. While being careful with the SD card, push the main board down into the middle part of the case (the `Enclosure body`).
+1. Push the two sensor mounts (the `Enclosure sensor mounts LHS` and `Enclosure sensor mounts RHS`) down next to main board. They should clip in (or glue).
+1. Place the sensors into the sensor mounts.
+
+## Put together the top, middle, and bottom
+
+1. Connect the USB cable from the case bottom to the main board.
+1. Connect the LED and LCD cables from the case top to the main board, if not already connected.
+1. While keeping all cables inside the case, screw the bottom and the top onto the middle part of the case.
+1. Power it on (by turning power switch to us battery) and the device will boot:
+
+![](photo.png)
