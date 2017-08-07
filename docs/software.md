@@ -90,7 +90,7 @@ In order to proceed with the setup for building the FOTA Demo firmware the follo
 ## Example (FOTA)
 
 1. Make sure your device is powered on and connected to mBed Cloud.
-1. <a id="example-edit-version"/>In your workspace directory where the fota-demo directory was [checked out](#mbed-import-fota) open up the ***mbed_app.json*** file and find the "version" key in the json file.
+1. <a id="example-edit-version"/>In your workspace directory where the fota-demo directory was [checked out](#ins-import-fota) open up the ***mbed_app.json*** file and find the "version" key in the json file.
 1. Change the "value" key underneath the version to a new number or string.
 1. Open a shell and change directories to the fota-demo directory and execute the following command
     ```bash
