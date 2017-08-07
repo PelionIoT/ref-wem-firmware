@@ -13,8 +13,23 @@ In order to proceed with the setup for building the FOTA Demo firmware the follo
 1. An internet connection to download the necessary software to build the firmware.
 1. An mBed Cloud 1.2 Account (does not work with previous versions of mBed Cloud)
 1. Basic knowledge of executing commands from a shell or command prompt.
-1. Python2 (NOTE: Python3 is not supported)
-1. Make, or equivalent utility, to execute a Makefile to build the target.
+1. The following utilties:
+    * Python2 (NOTE: Python3 is not supported)
+    * Make, or equivalent utility, to execute a Makefile to build the target.
+    * Bash, or another shell equivalent
+    * cat
+    * awk
+    * grep
+    * sed
+    * git
+    * ln
+    * cp
+    * ctags
+    * rm
+    * manifest tool
+        * NOTE: This can be installed with "pip install git+ssh://git@github.com/ARMmbed/manifest-tool-restricted.git@v1.2rc2"
+    * echo
+    * touch
 
 ## Setup
 
