@@ -43,6 +43,18 @@ Order the following off-the-shelf items:
 1. Power Switch (1P2T SPDT slide switch)
    * Buy: https://www.amazon.com/gp/product/B007QAJMHO
 
+## Install DAPlink onto main board
+
+If you are using a brand new K64 board, it likely will not have DAPLink on it. DAPLink makes flashing firmware onto it much easier.
+
+1. Download https://blackstoneengineering.github.io/DAPLink//firmware/0243_k20dx_frdmk64f_0x5000.bin
+1. On the K64 board, hold down reset button and plug it into your computer, it should show up as 'BOOTLOADER'
+1. Drag and Drop DAPLink firmware update to the BOOTLOADER usb drive
+1. Wait for the firmware to finish being saved
+1. Reset the board by power cycling it, the board should re-enumerate as ‘DAPLink’
+
+More details and instructions can be found at https://blackstoneengineering.github.io/DAPLink/
+
 ## Modify LEDs
 
 ![](led_wires.jpg)
