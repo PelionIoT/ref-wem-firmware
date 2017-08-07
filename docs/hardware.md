@@ -103,7 +103,7 @@ Open your printer software, then:
 1. Select print.
 1. Wait several hours!
 
-The remaining five STL files can be printed separately. The "body" takes the longest amount of time to print.
+The remaining five STL files can be printed separately. The "body" takes the longest amount of time to print. The externally visible parts (top, middle, and bottom) should be printed using fine-grained settings to ensure as smooth a finish as possible.
 
 ## Gluing LEDs into the case
 
