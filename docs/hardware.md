@@ -148,3 +148,15 @@ The bottom holds the battery, power switch, and USB charger.
 1. Power it on (by turning power switch to us battery) and the device will boot:
 
 ![](photo.png)
+
+## Test normal start up
+
+1. When power is turned on, a GREEN led should light up the battery icon.
+1. The LCD should display "Version" of the device.
+1. Wifi LED will flash YELLOW as it tries to connect. 
+1. LCD will display the SSID of the wifi it connected to.
+1. WiFi LED will be a solid BLUE when the board successfully connects to wifi.
+1. The board then attemts to connect to mbed cloud and the cloud LED will flash YELLOW.
+1. Reasonable sensor data should display on the LCD (temperature, humidity, and light).
+1. The cloud LED will be solid BLUE when the board is connected and registered to the mbed cloud.
+1. As sensor data is uploaded, the LEDs for the sensors and cloud will flash GREEN.
