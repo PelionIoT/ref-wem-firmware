@@ -337,6 +337,36 @@ static NetworkInterface *network_create(void)
                                 MBED_CONF_APP_WIFI_DEBUG);
 }
 
+/** Scans the wireless network for nearby APs.
+ *
+ * @param net The network interface to scan on.
+ * @return Returns the number of nearby APs on success,
+ *         -errno for failure.
+ */
+static int network_scan(NetworkInterface *net)
+{
+    ESP8266Interface *wifi = (ESP8266Interface *)net;
+
+    int count = wifi->scan(NULL, 0);
+
+#if MBED_CONF_APP_WIFI_DEBUG
+    WifiAccessPoint *ap = new WiFiAccessPoint[count];
+    count = wifi->scan(ap, count);
+
+    for (int idx = 0; idx < count; ++idx)
+    {
+        printf("{ \"macAddress\": \"%hhX:%hhX:%hhX:%hhx:%hhx:%hhx\", \"signalStrength\": %hhd, signalToNoiseRatio: 0 }\r\n",
+            ap[idx].get_bssid()[0], ap[idx].get_bssid()[1], ap[idx].get_bssid()[2],
+            ap[idx].get_bssid()[3], ap[idx].get_bssid()[4], ap[idx].get_bssid()[5],
+            ap[idx].get_rssi());
+    }
+
+    delete []ap;
+#endif
+
+    return count;
+}
+
 static int network_connect(NetworkInterface *net)
 {
     int ret;
@@ -411,6 +441,19 @@ static NetworkInterface *network_create(void)
 {
     display.init_network("Eth");
     return new EthernetInterface();
+}
+
+/** Scans the current network for other devices.
+ *
+ * @note This is not implemented for Ethernet based devices.
+ * @param net The network interface to scan on.
+ * @return Returns -1 for failure or no devices found.
+ */
+static int network_scan(NetworkInterface *net)
+{
+    (void) net;
+
+    return -1;
 }
 
 static int network_connect(NetworkInterface *net)
@@ -961,8 +1004,22 @@ static void init_app(EventQueue *queue)
             Thread::wait(2000);
         }
     } while (0 != ret);
-    display.set_network_success();
     printf("init network: OK\n");
+
+    /* scan the network for nearby devices or APs. */
+    printf("scanning network for nearby devices...\n");
+    ret = network_scan(net);
+    if (0 > ret) {
+        printf("WARN: failed to scan network! %d\n", ret);
+    } else {
+        printf("Found %d devices!\n", ret);
+    }
+
+    /* network_scan can take some time to perform when on WiFi, and since we
+     * don't have a separate indicator to show progress we delay the setting
+     * of success until we have finished.
+     */
+    display.set_network_success();
 
     /* initialize the factory configuration client
      * WARNING: the network must be connected first, otherwise this
