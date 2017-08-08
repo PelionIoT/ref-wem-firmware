@@ -184,7 +184,8 @@ static void light_read(struct light_sensor *s)
 
     tr_debug("light: %5.4f --> %u\n",  reading, lux);
 
-    size = snprintf(res_buffer, sizeof(res_buffer), "%u lx", lux);
+    size = snprintf(res_buffer, sizeof(res_buffer), "%s%u lux",
+                    ((reading >= 1.0)?">":""), lux);
 
     display.set_sensor_status(s->id, res_buffer);
     m2mclient->set_resource_value(s->res, res_buffer, size);
