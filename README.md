@@ -44,10 +44,7 @@ brew install arm-none-eabi-gcc
 
 ## Specifying a network configuration
 
-The network configuration is hard-coded into the project configuration file ``mbed_app.json``.
-
-Open ``mbed_app.json`` and modify the following configuration values to suit the deployment environment:
-
+The network configuration is specified in the project configuration file ``mbed_app.json``.  Open ``mbed_app.json`` and modify the following configuration values to suit the deployment environment:
 ```
     ...
     "wifi-ssid": {
@@ -64,6 +61,7 @@ Open ``mbed_app.json`` and modify the following configuration values to suit the
     }
     ...
 ```
+The configuration can also be changed at runtime via a serial console.  See the section on serial commands for help with connecting to and using the console.  See the section on Wi-Fi Commissioning for the relevant keystore options.
 
 ## <a name="GetDevCert"></a>Downloading A Developer Certificate
 
