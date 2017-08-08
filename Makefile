@@ -97,6 +97,8 @@ ifeq (${MBED_TARGET},K64F)
   endif
 endif
 
+PATCHES+=../tools/mbed-os-dns.diff
+
 # Builds the command to call 'mbed compile'.
 # $1: add extra options to the final command line
 # $2: override all command line arguments.  final command is 'mbed compile $2'
