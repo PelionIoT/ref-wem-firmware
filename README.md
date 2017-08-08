@@ -231,7 +231,7 @@ The fota-demo firmware also exposes the following resources:
 * Resource ID: 1
 * Path: /26241/0/1
 
-The app label is a user-friendly name that can be read and written.  The app label is displayed on the LCD with a prefix of ``Name: ``.
+The app label is a user-friendly name that can be read and written.  The app label is displayed on the LCD with a prefix of ``Label: ``.
 
 The app label can be written in 3 ways:
 1. By setting `app-label` in the config section of ``mbed_app.json``.
