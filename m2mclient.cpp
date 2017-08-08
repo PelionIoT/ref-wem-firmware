@@ -258,7 +258,7 @@ int M2MClient::add_app_resources()
     res = inst->create_dynamic_resource("1",
                                         "Label",
                                         M2MResourceInstance::STRING,
-                                        false /* observable */);
+                                        true /* observable */);
     res->set_operation(M2MBase::GET_PUT_ALLOWED);
     add_resource(res, M2MClientResourceAppLabel);
     res = NULL;
