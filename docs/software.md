@@ -87,6 +87,43 @@ In order to proceed with the setup for building the FOTA Demo firmware the follo
     1. Version information will display on the top line of the LCD. Environmental data and network status will display on the bottom line.
     1. Data being sent to the cloud will be illuminated by the colored LEDs. The solid BLUE LEDs will change to CYAN briefly and back to solid BLUE for every time environmental data is sent to mBed Cloud.
 
+### Typical start up
+
+Using a serial console program you can see the messages the device displays.
+
+First you'll see boot messages that start with "[BOOT]":
+
+```
+[BOOT] Active firmware integrity check:
+[BOOT] [++++                           ]
+[BOOT] [+++++++                                                               ]
+```
+
+After boot, messages from the app begin to display:
+
+```
+FOTA demo version: 1.0
+     code version: 51e39c8-dev-dev-johnb01
+init platform
+sd init OK
+init platform: OK
+entering run loop
+```
+
+mbed cloud connection is successful when you see:
+
+```
+init mbed client
+Client registered
+Cloud Client: Ready
+Internal Endpoint Name: 015dae3b5dbf000000000001001002a0
+Endpoint Name: 015ce9867a9702420a011a0e03c00000
+Device Id: 015dae3b5dbf000000000001001002a0
+Account Id:
+Security Mode (-1=not set, 0=psk, 1=<undef>, 2=cert, 3=none): 2
+mbed client registered
+```
+
 ## Example (FOTA)
 
 1. Make sure your device is powered on and connected to mBed Cloud.
