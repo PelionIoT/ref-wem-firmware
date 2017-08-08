@@ -149,7 +149,7 @@ reset        - Reset configuration options and/or certificates. Usage: reset [op
 set          - Set a configuration option to a the given value. Usage: set <option> <value>
 ```
 
-## Option Keystore
+### Option Keystore
 
 The keystore is a simple name value pair database used to store configuration parameters, for example Wi-Fi credentials.
 
@@ -180,7 +180,7 @@ wifi.ssid=iotlab
 Deleted key wifi.ssid
 ```
 
-## Wi-Fi Commissioning
+### Wi-Fi Commissioning
 
 To configure Wi-Fi set the following key options:
 
@@ -201,7 +201,7 @@ After setting the Wi-Fi credentials reset the device.
 > reboot
 ```
 
-## Reset
+### Reset
 
 To delete all stored options and their values:
 
@@ -215,3 +215,51 @@ To delete all stored options and their values:
 > reset all       deletes fcc certs and options keystore
 ```
 
+
+## M2M Resources
+
+The fota-demo firmware exposes several M2M resource IDs.  Most of these resources are read-only sensor measurements.
+
+The fota-demo firmware also exposes the following resources:
+
+### Application Info
+
+* Object ID: 26241
+
+#### Application Label
+
+* Resource ID: 1
+* Path: /26241/0/1
+
+The app label is a user-friendly name that can be read and written.  The app label is displayed on the LCD with a prefix of ``Name: ``.
+
+The app label can be written in 3 ways:
+1. By setting `app-label` in the config section of ``mbed_app.json``.
+
+    ```
+        "config": {
+            "app-label": {
+                "help": "Sets a device friendly name displayed on the LCD",
+                "value": "\"dragonfly\""
+            },
+        ...
+    ```
+
+2. Through M2M PUT requests
+This can be demonstrated on the mbed cloud portal.  After a device is registered with the mbed cloud, it should be listed on the ``Connected Devices`` page.  Click on the Device ID to bring up device details and then click on the ``Resources`` tab.  Scroll to ``Object ID 26241`` and click ``/26241/0/1``.  On the popup dialog, click ``Edit`` and enter a new name in the ``Value`` text box.  Make sure that the ``PUT`` request type is chosen and then click the ``Send`` button.
+
+3. Through the serial console by setting the `app.label` key.
+
+    ```
+    > set app.label anisoptera
+    app.label=anisoptera
+    ```
+
+    Note when changing the app label via the serial console, a reboot must be performed in order for the setting to take effect.
+
+#### Application Version
+
+* Resource ID: 2
+* Path: /26241/0/2
+
+The app version is read-only.  Its value is populated from the "version" field in ``mbed_app.json``.

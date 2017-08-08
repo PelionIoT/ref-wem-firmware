@@ -1,5 +1,9 @@
 {
     "config": {
+        "app-label": {
+            "help": "Sets a device friendly name displayed on the LCD",
+            "value": "\"dragonfly\""
+        },
         "fcc-wipe": {
             "help": "Wipe the FCC credentials stored on the device",
             "value": "false"
