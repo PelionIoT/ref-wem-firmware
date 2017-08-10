@@ -14,6 +14,10 @@
 #include "keystore.h"
 #include "lcdprogress.h"
 
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+
 #include <SDBlockDevice.h>
 #include <errno.h>
 #include <factory_configurator_client.h>
@@ -37,6 +41,8 @@
 #ifndef DEVTAG
 #error "No dev tag created"
 #endif
+
+namespace json = rapidjson;
 
 // ****************************************************************************
 // DEFINEs and type definitions
@@ -340,29 +346,80 @@ static NetworkInterface *network_create(void)
 /** Scans the wireless network for nearby APs.
  *
  * @param net The network interface to scan on.
+ * @param mbed_client The mBed Client cloud interface for uploading data.
  * @return Returns the number of nearby APs on success,
  *         -errno for failure.
  */
-static int network_scan(NetworkInterface *net)
+static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
 {
+    WiFiAccessPoint *ap;
     ESP8266Interface *wifi = (ESP8266Interface *)net;
 
+    /* scan for a list of available APs */
     int count = wifi->scan(NULL, 0);
 
-#if MBED_CONF_APP_WIFI_DEBUG
-    WifiAccessPoint *ap = new WiFiAccessPoint[count];
+    /* allocate and scan again */
+    ap = new WiFiAccessPoint[count];
     count = wifi->scan(ap, count);
 
+    /* setup the json document */
+    json::Document doc;
+    doc.SetArray();
+
+    /* create a json record for each AP which contains a
+     * macAddress and signalStrength key.
+     */
     for (int idx = 0; idx < count; ++idx)
     {
-        printf("{ \"macAddress\": \"%hhX:%hhX:%hhX:%hhx:%hhx:%hhx\", \"signalStrength\": %hhd, signalToNoiseRatio: 0 }\r\n",
+        char macaddr[18] = {0};
+
+        snprintf(macaddr, sizeof(macaddr), "%02X:%02X:%02X:%02X:%02X:%02X",
             ap[idx].get_bssid()[0], ap[idx].get_bssid()[1], ap[idx].get_bssid()[2],
-            ap[idx].get_bssid()[3], ap[idx].get_bssid()[4], ap[idx].get_bssid()[5],
-            ap[idx].get_rssi());
+            ap[idx].get_bssid()[3], ap[idx].get_bssid()[4], ap[idx].get_bssid()[5]);
+
+        /* not the prettiest thing in the world, but it avoids having to create
+         * a number of variables to hold some these values.
+         * The first argument is a JSON object to be pushed back: this object has
+         * two members, the first of which is the macAddress key-value pair; the
+         * second member is the signalStrength key-value pair.
+         * Both the PushBack and AddMember calls require allocators which are
+         * retrieved from the JSON doc.
+         */
+        doc.PushBack(
+            json::Value(json::kObjectType).
+            AddMember(
+                "macAddress",
+                json::Value().SetString(
+                    macaddr,
+                    strlen(macaddr),
+                    doc.GetAllocator()),
+                doc.GetAllocator()).
+            AddMember(
+                "signalStrength",
+                ap[idx].get_rssi(),
+                doc.GetAllocator()
+            ),
+            doc.GetAllocator()
+        );
     }
 
-    delete []ap;
+    /* We need a StringBuffer and Writer to generate the JSON output that will be sent */
+    json::StringBuffer buf;
+    json::Writer<json::StringBuffer> writer(buf);
+    doc.Accept(writer);
+
+#if MBED_CONF_APP_WIFI_DEBUG
+    printf("%s\n", buf.GetString());
 #endif
+
+    /* update the M2MClient resource for network data and send it as a JSON array */
+    M2MResource *res = mbed_client->get_resource(
+                    M2MClient::M2MClientResourceNetwork);
+
+    m2mclient->set_resource_value(res, buf.GetString(), buf.GetLength());
+
+    /* cleanup */
+    delete []ap;
 
     return count;
 }
@@ -447,11 +504,13 @@ static NetworkInterface *network_create(void)
  *
  * @note This is not implemented for Ethernet based devices.
  * @param net The network interface to scan on.
+ * @param mbed_client The mBed Client cloud interface for uploading data.
  * @return Returns -1 for failure or no devices found.
  */
-static int network_scan(NetworkInterface *net)
+static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
 {
     (void) net;
+    (void) mbed_client;
 
     return -1;
 }
@@ -1008,7 +1067,7 @@ static void init_app(EventQueue *queue)
 
     /* scan the network for nearby devices or APs. */
     printf("scanning network for nearby devices...\n");
-    ret = network_scan(net);
+    ret = network_scan(net, m2mclient);
     if (0 > ret) {
         printf("WARN: failed to scan network! %d\n", ret);
     } else {

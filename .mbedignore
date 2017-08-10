@@ -1,2 +1,5 @@
 mbed-bootloader-restricted/*
 mbed-bootloader-internal/*
+rapidjson/test/*
+rapidjson/example/*
+rapidjson/include/rapidjson/msinttypes/*

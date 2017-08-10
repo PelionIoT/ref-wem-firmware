@@ -40,6 +40,9 @@ public:
         /* Light Sensor */
         M2MClientResourceLightValue,
 
+	/* Network Data */
+        M2MClientResourceNetwork,
+
         /* must be last */
         M2MClientResourceCount
     };
@@ -305,6 +308,7 @@ private:
     int add_light_sensor();
     int add_temp_sensor();
     int add_humidity_sensor();
+    int add_network_sensor();
 
     /* registers all objects with the underlying MbedCloudClient */
     void register_objects();

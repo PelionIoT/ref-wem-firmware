@@ -24,6 +24,11 @@ int M2MClient::init()
         return ret;
     }
 
+    ret = add_network_sensor();
+    if (0 != ret) {
+	return ret;
+    }
+
     return 0;
 }
 
@@ -241,6 +246,31 @@ int M2MClient::add_humidity_sensor()
                                         true /* observable */);
     res->set_operation(M2MBase::GET_ALLOWED);
     add_resource(res, M2MClientResourceHumidityValue);
+
+    return 0;
+}
+
+int M2MClient::add_network_sensor()
+{
+    M2MObject *obj;
+    M2MResource *res;
+    M2MObjectInstance *inst;
+
+    /*
+     * create an instance of the top level object for fota-demo custom
+     * app resources
+     * */
+    obj = M2MInterfaceFactory::create_object("26242");
+    inst = obj->create_object_instance();
+
+    /*
+     * attach resources to the App object instance
+     */
+    res = inst->create_dynamic_resource("1", "network_resource",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_ALLOWED);
+    add_resource(res, M2MClientResourceNetwork);
 
     return 0;
 }
