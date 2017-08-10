@@ -2,7 +2,8 @@
 
 ## Purpose
 
-This is an mbed application for a sales tool that demonstrates firmware updates using the Firmware Over The Air (fota) capabilities of mbed and mbed Cloud 1.2.
+This is an mbed application for a sales tool that demonstrates firmware updates using the Firmware Over The Air (fota) capabilities of mbed and mbed Cloud 1.2. The tool contains environmental sensors for light temperature and humidity.  The sensor values are uploaded to the mbed cloud.  The sales tool is contained in a desktop plastic case.  It is battery powered and has LED indicators and an LCD display.
+![photo](docs/photo.png)
 
 ## Getting fota-demo
 
@@ -21,22 +22,29 @@ To import fota-demo, from the command line:
 	cd fota-demo
 	```
 
-fota-demo is now under ``~/workspace/fota-demo``.  You can look at ``main.cpp`` to familiarize yourself with the code.
+    fota-demo is now under ``~/workspace/fota-demo``.  You can look at ``main.cpp`` to familiarize yourself with the code.
 
 ## Prerequisites
 
 To build this project, you need to install the following:
 
-	```
+1. arm-none-eabi-gcc version 6.3.1.20170215 or greater
+
+Here is an example showing how to install on a Mac:
+```
+brew tap https://github.com/ARMmbed/homebrew-formulae
+brew install arm-none-eabi-gcc
+```
+
+2. Python dependencies
+
+```
 	pip install -r requirements.txt
-	```
+```
 
 ## Specifying a network configuration
 
-The network configuration is hard-coded into the project configuration file ``mbed_app.json``.
-
-Open ``mbed_app.json`` and modify the following configuration values to suit the deployment environment:
-
+The network configuration is specified in the project configuration file ``mbed_app.json``.  Open ``mbed_app.json`` and modify the following configuration values to suit the deployment environment:
 ```
     ...
     "wifi-ssid": {
@@ -53,6 +61,7 @@ Open ``mbed_app.json`` and modify the following configuration values to suit the
     }
     ...
 ```
+The configuration can also be changed at runtime via a serial console.  See the section on serial commands for help with connecting to and using the console.  See the section on Wi-Fi Commissioning for the relevant keystore options.
 
 ## <a name="GetDevCert"></a>Downloading A Developer Certificate
 
@@ -119,6 +128,8 @@ make campaign
 
 ## Serial Command Help
 
+A serial terminal can be connected to the device for the purpose of viewing diagnostic output and issuing serial commands.  Serial connection is a at a baud rate of 115200.
+
 Press enter at any time to get a command prompt.
 
 ```
@@ -138,7 +149,7 @@ reset        - Reset configuration options and/or certificates. Usage: reset [op
 set          - Set a configuration option to a the given value. Usage: set <option> <value>
 ```
 
-## Option Keystore
+### Option Keystore
 
 The keystore is a simple name value pair database used to store configuration parameters, for example Wi-Fi credentials.
 
@@ -169,7 +180,7 @@ wifi.ssid=iotlab
 Deleted key wifi.ssid
 ```
 
-## Wi-Fi Commissioning
+### Wi-Fi Commissioning
 
 To configure Wi-Fi set the following key options:
 
@@ -190,7 +201,7 @@ After setting the Wi-Fi credentials reset the device.
 > reboot
 ```
 
-## Reset
+### Reset
 
 To delete all stored options and their values:
 
@@ -204,3 +215,51 @@ To delete all stored options and their values:
 > reset all       deletes fcc certs and options keystore
 ```
 
+
+## M2M Resources
+
+The fota-demo firmware exposes several M2M resource IDs.  Most of these resources are read-only sensor measurements.
+
+The fota-demo firmware also exposes the following resources:
+
+### Application Info
+
+* Object ID: 26241
+
+#### Application Label
+
+* Resource ID: 1
+* Path: /26241/0/1
+
+The app label is a user-friendly name that can be read and written.  The app label is displayed on the LCD with a prefix of ``Label: ``.
+
+The app label can be written in 3 ways:
+1. By setting `app-label` in the config section of ``mbed_app.json``.
+
+    ```
+        "config": {
+            "app-label": {
+                "help": "Sets a device friendly name displayed on the LCD",
+                "value": "\"dragonfly\""
+            },
+        ...
+    ```
+
+2. Through M2M PUT requests
+This can be demonstrated on the mbed cloud portal.  After a device is registered with the mbed cloud, it should be listed on the ``Connected Devices`` page.  Click on the Device ID to bring up device details and then click on the ``Resources`` tab.  Scroll to ``Object ID 26241`` and click ``/26241/0/1``.  On the popup dialog, click ``Edit`` and enter a new name in the ``Value`` text box.  Make sure that the ``PUT`` request type is chosen and then click the ``Send`` button.
+
+3. Through the serial console by setting the `app.label` key.
+
+    ```
+    > set app.label anisoptera
+    app.label=anisoptera
+    ```
+
+    Note when changing the app label via the serial console, a reboot must be performed in order for the setting to take effect.
+
+#### Application Version
+
+* Resource ID: 2
+* Path: /26241/0/2
+
+The app version is read-only.  Its value is populated from the "version" field in ``mbed_app.json``.

@@ -125,7 +125,7 @@ public:
         Returns:
         nothing.
     */
-    void set(std::string& strkey, std::string& strvalue);
+    void set(const std::string& strkey, const std::string& strvalue);
 
     /*
         Function: del

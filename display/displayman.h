@@ -39,7 +39,7 @@ public:
     void set_installing();
     void set_progress(const std::string &message, uint32_t progress,
                       uint32_t total);
-    void set_network_ssid(std::string &ssid);
+    void set_network_status(const std::string &status);
     void set_network_in_progress();
     void set_network_fail();
     void set_network_success();
@@ -47,6 +47,7 @@ public:
     /*returns sesor id*/
     uint8_t register_sensor(const std::string &name, enum INDICATOR_TYPES indicator = IND_NO_TYPES);
     void set_sensor_status(uint8_t sensor_id, const std::string status);
+    void set_sensor_status(const std::string name, const std::string status);
     void set_sensor_name(uint8_t sensor_id, const std::string name);
     void cycle_status();
     void refresh();
@@ -75,10 +76,13 @@ private:
     uint8_t _active_sensor;
     enum ViewMode _view_mode;
     std::string _version_string;
-    std::string _network_ssid;
+    std::string _network_status;
     bool _cloud_registered;
 
     uint64_t _cycle_count;
+
+    struct SensorDisplay *find_sensor(const std::string &name);
+    void set_sensor_status(struct SensorDisplay *s, const std::string);
 };
 
 #endif

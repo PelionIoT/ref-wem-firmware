@@ -75,27 +75,27 @@ void DisplayMan::init_network(const char *type)
     }
 }
 
-void DisplayMan::set_network_ssid(std::string &ssid)
+void DisplayMan::set_network_status(const std::string &status)
 {
-    _network_ssid = ssid;
+    _network_status = status;
 }
 
 void DisplayMan::set_network_in_progress()
 {
     led_set_color(IND_WIFI, IND_COLOR_IN_PROGRESS, IND_FLAG_BLINK);
-    set_sensor_status(_network_sensor_id, _network_ssid);
+    set_sensor_status(_network_sensor_id, _network_status);
 }
 
 void DisplayMan::set_network_fail()
 {
     led_set_color(IND_WIFI, IND_COLOR_FAILED);
-    set_sensor_status(_network_sensor_id, _network_ssid);
+    set_sensor_status(_network_sensor_id, _network_status);
 }
 
 void DisplayMan::set_network_success()
 {
     led_set_color(IND_WIFI, IND_COLOR_SUCCESS);
-    set_sensor_status(_network_sensor_id, _network_ssid);
+    set_sensor_status(_network_sensor_id, _network_status);
 }
 
 void DisplayMan::set_cloud_in_progress()
@@ -121,15 +121,57 @@ uint8_t DisplayMan::register_sensor(const std::string &name, enum INDICATOR_TYPE
     return _sensors.size() - 1;
 }
 
-void DisplayMan::set_sensor_status(uint8_t sensor_id, const std::string status)
+struct DisplayMan::SensorDisplay *
+DisplayMan::find_sensor(const std::string &name)
 {
-    if (sensor_id < _sensors.size()) {
-        _sensors[sensor_id].status = status;
-        if (_cloud_registered && _sensors[sensor_id].indicator < IND_NO_TYPES) {
-            led_set_color(_sensors[sensor_id].indicator, IND_COLOR_SENSOR_DATA, IND_FLAG_ONCE);
-            led_set_color(IND_CLOUD, IND_COLOR_SENSOR_DATA, IND_FLAG_ONCE | IND_FLAG_LATER);
+    struct SensorDisplay *s;
+    std::vector<struct SensorDisplay>::iterator it;
+
+    for (it = _sensors.begin() ; it != _sensors.end(); ++it) {
+        s = &(*it);
+        if (s->name == name) {
+            return s;
         }
     }
+
+    return NULL;
+}
+
+void DisplayMan::set_sensor_status(struct SensorDisplay *s,
+                                   const std::string status)
+{
+    s->status = status;
+    if (_cloud_registered && s->indicator < IND_NO_TYPES) {
+        led_set_color(s->indicator, IND_COLOR_SENSOR_DATA, IND_FLAG_ONCE);
+        led_set_color(IND_CLOUD,
+                      IND_COLOR_SENSOR_DATA,
+                      IND_FLAG_ONCE | IND_FLAG_LATER);
+    }
+}
+
+void DisplayMan::set_sensor_status(uint8_t sensor_id, const std::string status)
+{
+    struct SensorDisplay *s;
+
+    if (sensor_id >= _sensors.size()) {
+        return;
+    }
+
+    s = &_sensors[sensor_id];
+    set_sensor_status(s, status);
+}
+
+void DisplayMan::set_sensor_status(const std::string name,
+                                   const std::string status)
+{
+    struct SensorDisplay *s;
+
+    s = find_sensor(name);
+    if (NULL == s) {
+        return;
+    }
+
+    set_sensor_status(s, status);
 }
 
 void DisplayMan::set_sensor_name(uint8_t sensor_id, const std::string name)
@@ -148,7 +190,7 @@ void DisplayMan::cycle_status()
 
     /* bottom line */
     if (_sensors.size() > 0) {
-        snprintf(line, 16, "%s: %s", _sensors[_active_sensor].name.c_str(),
+        snprintf(line, 17, "%s: %s", _sensors[_active_sensor].name.c_str(),
                  _sensors[_active_sensor].status.c_str());
         _lcd.printline(1, line);
         _active_sensor = (_active_sensor + 1) % _sensors.size();

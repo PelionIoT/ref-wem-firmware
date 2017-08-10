@@ -182,7 +182,7 @@ bool Keystore::exists(std::string& strkey)
     return bexist;
 }
 
-void Keystore::set(std::string& strkey, std::string& strvalue)
+void Keystore::set(const std::string& strkey, const std::string& strvalue)
 {
     //set the given key to the given value
     _mapdb[strkey] = strvalue;

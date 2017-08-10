@@ -46,6 +46,12 @@
 #define SSID_KEY "wifi.ssid"
 #define PASSWORD_KEY "wifi.key"
 #define SECURITY_KEY "wifi.encryption"
+#define APP_LABEL_KEY "app.label"
+
+#define APP_LABEL_SENSOR_NAME "Label"
+#ifndef MBED_CONF_APP_APP_LABEL
+#define MBED_CONF_APP_APP_LABEL "dragonfly"
+#endif
 
 enum FOTA_THREADS {
     FOTA_THREAD_DISPLAY = 0,
@@ -60,14 +66,8 @@ struct dht_sensor {
 
     DHT *dev;
 
-    M2MObject *h_obj;
-    M2MObject *t_obj;
-
     M2MResource *h_res;
     M2MResource *t_res;
-
-    M2MObjectInstance *h_inst;
-    M2MObjectInstance *t_inst;
 };
 
 struct light_sensor {
@@ -75,8 +75,6 @@ struct light_sensor {
 
     AnalogIn *dev;
 
-    M2MObject *obj;
-    M2MObjectInstance *inst;
     M2MResource *res;
 };
 
@@ -111,6 +109,15 @@ static void display_refresh(DisplayMan *display)
     display->refresh();
 }
 
+/**
+ * Sets the app label on the LCD and Mbed Client
+ */
+static void set_app_label(M2MClient *m2m, const char *label)
+{
+    display.set_sensor_status(APP_LABEL_SENSOR_NAME, label);
+    m2m->set_resource_value(M2MClient::M2MClientResourceAppLabel, label);
+}
+
 // ****************************************************************************
 // Sensors
 // ****************************************************************************
@@ -125,17 +132,42 @@ static void light_init(struct light_sensor *s, M2MClient *mbed_client)
     /* init the driver */
     s->dev = new AnalogIn(A0);
 
-    /* register the m2m object */
-    s->obj = M2MInterfaceFactory::create_object("3301");
-    s->inst = s->obj->create_object_instance();
+    s->res = m2mclient->get_resource(M2MClient::M2MClientResourceLightSensor);
+    m2mclient->set_resource_value(s->res, "0", 1);
+}
 
-    s->res = s->inst->create_dynamic_resource("1", "light_resource",
-                                              M2MResourceInstance::FLOAT,
-                                              true /* observable */);
-    s->res->set_operation(M2MBase::GET_ALLOWED);
-    s->res->set_value((uint8_t *)"0", 1);
+/**
+ * Converts light sensor reading to Lux units
+ *
+ * Empirical measurement against a light meter under 17
+ * different lighting conditions led to the following
+ * conversion table
+ * Reading     Lux
+ * 0.128          392
+ * 0.211          767
+ * 0.264         1145
+ * 0.292         1294
+ * 0.317         1407
+ * 0.349         1665
+ * 0.402         1959
+ * 0.457         2580
+ * 0.517         2690
+ * 0.570         3540
+ * 0.592         3770
+ * 0.628         4310
+ * 0.702         5040
+ * 0.816         5880
+ * 0.856         6150
+ * 0.917         7610
+ * 0.958         8330
+ *
+ * This data is best fit by the power equation
+ * Lux = 8251*(reading)^1.5108
+ * This equation fits with an R^2 value of 0.9962
+ */
 
-    mbed_client->add_resource(s->obj);
+unsigned int light_sensor_to_lux(float reading) {
+    return lroundf(8250.0 * pow(reading, 1.51));
 }
 
 /**
@@ -143,15 +175,20 @@ static void light_init(struct light_sensor *s, M2MClient *mbed_client)
  */
 static void light_read(struct light_sensor *s)
 {
-    int size = 0;
-    uint8_t res_buffer[33] = {0};
+    size_t size;
+    char res_buffer[33] = {0};
 
-    float flux = s->dev->read();
+    float reading = s->dev->read();
 
-    size = sprintf((char *)res_buffer, "%2.2f lm", flux);
+    unsigned int lux = light_sensor_to_lux(reading);
 
-    display.set_sensor_status(s->id, (char *)res_buffer);
-    s->res->set_value(res_buffer, size);
+    tr_debug("light: %5.4f --> %u\n",  reading, lux);
+
+    size = snprintf(res_buffer, sizeof(res_buffer), "%s%u lux",
+                    ((reading >= 1.0)?">":""), lux);
+
+    display.set_sensor_status(s->id, res_buffer);
+    m2mclient->set_resource_value(s->res, res_buffer, size);
 }
 
 /**
@@ -166,29 +203,17 @@ static void dht_init(struct dht_sensor *s, M2MClient *mbed_client)
     /* init the driver */
     s->dev = new DHT(D4, AM2302);
 
-    /* register the m2m temperature object */
-    s->t_obj = M2MInterfaceFactory::create_object("3303");
-    s->t_inst = s->t_obj->create_object_instance();
+    s->t_res = mbed_client->get_resource(
+                    M2MClient::M2MClientResourceTempSensor);
+    s->h_res = mbed_client->get_resource(
+                    M2MClient::M2MClientResourceHumiditySensor);
 
-    s->t_res = s->t_inst->create_dynamic_resource("1", "temperature_resource",
-                                                  M2MResourceInstance::FLOAT,
-                                                  true /* observable */);
-    s->t_res->set_operation(M2MBase::GET_ALLOWED);
-    s->t_res->set_value((uint8_t *)"0", 1);
+    /* set default values */
+    display.set_sensor_status(s->t_id, "0");
+    mbed_client->set_resource_value(s->t_res, "0", 1);
 
-    mbed_client->add_resource(s->t_obj);
-
-    /* register the m2m humidity object */
-    s->h_obj = M2MInterfaceFactory::create_object("3304");
-    s->h_inst = s->h_obj->create_object_instance();
-
-    s->h_res = s->h_inst->create_dynamic_resource("1", "humidity_resource",
-                                                  M2MResourceInstance::FLOAT,
-                                                  true /* observable */);
-    s->h_res->set_operation(M2MBase::GET_ALLOWED);
-    s->h_res->set_value((uint8_t *)"0", 1);
-
-    mbed_client->add_resource(s->h_obj);
+    display.set_sensor_status(s->h_id, "0");
+    mbed_client->set_resource_value(s->h_res, "0", 1);
 }
 
 /**
@@ -199,7 +224,7 @@ static void dht_read(struct dht_sensor *dht)
     int size = 0;
     eError readError;
     float temperature, humidity;
-    uint8_t res_buffer[33] = {0};
+    char res_buffer[33] = {0};
 
     readError = dht->dev->readData();
     if (readError == ERROR_NONE) {
@@ -207,12 +232,12 @@ static void dht_read(struct dht_sensor *dht)
         humidity = dht->dev->ReadHumidity();
         tr_debug("DHT: temp = %fC, humi = %f%%\n", temperature, humidity);
 
-        size = sprintf((char *)res_buffer, "%.1f C", temperature);
-        dht->t_res->set_value(res_buffer, size);
+        size = snprintf(res_buffer, sizeof(res_buffer), "%.1f C", temperature);
+        m2mclient->set_resource_value(dht->t_res, res_buffer, size);
         display.set_sensor_status(dht->t_id, (char *)res_buffer);
 
-        size = sprintf((char *)res_buffer, "%.0f%%", humidity);
-        dht->h_res->set_value(res_buffer, size);
+        size = snprintf(res_buffer, sizeof(res_buffer), "%.0f%%", humidity);
+        m2mclient->set_resource_value(dht->h_res, res_buffer, size);
         display.set_sensor_status(dht->h_id, (char *)res_buffer);
     } else {
         tr_error("DHT: readData() failed with %d\n", readError);
@@ -306,7 +331,7 @@ static NetworkInterface *network_create(void)
     k.close();
 
     display.init_network("WiFi");
-    display.set_network_ssid(ssid);
+    display.set_network_status(ssid);
 
     return new ESP8266Interface(MBED_CONF_APP_WIFI_TX, MBED_CONF_APP_WIFI_RX,
                                 MBED_CONF_APP_WIFI_DEBUG);
@@ -356,7 +381,7 @@ static int network_connect(NetworkInterface *net)
         printf("Using default %s\n", SECURITY_KEY);
     }
 
-    display.set_network_ssid(ssid);
+    display.set_network_status(ssid);
     printf("[WIFI] connecting: mac=%s, ssid=%s, encryption=%s\n",
            network_get_macaddr(wifi, macaddr), ssid.c_str(), security.c_str());
 
@@ -396,6 +421,7 @@ static int network_connect(NetworkInterface *net)
     /* note: Ethernet MAC isn't available until *after* a call to
      * EthernetInterface::connect(), so the first time we attempt to
      * connect this will print a NULL mac, but will work after a retry */
+    display.set_network_status("connecting");
     printf("[ETH] obtaining IP address: mac=%s\n",
            network_get_macaddr(net, macaddr));
     ret = net->connect();
@@ -403,6 +429,7 @@ static int network_connect(NetworkInterface *net)
         printf("ERROR: [ETH] Failed to connect! %d\n", ret);
         return ret;
     }
+    display.set_network_status("connected");
     printf("[ETH] connected: mac%s, ip=%s, netmask=%s, gateway=%s\n",
            network_get_macaddr(net, macaddr), net->get_ip_address(),
            net->get_netmask(), net->get_gateway());
@@ -414,6 +441,26 @@ static int network_connect(NetworkInterface *net)
 // ****************************************************************************
 // Cloud
 // ****************************************************************************
+/**
+ * Handles a M2M PUT request on the app label resource
+ */
+static void mbed_client_handle_put_app_label(M2MClient *m2m)
+{
+    Keystore k;
+    std::string label;
+
+    label = m2m->get_resource_value_str(M2MClient::M2MClientResourceAppLabel);
+    if (label.length() == 0) {
+        return;
+    }
+
+    k.open();
+    k.set(APP_LABEL_KEY, label);
+    k.close();
+
+    set_app_label(m2m, label.c_str());
+}
+
 /**
  * Readies the app for a firmware download
  */
@@ -538,6 +585,32 @@ static void mbed_client_on_error(void *context, int err_code,
     display.set_cloud_error();
 }
 
+static void
+mbed_client_on_resource_updated(void *context,
+                                M2MClient::M2MClientResource resource)
+{
+    M2MClient *m2m;
+    M2MResource *res;
+
+    m2m = (M2MClient *)context;
+
+    switch (resource) {
+    case M2MClient::M2MClientResourceAppLabel:
+        evq.call(mbed_client_handle_put_app_label, m2m);
+        break;
+    default:
+        res = m2m->get_resource(resource);
+        if (NULL != res) {
+            printf("WARN: unsupported PUT request: resource=%d, uri_path=%s\n",
+                   resource, res->uri_path());
+        } else {
+            printf("WARN: unsupported PUT request on unregistered resource=%d\n",
+                   resource);
+        }
+        break;
+    }
+}
+
 static int register_mbed_client(NetworkInterface *iface, M2MClient *mbed_client)
 {
     mbed_client->on_registered(NULL, mbed_client_on_registered);
@@ -545,6 +618,8 @@ static int register_mbed_client(NetworkInterface *iface, M2MClient *mbed_client)
     mbed_client->on_error(mbed_client, mbed_client_on_error);
     mbed_client->on_update_authorize(mbed_client_on_update_authorize);
     mbed_client->on_update_progress(mbed_client_on_update_progress);
+    mbed_client->on_resource_updated(mbed_client,
+                                     mbed_client_on_resource_updated);
 
     display.set_cloud_in_progress();
     mbed_client->call_register(iface);
@@ -835,12 +910,32 @@ void init_commander(void)
     cmd.init();
 }
 
+static void init_app_label(M2MClient *m2m)
+{
+    Keystore k;
+    string label;
+
+    display.register_sensor(APP_LABEL_SENSOR_NAME);
+
+    k.open();
+    if (k.exists(APP_LABEL_KEY)) {
+        label = k.get(APP_LABEL_KEY);
+    } else {
+        label = MBED_CONF_APP_APP_LABEL;
+    }
+    k.close();
+
+    set_app_label(m2m, label.c_str());
+}
+
 static void init_app(EventQueue *queue)
 {
     int ret;
 
     m2mclient = new M2MClient();
+    m2mclient->init();
 
+    init_app_label(m2mclient);
     init_commander();
 
     /* create the network */
