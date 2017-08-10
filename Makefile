@@ -199,14 +199,7 @@ patchclean:
 
 .PHONY: distclean
 distclean: clean
-	rm -rf Chainable_RGB_LED
-	rm -rf esp8266_driver
-	rm -rf mbed-os
-	rm -rf sd-driver
-	rm -rf ws2801
-	rm -rf mbed-cloud-client-restricted
-	rm -rf mbed-cloud-client-internal
-	rm -rf TextLCD
+	for lib in ${LIBS}; do rm -rf $${lib%.lib}; done
 	rm -rf manifest-tool-restricted
 	rm -fr ${BOOTLDR_DIR}
 	rm -f ${BOOTLOADER}
