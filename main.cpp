@@ -132,7 +132,7 @@ static void light_init(struct light_sensor *s, M2MClient *mbed_client)
     /* init the driver */
     s->dev = new AnalogIn(A0);
 
-    s->res = m2mclient->get_resource(M2MClient::M2MClientResourceLightSensor);
+    s->res = m2mclient->get_resource(M2MClient::M2MClientResourceLightValue);
     m2mclient->set_resource_value(s->res, "0", 1);
 }
 
@@ -204,9 +204,9 @@ static void dht_init(struct dht_sensor *s, M2MClient *mbed_client)
     s->dev = new DHT(D4, AM2302);
 
     s->t_res = mbed_client->get_resource(
-                    M2MClient::M2MClientResourceTempSensor);
+                    M2MClient::M2MClientResourceTempValue);
     s->h_res = mbed_client->get_resource(
-                    M2MClient::M2MClientResourceHumiditySensor);
+                    M2MClient::M2MClientResourceHumidityValue);
 
     /* set default values */
     display.set_sensor_status(s->t_id, "0");

@@ -27,11 +27,19 @@ class M2MClient : public MbedCloudClientCallback {
 
 public:
     enum M2MClientResource {
+        /* Application Info */
         M2MClientResourceAppLabel,
         M2MClientResourceAppVersion,
-        M2MClientResourceTempSensor,
-        M2MClientResourceHumiditySensor,
-        M2MClientResourceLightSensor,
+
+        /* Temperature Sensor */
+        M2MClientResourceTempValue,
+
+        /* Humidity Sensor */
+        M2MClientResourceHumidityValue,
+
+        /* Light Sensor */
+        M2MClientResourceLightValue,
+
         /* must be last */
         M2MClientResourceCount
     };
