@@ -40,8 +40,22 @@ public:
         /* Light Sensor */
         M2MClientResourceLightValue,
 
-	/* Network Data */
+        /* Network Data */
         M2MClientResourceNetwork,
+        
+        /* Geo Location specified by the user */
+        M2MClientResourceGeoLat,
+        M2MClientResourceGeoLon,
+        M2MClientResourceGeoAccuracy,
+        M2MClientResourceGeoTime,
+        M2MClientResourceGeoType,
+
+        /* Geo Location determined by automatic means */
+        M2MClientResourceAutoGeoLat,
+        M2MClientResourceAutoGeoLon,
+        M2MClientResourceAutoGeoAccuracy,
+        M2MClientResourceAutoGeoTime,
+        M2MClientResourceAutoGeoType,
 
         /* must be last */
         M2MClientResourceCount
@@ -303,6 +317,9 @@ private:
 
     /* adds the M2M app resources to the internal object map */
     int add_app_resources();
+
+    /* adds the M2M Geo and GeoSensor resources to the internal object map */
+    int add_geo_resources();
 
     /* resource adders for each supported sensor type */
     int add_light_sensor();

@@ -26,7 +26,12 @@ int M2MClient::init()
 
     ret = add_network_sensor();
     if (0 != ret) {
-	return ret;
+        return ret;
+    }
+
+    ret = add_geo_resources();
+    if (0 != ret) {
+        return ret;
     }
 
     return 0;
@@ -290,6 +295,101 @@ void M2MClient::value_updated(M2MBase *base, M2MBase::BaseType type)
     }
     
     _on_resource_updated_cb(_on_resource_updated_context, entry->type);
+}
+
+int M2MClient::add_geo_resources()
+{
+    const char *type;
+    M2MObject *obj;
+    M2MResource *res;
+    M2MObjectInstance *inst;
+
+    /* one object will hold both geo resource types */
+    obj = M2MInterfaceFactory::create_object("3336");
+
+    /*
+     * add the user-specified geo resource
+     * */
+    inst = obj->create_object_instance((uint16_t)0);
+    res = inst->create_dynamic_resource("5514", "Latitude",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceGeoLat);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5515", "Longitude",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceGeoLon);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5516", "Uncertainty",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceGeoAccuracy);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5518", "Timestamp",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceGeoTime);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5750", "Application_Type",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_ALLOWED);
+    type = "user";
+    set_resource_value(res, type, strlen(type));
+    add_resource(res, M2MClientResourceGeoType);
+    res = NULL;
+
+    /*
+     * add the dynamic geo resource
+     * */
+    inst = obj->create_object_instance((uint16_t)1);
+    res = inst->create_dynamic_resource("5514", "Latitude",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceAutoGeoLat);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5515", "Longitude",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceAutoGeoLon);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5516", "Uncertainty",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceAutoGeoAccuracy);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5518", "Timestamp",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceAutoGeoTime);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5750", "Application_Type",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_ALLOWED);
+    type = "auto";
+    set_resource_value(res, type, strlen(type));
+    add_resource(res, M2MClientResourceAutoGeoType);
+    res = NULL;
+
+    return 0;
 }
 
 int M2MClient::add_app_resources()
