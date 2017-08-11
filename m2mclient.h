@@ -39,21 +39,7 @@ public:
     M2MClient() : _registered(false), _register_called(false) {
     }
 
-    int init() {
-        int ret;
-
-        ret = add_app_resources();
-        if (0 != ret) {
-            return ret;
-        }
-
-        ret = add_sensor_resources();
-        if (0 != ret) {
-            return ret;
-        }
-
-        return 0;
-    }
+    int init();
 
     /* handles PUT callbacks from MbedCloudClient
      *
@@ -307,13 +293,10 @@ private:
     /* adds the M2M app resources to the internal object map */
     int add_app_resources();
 
-    /* adds the M2M sensor resources to the internal object map */
-    int add_sensor_resources();
-
     /* resource adders for each supported sensor type */
-    void add_light_sensor();
-    void add_temp_sensor();
-    void add_humidity_sensor();
+    int add_light_sensor();
+    int add_temp_sensor();
+    int add_humidity_sensor();
 
     /* registers all objects with the underlying MbedCloudClient */
     void register_objects();

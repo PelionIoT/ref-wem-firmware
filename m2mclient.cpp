@@ -1,5 +1,32 @@
 #include "m2mclient.h"
 
+int M2MClient::init()
+{
+    int ret;
+
+    ret = add_app_resources();
+    if (0 != ret) {
+        return ret;
+    }
+
+    ret = add_light_sensor();
+    if (0 != ret) {
+        return ret;
+    }
+
+    ret = add_temp_sensor();
+    if (0 != ret) {
+        return ret;
+    }
+
+    ret = add_humidity_sensor();
+    if (0 != ret) {
+        return ret;
+    }
+
+    return 0;
+}
+
 std::string M2MClient::get_resource_value_str(M2MResource *res)
 {
     return res->get_value_string().c_str();
@@ -167,7 +194,7 @@ M2MResource *M2MClient::get_resource(enum M2MClientResource resource)
     return entry->res;
 }
 
-void M2MClient::add_light_sensor()
+int M2MClient::add_light_sensor()
 {
     M2MObject *obj;
     M2MResource *res;
@@ -180,9 +207,11 @@ void M2MClient::add_light_sensor()
                                         true /* observable */);
     res->set_operation(M2MBase::GET_ALLOWED);
     add_resource(res, M2MClientResourceLightSensor);
+
+    return 0;
 }
 
-void M2MClient::add_temp_sensor()
+int M2MClient::add_temp_sensor()
 {
     M2MObject *obj;
     M2MResource *res;
@@ -195,9 +224,11 @@ void M2MClient::add_temp_sensor()
                                         true /* observable */);
     res->set_operation(M2MBase::GET_ALLOWED);
     add_resource(res, M2MClientResourceTempSensor);
+
+    return 0;
 }
 
-void M2MClient::add_humidity_sensor()
+int M2MClient::add_humidity_sensor()
 {
     M2MObject *obj;
     M2MResource *res;
@@ -210,13 +241,7 @@ void M2MClient::add_humidity_sensor()
                                         true /* observable */);
     res->set_operation(M2MBase::GET_ALLOWED);
     add_resource(res, M2MClientResourceHumiditySensor);
-}
 
-int M2MClient::add_sensor_resources()
-{
-    add_light_sensor();
-    add_temp_sensor();
-    add_humidity_sensor();
     return 0;
 }
 
