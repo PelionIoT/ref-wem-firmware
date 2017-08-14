@@ -682,9 +682,36 @@ static void mbed_client_on_unregistered(void *context)
 static void mbed_client_on_error(void *context, int err_code,
                                  const char *err_name, const char *err_desc)
 {
+    int ret;
+
     printf("ERROR: mbed client (%d) %s\n", err_code, err_name);
     printf("    Error details : %s\n", err_desc);
     display.set_cloud_error();
+    if ((err_code == MbedCloudClient::ConnectNetworkError) ||
+        (err_code == MbedCloudClient::ConnectDnsResolvingFailed)) {
+        network_disconnect(net);
+        display.set_network_fail();
+        printf("Network connection failed.  Attempting to reconnect.\n");
+        /* Because we are running in the mbed client thread context
+         * we want to disable our sensors from modifying the mbed
+         * client queue while we mess with the network.  This will
+         * allow the main context to continue to refresh the display.
+         */
+        sensors_stop(&sensors, &evq);
+        display.set_network_in_progress();
+        ret = network_connect(net);
+        if (0 == ret) {
+            display.set_network_success();
+            printf("Successful reconnection to network.\n");
+        } else {
+            display.set_network_fail();
+            printf("WARN: unable to reconnect to network.\n");
+        }
+        /* Whether the reconnection was successful or not,
+         * re-enable snsor data collection.
+         */
+        sensors_start(&sensors, &evq);
+    }
 }
 
 static void
