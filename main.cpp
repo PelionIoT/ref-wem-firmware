@@ -579,6 +579,63 @@ static void mbed_client_handle_put_app_label(M2MClient *m2m)
 }
 
 /**
+ * Handles a M2M PUT request on Geo Latitude
+ */
+static void
+mbed_client_handle_put_geo_lat(M2MClient *m2m)
+{
+    Keystore k;
+    std::string val;
+
+    val = m2m->get_resource_value_str(M2MClient::M2MClientResourceGeoLat);
+    if (val.length() == 0) {
+        return;
+    }
+
+    k.open();
+    k.set(GEO_LAT_KEY, val);
+    k.close();
+}
+
+/**
+ * Handles a M2M PUT request on Geo Longitude
+ */
+static void
+mbed_client_handle_put_geo_long(M2MClient *m2m)
+{
+    Keystore k;
+    std::string val;
+
+    val = m2m->get_resource_value_str(M2MClient::M2MClientResourceGeoLong);
+    if (val.length() == 0) {
+        return;
+    }
+
+    k.open();
+    k.set(GEO_LONG_KEY, val);
+    k.close();
+}
+
+/**
+ * Handles a M2M PUT request on Geo Accuracy
+ */
+static void
+mbed_client_handle_put_geo_accuracy(M2MClient *m2m)
+{
+    Keystore k;
+    std::string val;
+
+    val = m2m->get_resource_value_str(M2MClient::M2MClientResourceGeoAccuracy);
+    if (val.length() == 0) {
+        return;
+    }
+
+    k.open();
+    k.set(GEO_ACCURACY_KEY, val);
+    k.close();
+}
+
+/**
  * Readies the app for a firmware download
  */
 void fota_auth_download(M2MClient *mbed_client)
@@ -741,6 +798,15 @@ mbed_client_on_resource_updated(void *context,
     switch (resource) {
     case M2MClient::M2MClientResourceAppLabel:
         evq.call(mbed_client_handle_put_app_label, m2m);
+        break;
+    case M2MClient::M2MClientResourceGeoLat:
+        evq.call(mbed_client_handle_put_geo_lat, m2m);
+        break;
+    case M2MClient::M2MClientResourceGeoLong:
+        evq.call(mbed_client_handle_put_geo_long, m2m);
+        break;
+    case M2MClient::M2MClientResourceGeoAccuracy:
+        evq.call(mbed_client_handle_put_geo_accuracy, m2m);
         break;
     default:
         res = m2m->get_resource(resource);
