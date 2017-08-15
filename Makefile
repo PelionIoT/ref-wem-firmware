@@ -86,8 +86,9 @@ COMBINED_BIN_FILE:=${MBED_BUILD_DIR}/combined.bin
 # The ram patch gives us more than 130k of ram to use
 ifeq (${MBED_TARGET},K64F)
   BOOTLOADER:=${CURDIR}/tools/${BOOTLDR_PROG}
+  BOOTLOADER_SIZE=0x20000
   APP_OFFSET:=0x20400
-  HEADER_OFFSET:=0x20000
+  HEADER_OFFSET:=${BOOTLOADER_SIZE}
   ifeq (${MBED_TOOLCHAIN},GCC_ARM)
     PATCHES:=../tools/MK64FN1M0xxx12.ld.diff ../tools/gcc_k64f_ram_patch.diff
   else ifeq (${MBED_TOOLCHAIN},IAR)
@@ -154,6 +155,15 @@ define Build/Bootloader/Compile
 	mv ${MBED_BUILD_DIR}/${BOOTLDR_PROG} ${BOOTLOADER};
 endef
 
+define Build/Bootloader/CheckSize
+	@blsize=$(shell tail -n 1 ${BOOTLDR_DIR}/${MBED_BUILD_DIR}/${BOOTLDR_DIR}_map.csv | awk -F',' '{ print $$NF }'); \
+	max=$(shell printf "%d" ${1}); \
+	if [ "$${blsize}" -gt "$${max}" ]; then \
+		echo "bootloader size $${blsize} is too big.  max=$${max}"; \
+		false; \
+	fi;
+endef
+
 .PHONY: all
 all: build
 
@@ -161,6 +171,7 @@ all: build
 build: prepare ${COMBINED_BIN_FILE}
 
 ${COMBINED_BIN_FILE}: bootloader ${MBED_BUILD_DIR}/${PROG}.bin
+	$(call Build/Bootloader/CheckSize,${BOOTLOADER_SIZE})
 	tools/combine_bootloader_with_app.py -b ${BOOTLOADER} -a ${MBED_BUILD_DIR}/${PROG}.bin --app-offset ${APP_OFFSET} --header-offset ${HEADER_OFFSET} -o ${COMBINED_BIN_FILE}
 
 ${MBED_BUILD_DIR}/${PROG}.bin: prepare ${SRCS} ${HDRS} mbed_app.json
