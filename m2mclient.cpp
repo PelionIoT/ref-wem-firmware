@@ -322,7 +322,7 @@ int M2MClient::add_geo_resources()
                                         M2MResourceInstance::STRING,
                                         true /* observable */);
     res->set_operation(M2MBase::GET_PUT_ALLOWED);
-    add_resource(res, M2MClientResourceGeoLon);
+    add_resource(res, M2MClientResourceGeoLong);
     res = NULL;
 
     res = inst->create_dynamic_resource("5516", "Uncertainty",
@@ -356,7 +356,7 @@ int M2MClient::add_geo_resources()
                                         M2MResourceInstance::STRING,
                                         true /* observable */);
     res->set_operation(M2MBase::GET_PUT_ALLOWED);
-    add_resource(res, M2MClientResourceAutoGeoLon);
+    add_resource(res, M2MClientResourceAutoGeoLong);
     res = NULL;
 
     res = inst->create_dynamic_resource("5516", "Uncertainty",

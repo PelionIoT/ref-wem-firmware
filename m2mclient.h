@@ -45,13 +45,13 @@ public:
 
         /* Geo Location specified by the user */
         M2MClientResourceGeoLat,
-        M2MClientResourceGeoLon,
+        M2MClientResourceGeoLong,
         M2MClientResourceGeoAccuracy,
         M2MClientResourceGeoType,
 
         /* Geo Location determined by automatic means */
         M2MClientResourceAutoGeoLat,
-        M2MClientResourceAutoGeoLon,
+        M2MClientResourceAutoGeoLong,
         M2MClientResourceAutoGeoAccuracy,
         M2MClientResourceAutoGeoType,
 

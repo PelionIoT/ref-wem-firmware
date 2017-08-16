@@ -59,6 +59,21 @@ namespace json = rapidjson;
 #define MBED_CONF_APP_APP_LABEL "dragonfly"
 #endif
 
+#define GEO_LAT_KEY "geo.lat"
+#ifndef MBED_CONF_APP_GEO_LAT
+#define MBED_CONF_APP_GEO_LAT "30.2433"
+#endif
+
+#define GEO_LONG_KEY "geo.long"
+#ifndef MBED_CONF_APP_GEO_LONG
+#define MBED_CONF_APP_GEO_LONG "-97.8456"
+#endif
+
+#define GEO_ACCURACY_KEY "geo.accuracy"
+#ifndef MBED_CONF_APP_GEO_ACCURACY
+#define MBED_CONF_APP_GEO_ACCURACY "11"
+#endif
+
 enum FOTA_THREADS {
     FOTA_THREAD_DISPLAY = 0,
     FOTA_THREAD_SENSOR_LIGHT,
@@ -1057,6 +1072,39 @@ static void init_app_label(M2MClient *m2m)
     set_app_label(m2m, label.c_str());
 }
 
+static void init_geo(M2MClient *m2m)
+{
+    Keystore k;
+
+    k.open();
+
+    if (k.exists(GEO_LAT_KEY)) {
+        m2m->set_resource_value(M2MClient::M2MClientResourceGeoLat,
+                                k.get(GEO_LAT_KEY));
+    } else {
+        m2m->set_resource_value(M2MClient::M2MClientResourceGeoLat,
+                                MBED_CONF_APP_GEO_LAT);
+    }
+
+    if (k.exists(GEO_LONG_KEY)) {
+        m2m->set_resource_value(M2MClient::M2MClientResourceGeoLong,
+                                k.get(GEO_LONG_KEY));
+    } else {
+        m2m->set_resource_value(M2MClient::M2MClientResourceGeoLong,
+                                MBED_CONF_APP_GEO_LONG);
+    }
+
+    if (k.exists(GEO_ACCURACY_KEY)) {
+        m2m->set_resource_value(M2MClient::M2MClientResourceGeoAccuracy,
+                                k.get(GEO_ACCURACY_KEY));
+    } else {
+        m2m->set_resource_value(M2MClient::M2MClientResourceGeoAccuracy,
+                                MBED_CONF_APP_GEO_ACCURACY);
+    }
+
+    k.close();
+}
+
 static void init_app(EventQueue *queue)
 {
     int ret;
@@ -1065,6 +1113,7 @@ static void init_app(EventQueue *queue)
     m2mclient->init();
 
     init_app_label(m2mclient);
+    init_geo(m2mclient);
     init_commander();
 
     /* create the network */
