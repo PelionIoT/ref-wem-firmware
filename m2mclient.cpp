@@ -332,13 +332,6 @@ int M2MClient::add_geo_resources()
     add_resource(res, M2MClientResourceGeoAccuracy);
     res = NULL;
 
-    res = inst->create_dynamic_resource("5518", "Timestamp",
-                                        M2MResourceInstance::STRING,
-                                        true /* observable */);
-    res->set_operation(M2MBase::GET_PUT_ALLOWED);
-    add_resource(res, M2MClientResourceGeoTime);
-    res = NULL;
-
     res = inst->create_dynamic_resource("5750", "Application_Type",
                                         M2MResourceInstance::STRING,
                                         true /* observable */);
@@ -371,13 +364,6 @@ int M2MClient::add_geo_resources()
                                         true /* observable */);
     res->set_operation(M2MBase::GET_PUT_ALLOWED);
     add_resource(res, M2MClientResourceAutoGeoAccuracy);
-    res = NULL;
-
-    res = inst->create_dynamic_resource("5518", "Timestamp",
-                                        M2MResourceInstance::STRING,
-                                        true /* observable */);
-    res->set_operation(M2MBase::GET_PUT_ALLOWED);
-    add_resource(res, M2MClientResourceAutoGeoTime);
     res = NULL;
 
     res = inst->create_dynamic_resource("5750", "Application_Type",
