@@ -540,6 +540,23 @@ static int network_connect(NetworkInterface *net)
 }
 #endif
 
+/**
+ * Continually attempt network connection until successful
+ */
+static void sync_network_connect(NetworkInterface *net)
+{
+    int ret;
+    do {
+        display.set_network_in_progress();
+        ret = network_connect(net);
+        if (0 != ret) {
+            display.set_network_fail();
+            printf("WARN: failed to init network, retrying...\n");
+            Thread::wait(2000);
+        }
+    } while (0 != ret);
+}
+
 // ****************************************************************************
 // Cloud
 // ****************************************************************************
@@ -682,8 +699,6 @@ static void mbed_client_on_unregistered(void *context)
 static void mbed_client_on_error(void *context, int err_code,
                                  const char *err_name, const char *err_desc)
 {
-    int ret;
-
     printf("ERROR: mbed client (%d) %s\n", err_code, err_name);
     printf("    Error details : %s\n", err_desc);
     display.set_cloud_error();
@@ -696,20 +711,14 @@ static void mbed_client_on_error(void *context, int err_code,
          * we want to disable our sensors from modifying the mbed
          * client queue while we mess with the network.  This will
          * allow the main context to continue to refresh the display.
+         *
+         * Holding on to this thread context until netork connection
+         * is re-established will prevent the mbed client from backing
+         * off the time between connection retries.
          */
         sensors_stop(&sensors, &evq);
-        display.set_network_in_progress();
-        ret = network_connect(net);
-        if (0 == ret) {
-            display.set_network_success();
-            printf("Successful reconnection to network.\n");
-        } else {
-            display.set_network_fail();
-            printf("WARN: unable to reconnect to network.\n");
-        }
-        /* Whether the reconnection was successful or not,
-         * re-enable snsor data collection.
-         */
+        sync_network_connect(net);
+        display.set_network_success();
         sensors_start(&sensors, &evq);
     }
 }
@@ -1081,15 +1090,7 @@ static void init_app(EventQueue *queue)
      * in addition, the fcc code requires a connected network when generating
      * creds the first time, so we need to spin here until we have an active
      * network. */
-    do {
-        display.set_network_in_progress();
-        ret = network_connect(net);
-        if (0 != ret) {
-            display.set_network_fail();
-            printf("WARN: failed to init network, retrying...\n");
-            Thread::wait(2000);
-        }
-    } while (0 != ret);
+    sync_network_connect(net);
     printf("init network: OK\n");
 
     /* scan the network for nearby devices or APs. */
