@@ -538,7 +538,6 @@ static int network_connect(NetworkInterface *net)
     /* note: Ethernet MAC isn't available until *after* a call to
      * EthernetInterface::connect(), so the first time we attempt to
      * connect this will print a NULL mac, but will work after a retry */
-    display.set_network_status("connecting");
     printf("[ETH] obtaining IP address: mac=%s\n",
            network_get_macaddr(net, macaddr));
     ret = net->connect();
@@ -546,7 +545,6 @@ static int network_connect(NetworkInterface *net)
         printf("ERROR: [ETH] Failed to connect! %d\n", ret);
         return ret;
     }
-    display.set_network_status("connected");
     printf("[ETH] connected: mac%s, ip=%s, netmask=%s, gateway=%s\n",
            network_get_macaddr(net, macaddr), net->get_ip_address(),
            net->get_netmask(), net->get_gateway());
@@ -562,7 +560,7 @@ static void sync_network_connect(NetworkInterface *net)
 {
     int ret;
     do {
-        display.set_network_in_progress();
+        display.set_network_connecting();
         ret = network_connect(net);
         if (0 != ret) {
             display.set_network_fail();
@@ -1210,6 +1208,7 @@ static void init_app(EventQueue *queue)
 
     /* scan the network for nearby devices or APs. */
     printf("scanning network for nearby devices...\n");
+    display.set_network_scanning();
     ret = network_scan(net, m2mclient);
     if (0 > ret) {
         printf("WARN: failed to scan network! %d\n", ret);

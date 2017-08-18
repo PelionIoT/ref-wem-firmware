@@ -39,10 +39,11 @@ public:
     void set_installing();
     void set_progress(const std::string &message, uint32_t progress,
                       uint32_t total);
-    void set_network_status(const std::string &status);
-    void set_network_in_progress();
-    void set_network_fail();
-    void set_network_success();
+    void set_network_status(const std::string status);
+    void set_network_connecting(const std::string status = "connecting");
+    void set_network_scanning(const std::string status = "scanning");
+    void set_network_fail(const std::string status = "failed");
+    void set_network_success(const std::string status = "connected");
     void init_network(const char *type);
     /*returns sesor id*/
     uint8_t register_sensor(const std::string &name, enum INDICATOR_TYPES indicator = IND_NO_TYPES);
@@ -76,7 +77,6 @@ private:
     uint8_t _active_sensor;
     enum ViewMode _view_mode;
     std::string _version_string;
-    std::string _network_status;
     bool _cloud_registered;
 
     uint64_t _cycle_count;
