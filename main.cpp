@@ -776,6 +776,7 @@ static void mbed_client_on_error(void *context, int err_code,
         (err_code == MbedCloudClient::ConnectDnsResolvingFailed)) {
         network_disconnect(net);
         display.set_network_fail();
+        display.set_cloud_unregistered();
         printf("Network connection failed.  Attempting to reconnect.\n");
         /* Because we are running in the mbed client thread context
          * we want to disable our sensors from modifying the mbed
@@ -790,6 +791,8 @@ static void mbed_client_on_error(void *context, int err_code,
         sync_network_connect(net);
         display.set_network_success();
         sensors_start(&sensors, &evq);
+        /* CLoud client will automatically try to reconnect.*/
+        display.set_cloud_in_progress();
     }
 }
 
