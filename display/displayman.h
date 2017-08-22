@@ -40,10 +40,10 @@ public:
     void set_progress(const std::string &message, uint32_t progress,
                       uint32_t total);
     void set_network_status(const std::string status);
-    void set_network_connecting(const std::string status = "connecting");
-    void set_network_scanning(const std::string status = "scanning");
-    void set_network_fail(const std::string status = "failed");
-    void set_network_success(const std::string status = "connected");
+    void set_network_connecting();
+    void set_network_scanning();
+    void set_network_fail();
+    void set_network_success();
     void init_network(const char *type);
     /*returns sesor id*/
     uint8_t register_sensor(const std::string &name, enum INDICATOR_TYPES indicator = IND_NO_TYPES);

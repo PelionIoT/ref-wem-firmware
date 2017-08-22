@@ -80,28 +80,24 @@ void DisplayMan::set_network_status(const std::string status)
     set_sensor_status(_network_sensor_id, status);
 }
 
-void DisplayMan::set_network_connecting(const std::string status)
+void DisplayMan::set_network_connecting()
 {
     led_set_color(IND_WIFI, IND_COLOR_IN_PROGRESS, IND_FLAG_BLINK);
-    set_network_status(status);
 }
 
-void DisplayMan::set_network_scanning(const std::string status)
+void DisplayMan::set_network_scanning()
 {
     led_set_color(IND_WIFI, IND_COLOR_SUCCESS, IND_FLAG_BLINK);
-    set_network_status(status);
 }
 
-void DisplayMan::set_network_fail(const std::string status)
+void DisplayMan::set_network_fail()
 {
     led_set_color(IND_WIFI, IND_COLOR_FAILED);
-    set_network_status(status);
 }
 
-void DisplayMan::set_network_success(const std::string status)
+void DisplayMan::set_network_success()
 {
     led_set_color(IND_WIFI, IND_COLOR_SUCCESS);
-    set_network_status(status);
 }
 
 void DisplayMan::set_cloud_in_progress()
