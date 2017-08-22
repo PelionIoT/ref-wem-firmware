@@ -263,3 +263,74 @@ This can be demonstrated on the mbed cloud portal.  After a device is registered
 * Path: /26241/0/2
 
 The app version is read-only.  Its value is populated from the "version" field in ``mbed_app.json``.
+
+### User Configured Geographical Info
+
+* Object ID: 3336
+* Instance: 0
+
+Latitude, Longitude, and Accuracy info can be stored on the device and made available via M2M in instance 0 of object ID 3336.  Along with lat/long, a resource of named ``Application Type`` is also present, and is set to ``user`` in the case of instance 0.  This is to allow for other types of geographical data to be made available on a separate instance which can be differentiated by a type.
+
+Geographical data can be written in 3 ways:
+1. By setting the following keys in the `config` section of `mbed_app.json`.
+
+    ```
+        "config": {
+            "geo-lat": {
+                "help": "Sets the device latitude, from -90.0 to 90",
+                "value": "\"30.2433\""
+            },
+            "geo-long": {
+                "help": "Sets the device longitude, from -180 to 180",
+                "value": "\"-97.8456\""
+            },
+            "geo-accuracy": {
+                "help": "Sets the accuracy of geo-lat and geo-lon, in meters",
+                "value": "\"11\""
+            },
+        ...
+    ```
+
+2. Through the serial console by setting the following keys:
+
+    ```
+    > set geo.lat 30.2433
+    geo.lat=30.2433
+
+    > set geo.long -97.8456
+    geo.long=-97.8456
+
+    > set geo.accuracy 11
+    geo.accuracy=11
+    ```
+
+2. Through M2M PUT requests
+
+    This can be demonstrated on the mbed cloud portal.  After a device is registered with the mbed cloud, it should be listed on the ``Connected Devices`` page.  Click on the Device ID to bring up device details and then click on the ``Resources`` tab.  Scroll to ``Object ID 3336`` and click on resources attached to instance 0, such as ``/3336/0/5514`` which shows latitude, ``/3336/0/5515`` which shows longitude, and ``/3336/0/5516`` which shows accuracy.  On the popup dialog, click ``Edit`` and enter a new value in the ``Value`` text box.  Make sure that the ``PUT`` request type is chosen and then click the ``Send`` button.
+
+Here are some additional details about each of the user-configurable geographical resources.  Unless otherwise specified, each resource has a keystore option which can be modified on the serial console.  Please see the section entitled Option Keystore for more details about how to use this interface.
+
+####  Type
+
+* Resource ID: 5750
+* Path: /3336/0/5750
+* option key: none - this resource is not configurable
+* value: "user"
+
+#### Latitude
+
+* Resource ID: 5514
+* Path: /3336/0/5514
+* option key: geo.lat
+
+#### Longitude
+
+* Resource ID: 5515
+* Path: /3336/0/5515
+* option key: geo.long
+
+#### Accuracy
+
+* Resource ID: 5516
+* Path: /3336/0/5516
+* option key: geo.accuracy
