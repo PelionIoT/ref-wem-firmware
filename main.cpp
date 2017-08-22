@@ -599,7 +599,12 @@ mbed_client_handle_put_geo_lat(M2MClient *m2m)
     }
 
     k.open();
-    k.set(GEO_LAT_KEY, val);
+    /* special case '-' means delete */
+    if (val.length() == 1 && val[0] == '-') {
+        k.del(GEO_LAT_KEY);
+    } else {
+        k.set(GEO_LAT_KEY, val);
+    }
     k.close();
 }
 
@@ -618,7 +623,12 @@ mbed_client_handle_put_geo_long(M2MClient *m2m)
     }
 
     k.open();
-    k.set(GEO_LONG_KEY, val);
+    /* special case '-' means delete */
+    if (val.length() == 1 && val[0] == '-') {
+        k.del(GEO_LONG_KEY);
+    } else {
+        k.set(GEO_LONG_KEY, val);
+    }
     k.close();
 }
 
@@ -637,7 +647,12 @@ mbed_client_handle_put_geo_accuracy(M2MClient *m2m)
     }
 
     k.open();
-    k.set(GEO_ACCURACY_KEY, val);
+    /* special case '-' means delete */
+    if (val.length() == 1 && val[0] == '-') {
+        k.del(GEO_ACCURACY_KEY);
+    } else {
+        k.set(GEO_ACCURACY_KEY, val);
+    }
     k.close();
 }
 
