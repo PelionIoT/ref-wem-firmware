@@ -60,19 +60,8 @@ namespace json = rapidjson;
 #endif
 
 #define GEO_LAT_KEY "geo.lat"
-#ifndef MBED_CONF_APP_GEO_LAT
-#define MBED_CONF_APP_GEO_LAT "30.2433"
-#endif
-
 #define GEO_LONG_KEY "geo.long"
-#ifndef MBED_CONF_APP_GEO_LONG
-#define MBED_CONF_APP_GEO_LONG "-97.8456"
-#endif
-
 #define GEO_ACCURACY_KEY "geo.accuracy"
-#ifndef MBED_CONF_APP_GEO_ACCURACY
-#define MBED_CONF_APP_GEO_ACCURACY "11"
-#endif
 
 enum FOTA_THREADS {
     FOTA_THREAD_DISPLAY = 0,
@@ -1157,25 +1146,31 @@ static void init_geo(M2MClient *m2m)
     if (k.exists(GEO_LAT_KEY)) {
         m2m->set_resource_value(M2MClient::M2MClientResourceGeoLat,
                                 k.get(GEO_LAT_KEY));
+#ifdef MBED_CONF_APP_GEO_LAT
     } else {
         m2m->set_resource_value(M2MClient::M2MClientResourceGeoLat,
                                 MBED_CONF_APP_GEO_LAT);
+#endif
     }
 
     if (k.exists(GEO_LONG_KEY)) {
         m2m->set_resource_value(M2MClient::M2MClientResourceGeoLong,
                                 k.get(GEO_LONG_KEY));
+#ifdef MBED_CONF_APP_GEO_LONG
     } else {
         m2m->set_resource_value(M2MClient::M2MClientResourceGeoLong,
                                 MBED_CONF_APP_GEO_LONG);
+#endif
     }
 
     if (k.exists(GEO_ACCURACY_KEY)) {
         m2m->set_resource_value(M2MClient::M2MClientResourceGeoAccuracy,
                                 k.get(GEO_ACCURACY_KEY));
+#ifdef MBED_CONF_APP_GEO_ACCURACY
     } else {
         m2m->set_resource_value(M2MClient::M2MClientResourceGeoAccuracy,
                                 MBED_CONF_APP_GEO_ACCURACY);
+#endif
     }
 
     k.close();
