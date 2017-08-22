@@ -304,11 +304,26 @@ Geographical data can be written in 3 ways:
     geo.accuracy=11
     ```
 
-2. Through M2M PUT requests
+3. Through M2M PUT requests
 
     This can be demonstrated on the mbed cloud portal.  After a device is registered with the mbed cloud, it should be listed on the ``Connected Devices`` page.  Click on the Device ID to bring up device details and then click on the ``Resources`` tab.  Scroll to ``Object ID 3336`` and click on resources attached to instance 0, such as ``/3336/0/5514`` which shows latitude, ``/3336/0/5515`` which shows longitude, and ``/3336/0/5516`` which shows accuracy.  On the popup dialog, click ``Edit`` and enter a new value in the ``Value`` text box.  Make sure that the ``PUT`` request type is chosen and then click the ``Send`` button.
 
 Here are some additional details about each of the user-configurable geographical resources.  Unless otherwise specified, each resource has a keystore option which can be modified on the serial console.  Please see the section entitled Option Keystore for more details about how to use this interface.
+
+Geographical data can be effectively deleted from the mbed cloud portal by setting the resource to a '-' (dash).  This special character allows upstream web apps to clean up state and make any appropriate changes.
+
+    ```
+    > set geo.lat -
+    geo.lat=-
+
+    > set geo.long -
+    geo.long=-
+
+    > set geo.accuracy -
+    geo.accuracy=-
+
+    > reboot
+    ```
 
 ####  Type
 
