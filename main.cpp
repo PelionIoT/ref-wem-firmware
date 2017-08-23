@@ -14,6 +14,10 @@
 #include "keystore.h"
 #include "lcdprogress.h"
 
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+
 #include <SDBlockDevice.h>
 #include <errno.h>
 #include <factory_configurator_client.h>
@@ -38,6 +42,8 @@
 #error "No dev tag created"
 #endif
 
+namespace json = rapidjson;
+
 // ****************************************************************************
 // DEFINEs and type definitions
 // ****************************************************************************
@@ -52,6 +58,10 @@
 #ifndef MBED_CONF_APP_APP_LABEL
 #define MBED_CONF_APP_APP_LABEL "dragonfly"
 #endif
+
+#define GEO_LAT_KEY "geo.lat"
+#define GEO_LONG_KEY "geo.long"
+#define GEO_ACCURACY_KEY "geo.accuracy"
 
 enum FOTA_THREADS {
     FOTA_THREAD_DISPLAY = 0,
@@ -132,7 +142,7 @@ static void light_init(struct light_sensor *s, M2MClient *mbed_client)
     /* init the driver */
     s->dev = new AnalogIn(A0);
 
-    s->res = m2mclient->get_resource(M2MClient::M2MClientResourceLightSensor);
+    s->res = m2mclient->get_resource(M2MClient::M2MClientResourceLightValue);
     m2mclient->set_resource_value(s->res, "0", 1);
 }
 
@@ -204,9 +214,9 @@ static void dht_init(struct dht_sensor *s, M2MClient *mbed_client)
     s->dev = new DHT(D4, AM2302);
 
     s->t_res = mbed_client->get_resource(
-                    M2MClient::M2MClientResourceTempSensor);
+                    M2MClient::M2MClientResourceTempValue);
     s->h_res = mbed_client->get_resource(
-                    M2MClient::M2MClientResourceHumiditySensor);
+                    M2MClient::M2MClientResourceHumidityValue);
 
     /* set default values */
     display.set_sensor_status(s->t_id, "0");
@@ -337,6 +347,87 @@ static NetworkInterface *network_create(void)
                                 MBED_CONF_APP_WIFI_DEBUG);
 }
 
+/** Scans the wireless network for nearby APs.
+ *
+ * @param net The network interface to scan on.
+ * @param mbed_client The mBed Client cloud interface for uploading data.
+ * @return Returns the number of nearby APs on success,
+ *         -errno for failure.
+ */
+static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
+{
+    WiFiAccessPoint *ap;
+    ESP8266Interface *wifi = (ESP8266Interface *)net;
+
+    /* scan for a list of available APs */
+    int count = wifi->scan(NULL, 0);
+
+    /* allocate and scan again */
+    ap = new WiFiAccessPoint[count];
+    count = wifi->scan(ap, count);
+
+    /* setup the json document */
+    json::Document doc;
+    doc.SetArray();
+
+    /* create a json record for each AP which contains a
+     * macAddress and signalStrength key.
+     */
+    for (int idx = 0; idx < count; ++idx)
+    {
+        char macaddr[18] = {0};
+
+        snprintf(macaddr, sizeof(macaddr), "%02X:%02X:%02X:%02X:%02X:%02X",
+            ap[idx].get_bssid()[0], ap[idx].get_bssid()[1], ap[idx].get_bssid()[2],
+            ap[idx].get_bssid()[3], ap[idx].get_bssid()[4], ap[idx].get_bssid()[5]);
+
+        /* not the prettiest thing in the world, but it avoids having to create
+         * a number of variables to hold some these values.
+         * The first argument is a JSON object to be pushed back: this object has
+         * two members, the first of which is the macAddress key-value pair; the
+         * second member is the signalStrength key-value pair.
+         * Both the PushBack and AddMember calls require allocators which are
+         * retrieved from the JSON doc.
+         */
+        doc.PushBack(
+            json::Value(json::kObjectType).
+            AddMember(
+                "macAddress",
+                json::Value().SetString(
+                    macaddr,
+                    strlen(macaddr),
+                    doc.GetAllocator()),
+                doc.GetAllocator()).
+            AddMember(
+                "signalStrength",
+                ap[idx].get_rssi(),
+                doc.GetAllocator()
+            ),
+            doc.GetAllocator()
+        );
+    }
+
+    /* We need a StringBuffer and Writer to generate the JSON output that will be sent */
+    json::StringBuffer buf;
+    json::Writer<json::StringBuffer> writer(buf);
+    doc.Accept(writer);
+
+#if MBED_CONF_APP_WIFI_DEBUG
+    printf("%s\n", buf.GetString());
+#endif
+
+    /* update the M2MClient resource for network data and send it as a JSON array */
+    M2MResource *res = mbed_client->get_resource(
+                    M2MClient::M2MClientResourceNetwork);
+
+    m2mclient->set_resource_value(res, buf.GetString(), buf.GetLength());
+
+    /* cleanup */
+    delete []ap;
+
+    return count;
+}
+
 static int network_connect(NetworkInterface *net)
 {
     int ret;
@@ -413,6 +504,21 @@ static NetworkInterface *network_create(void)
     return new EthernetInterface();
 }
 
+/** Scans the current network for other devices.
+ *
+ * @note This is not implemented for Ethernet based devices.
+ * @param net The network interface to scan on.
+ * @param mbed_client The mBed Client cloud interface for uploading data.
+ * @return Returns -1 for failure or no devices found.
+ */
+static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
+{
+    (void) net;
+    (void) mbed_client;
+
+    return -1;
+}
+
 static int network_connect(NetworkInterface *net)
 {
     int ret;
@@ -438,6 +544,23 @@ static int network_connect(NetworkInterface *net)
 }
 #endif
 
+/**
+ * Continually attempt network connection until successful
+ */
+static void sync_network_connect(NetworkInterface *net)
+{
+    int ret;
+    do {
+        display.set_network_connecting();
+        ret = network_connect(net);
+        if (0 != ret) {
+            display.set_network_fail();
+            printf("WARN: failed to init network, retrying...\n");
+            Thread::wait(2000);
+        }
+    } while (0 != ret);
+}
+
 // ****************************************************************************
 // Cloud
 // ****************************************************************************
@@ -459,6 +582,78 @@ static void mbed_client_handle_put_app_label(M2MClient *m2m)
     k.close();
 
     set_app_label(m2m, label.c_str());
+}
+
+/**
+ * Handles a M2M PUT request on Geo Latitude
+ */
+static void
+mbed_client_handle_put_geo_lat(M2MClient *m2m)
+{
+    Keystore k;
+    std::string val;
+
+    val = m2m->get_resource_value_str(M2MClient::M2MClientResourceGeoLat);
+    if (val.length() == 0) {
+        return;
+    }
+
+    k.open();
+    /* special case '-' means delete */
+    if (val.length() == 1 && val[0] == '-') {
+        k.del(GEO_LAT_KEY);
+    } else {
+        k.set(GEO_LAT_KEY, val);
+    }
+    k.close();
+}
+
+/**
+ * Handles a M2M PUT request on Geo Longitude
+ */
+static void
+mbed_client_handle_put_geo_long(M2MClient *m2m)
+{
+    Keystore k;
+    std::string val;
+
+    val = m2m->get_resource_value_str(M2MClient::M2MClientResourceGeoLong);
+    if (val.length() == 0) {
+        return;
+    }
+
+    k.open();
+    /* special case '-' means delete */
+    if (val.length() == 1 && val[0] == '-') {
+        k.del(GEO_LONG_KEY);
+    } else {
+        k.set(GEO_LONG_KEY, val);
+    }
+    k.close();
+}
+
+/**
+ * Handles a M2M PUT request on Geo Accuracy
+ */
+static void
+mbed_client_handle_put_geo_accuracy(M2MClient *m2m)
+{
+    Keystore k;
+    std::string val;
+
+    val = m2m->get_resource_value_str(M2MClient::M2MClientResourceGeoAccuracy);
+    if (val.length() == 0) {
+        return;
+    }
+
+    k.open();
+    /* special case '-' means delete */
+    if (val.length() == 1 && val[0] == '-') {
+        k.del(GEO_ACCURACY_KEY);
+    } else {
+        k.set(GEO_ACCURACY_KEY, val);
+    }
+    k.close();
 }
 
 /**
@@ -583,6 +778,28 @@ static void mbed_client_on_error(void *context, int err_code,
     printf("ERROR: mbed client (%d) %s\n", err_code, err_name);
     printf("    Error details : %s\n", err_desc);
     display.set_cloud_error();
+    if ((err_code == MbedCloudClient::ConnectNetworkError) ||
+        (err_code == MbedCloudClient::ConnectDnsResolvingFailed)) {
+        network_disconnect(net);
+        display.set_network_fail();
+        display.set_cloud_unregistered();
+        printf("Network connection failed.  Attempting to reconnect.\n");
+        /* Because we are running in the mbed client thread context
+         * we want to disable our sensors from modifying the mbed
+         * client queue while we mess with the network.  This will
+         * allow the main context to continue to refresh the display.
+         *
+         * Holding on to this thread context until netork connection
+         * is re-established will prevent the mbed client from backing
+         * off the time between connection retries.
+         */
+        sensors_stop(&sensors, &evq);
+        sync_network_connect(net);
+        display.set_network_success();
+        sensors_start(&sensors, &evq);
+        /* CLoud client will automatically try to reconnect.*/
+        display.set_cloud_in_progress();
+    }
 }
 
 static void
@@ -597,6 +814,15 @@ mbed_client_on_resource_updated(void *context,
     switch (resource) {
     case M2MClient::M2MClientResourceAppLabel:
         evq.call(mbed_client_handle_put_app_label, m2m);
+        break;
+    case M2MClient::M2MClientResourceGeoLat:
+        evq.call(mbed_client_handle_put_geo_lat, m2m);
+        break;
+    case M2MClient::M2MClientResourceGeoLong:
+        evq.call(mbed_client_handle_put_geo_long, m2m);
+        break;
+    case M2MClient::M2MClientResourceGeoAccuracy:
+        evq.call(mbed_client_handle_put_geo_accuracy, m2m);
         break;
     default:
         res = m2m->get_resource(resource);
@@ -928,6 +1154,45 @@ static void init_app_label(M2MClient *m2m)
     set_app_label(m2m, label.c_str());
 }
 
+static void init_geo(M2MClient *m2m)
+{
+    Keystore k;
+
+    k.open();
+
+    if (k.exists(GEO_LAT_KEY)) {
+        m2m->set_resource_value(M2MClient::M2MClientResourceGeoLat,
+                                k.get(GEO_LAT_KEY));
+#ifdef MBED_CONF_APP_GEO_LAT
+    } else {
+        m2m->set_resource_value(M2MClient::M2MClientResourceGeoLat,
+                                MBED_CONF_APP_GEO_LAT);
+#endif
+    }
+
+    if (k.exists(GEO_LONG_KEY)) {
+        m2m->set_resource_value(M2MClient::M2MClientResourceGeoLong,
+                                k.get(GEO_LONG_KEY));
+#ifdef MBED_CONF_APP_GEO_LONG
+    } else {
+        m2m->set_resource_value(M2MClient::M2MClientResourceGeoLong,
+                                MBED_CONF_APP_GEO_LONG);
+#endif
+    }
+
+    if (k.exists(GEO_ACCURACY_KEY)) {
+        m2m->set_resource_value(M2MClient::M2MClientResourceGeoAccuracy,
+                                k.get(GEO_ACCURACY_KEY));
+#ifdef MBED_CONF_APP_GEO_ACCURACY
+    } else {
+        m2m->set_resource_value(M2MClient::M2MClientResourceGeoAccuracy,
+                                MBED_CONF_APP_GEO_ACCURACY);
+#endif
+    }
+
+    k.close();
+}
+
 static void init_app(EventQueue *queue)
 {
     int ret;
@@ -936,6 +1201,7 @@ static void init_app(EventQueue *queue)
     m2mclient->init();
 
     init_app_label(m2mclient);
+    init_geo(m2mclient);
     init_commander();
 
     /* create the network */
@@ -952,17 +1218,24 @@ static void init_app(EventQueue *queue)
      * in addition, the fcc code requires a connected network when generating
      * creds the first time, so we need to spin here until we have an active
      * network. */
-    do {
-        display.set_network_in_progress();
-        ret = network_connect(net);
-        if (0 != ret) {
-            display.set_network_fail();
-            printf("WARN: failed to init network, retrying...\n");
-            Thread::wait(2000);
-        }
-    } while (0 != ret);
-    display.set_network_success();
+    sync_network_connect(net);
     printf("init network: OK\n");
+
+    /* scan the network for nearby devices or APs. */
+    printf("scanning network for nearby devices...\n");
+    display.set_network_scanning();
+    ret = network_scan(net, m2mclient);
+    if (0 > ret) {
+        printf("WARN: failed to scan network! %d\n", ret);
+    } else {
+        printf("Found %d devices!\n", ret);
+    }
+
+    /* network_scan can take some time to perform when on WiFi, and since we
+     * don't have a separate indicator to show progress we delay the setting
+     * of success until we have finished.
+     */
+    display.set_network_success();
 
     /* initialize the factory configuration client
      * WARNING: the network must be connected first, otherwise this

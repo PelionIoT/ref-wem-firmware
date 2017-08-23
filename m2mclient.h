@@ -27,11 +27,34 @@ class M2MClient : public MbedCloudClientCallback {
 
 public:
     enum M2MClientResource {
+        /* Application Info */
         M2MClientResourceAppLabel,
         M2MClientResourceAppVersion,
-        M2MClientResourceTempSensor,
-        M2MClientResourceHumiditySensor,
-        M2MClientResourceLightSensor,
+
+        /* Temperature Sensor */
+        M2MClientResourceTempValue,
+
+        /* Humidity Sensor */
+        M2MClientResourceHumidityValue,
+
+        /* Light Sensor */
+        M2MClientResourceLightValue,
+
+        /* Network Data */
+        M2MClientResourceNetwork,
+
+        /* Geo Location specified by the user */
+        M2MClientResourceGeoLat,
+        M2MClientResourceGeoLong,
+        M2MClientResourceGeoAccuracy,
+        M2MClientResourceGeoType,
+
+        /* Geo Location determined by automatic means */
+        M2MClientResourceAutoGeoLat,
+        M2MClientResourceAutoGeoLong,
+        M2MClientResourceAutoGeoAccuracy,
+        M2MClientResourceAutoGeoType,
+
         /* must be last */
         M2MClientResourceCount
     };
@@ -39,21 +62,7 @@ public:
     M2MClient() : _registered(false), _register_called(false) {
     }
 
-    int init() {
-        int ret;
-
-        ret = add_app_resources();
-        if (0 != ret) {
-            return ret;
-        }
-
-        ret = add_sensor_resources();
-        if (0 != ret) {
-            return ret;
-        }
-
-        return 0;
-    }
+    int init();
 
     /* handles PUT callbacks from MbedCloudClient
      *
@@ -307,13 +316,14 @@ private:
     /* adds the M2M app resources to the internal object map */
     int add_app_resources();
 
-    /* adds the M2M sensor resources to the internal object map */
-    int add_sensor_resources();
+    /* adds the M2M Geo and GeoSensor resources to the internal object map */
+    int add_geo_resources();
 
     /* resource adders for each supported sensor type */
-    void add_light_sensor();
-    void add_temp_sensor();
-    void add_humidity_sensor();
+    int add_light_sensor();
+    int add_temp_sensor();
+    int add_humidity_sensor();
+    int add_network_sensor();
 
     /* registers all objects with the underlying MbedCloudClient */
     void register_objects();

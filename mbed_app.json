@@ -8,6 +8,18 @@
             "help": "Wipe the FCC credentials stored on the device",
             "value": "false"
         },
+        "geo-lat": {
+            "help": "Sets the device latitude, from -90.0 to 90.0",
+            "value": null
+        },
+        "geo-long": {
+            "help": "Sets the device longitude, from -180 to 180",
+            "value": null
+        },
+        "geo-accuracy": {
+            "help": "Sets the accuracy of geo-lat and geo-lon, in meters",
+            "value": null
+        },
         "self-test": {
             "help": "Run a self-test upon boot",
             "value": "false"

@@ -1,5 +1,42 @@
 #include "m2mclient.h"
 
+int M2MClient::init()
+{
+    int ret;
+
+    ret = add_app_resources();
+    if (0 != ret) {
+        return ret;
+    }
+
+    ret = add_light_sensor();
+    if (0 != ret) {
+        return ret;
+    }
+
+    ret = add_temp_sensor();
+    if (0 != ret) {
+        return ret;
+    }
+
+    ret = add_humidity_sensor();
+    if (0 != ret) {
+        return ret;
+    }
+
+    ret = add_network_sensor();
+    if (0 != ret) {
+        return ret;
+    }
+
+    ret = add_geo_resources();
+    if (0 != ret) {
+        return ret;
+    }
+
+    return 0;
+}
+
 std::string M2MClient::get_resource_value_str(M2MResource *res)
 {
     return res->get_value_string().c_str();
@@ -167,7 +204,7 @@ M2MResource *M2MClient::get_resource(enum M2MClientResource resource)
     return entry->res;
 }
 
-void M2MClient::add_light_sensor()
+int M2MClient::add_light_sensor()
 {
     M2MObject *obj;
     M2MResource *res;
@@ -175,14 +212,16 @@ void M2MClient::add_light_sensor()
 
     obj = M2MInterfaceFactory::create_object("3301");
     inst = obj->create_object_instance();
-    res = inst->create_dynamic_resource("1", "light_resource",
+    res = inst->create_dynamic_resource("5700", "light_value",
                                         M2MResourceInstance::FLOAT,
                                         true /* observable */);
     res->set_operation(M2MBase::GET_ALLOWED);
-    add_resource(res, M2MClientResourceLightSensor);
+    add_resource(res, M2MClientResourceLightValue);
+
+    return 0;
 }
 
-void M2MClient::add_temp_sensor()
+int M2MClient::add_temp_sensor()
 {
     M2MObject *obj;
     M2MResource *res;
@@ -190,14 +229,16 @@ void M2MClient::add_temp_sensor()
 
     obj = M2MInterfaceFactory::create_object("3303");
     inst = obj->create_object_instance();
-    res = inst->create_dynamic_resource("1", "temperature_resource",
+    res = inst->create_dynamic_resource("5700", "temperature_value",
                                         M2MResourceInstance::FLOAT,
                                         true /* observable */);
     res->set_operation(M2MBase::GET_ALLOWED);
-    add_resource(res, M2MClientResourceTempSensor);
+    add_resource(res, M2MClientResourceTempValue);
+
+    return 0;
 }
 
-void M2MClient::add_humidity_sensor()
+int M2MClient::add_humidity_sensor()
 {
     M2MObject *obj;
     M2MResource *res;
@@ -205,18 +246,37 @@ void M2MClient::add_humidity_sensor()
 
     obj = M2MInterfaceFactory::create_object("3304");
     inst = obj->create_object_instance();
-    res = inst->create_dynamic_resource("1", "humidity_resource",
+    res = inst->create_dynamic_resource("5700", "humidity_value",
                                         M2MResourceInstance::FLOAT,
                                         true /* observable */);
     res->set_operation(M2MBase::GET_ALLOWED);
-    add_resource(res, M2MClientResourceHumiditySensor);
+    add_resource(res, M2MClientResourceHumidityValue);
+
+    return 0;
 }
 
-int M2MClient::add_sensor_resources()
+int M2MClient::add_network_sensor()
 {
-    add_light_sensor();
-    add_temp_sensor();
-    add_humidity_sensor();
+    M2MObject *obj;
+    M2MResource *res;
+    M2MObjectInstance *inst;
+
+    /*
+     * create an instance of the top level object for fota-demo custom
+     * app resources
+     * */
+    obj = M2MInterfaceFactory::create_object("26242");
+    inst = obj->create_object_instance();
+
+    /*
+     * attach resources to the App object instance
+     */
+    res = inst->create_dynamic_resource("1", "network_resource",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_ALLOWED);
+    add_resource(res, M2MClientResourceNetwork);
+
     return 0;
 }
 
@@ -235,6 +295,87 @@ void M2MClient::value_updated(M2MBase *base, M2MBase::BaseType type)
     }
     
     _on_resource_updated_cb(_on_resource_updated_context, entry->type);
+}
+
+int M2MClient::add_geo_resources()
+{
+    const char *type;
+    M2MObject *obj;
+    M2MResource *res;
+    M2MObjectInstance *inst;
+
+    /* one object will hold both geo resource types */
+    obj = M2MInterfaceFactory::create_object("3336");
+
+    /*
+     * add the user-specified geo resource
+     * */
+    inst = obj->create_object_instance((uint16_t)0);
+    res = inst->create_dynamic_resource("5514", "Latitude",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceGeoLat);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5515", "Longitude",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceGeoLong);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5516", "Uncertainty",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceGeoAccuracy);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5750", "Application_Type",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_ALLOWED);
+    type = "user";
+    set_resource_value(res, type, strlen(type));
+    add_resource(res, M2MClientResourceGeoType);
+    res = NULL;
+
+    /*
+     * add the dynamic geo resource
+     * */
+    inst = obj->create_object_instance((uint16_t)1);
+    res = inst->create_dynamic_resource("5514", "Latitude",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceAutoGeoLat);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5515", "Longitude",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceAutoGeoLong);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5516", "Uncertainty",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_PUT_ALLOWED);
+    add_resource(res, M2MClientResourceAutoGeoAccuracy);
+    res = NULL;
+
+    res = inst->create_dynamic_resource("5750", "Application_Type",
+                                        M2MResourceInstance::STRING,
+                                        true /* observable */);
+    res->set_operation(M2MBase::GET_ALLOWED);
+    type = "auto";
+    set_resource_value(res, type, strlen(type));
+    add_resource(res, M2MClientResourceAutoGeoType);
+    res = NULL;
+
+    return 0;
 }
 
 int M2MClient::add_app_resources()
