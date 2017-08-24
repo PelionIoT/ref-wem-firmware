@@ -12,6 +12,7 @@ DEFAULT_TARGET:=K64F
 DEFAULT_TOOLCHAIN:=GCC_ARM
 
 SRCDIR:=.
+PATCHDIR:=${CURDIR}/patches
 SRCS:=$(wildcard $(SRCDIR)/*.cpp)
 HDRS:=$(wildcard $(SRCDIR)/*.h)
 LIBS:=$(wildcard $(SRCDIR)/*.lib)
@@ -90,15 +91,15 @@ ifeq (${MBED_TARGET},K64F)
   APP_OFFSET:=0x20400
   HEADER_OFFSET:=${BOOTLOADER_SIZE}
   ifeq (${MBED_TOOLCHAIN},GCC_ARM)
-    PATCHES:=../tools/MK64FN1M0xxx12.ld.diff ../tools/gcc_k64f_ram_patch.diff
+    PATCHES:=${PATCHDIR}/MK64FN1M0xxx12.ld.diff ${PATCHDIR}/gcc_k64f_ram_patch.diff
   else ifeq (${MBED_TOOLCHAIN},IAR)
-    PATCHES:=../tools/MK64FN1M0xxx12.icf.diff
+    PATCHES:=${PATCHDIR}/MK64FN1M0xxx12.icf.diff
   else ifeq (${MBED_TOOLCHAIN},ARM)
-    PATCHES:=./tools/MK64FN1M0xxx12.sct.diff
+    PATCHES:=${PATCHDIR}/MK64FN1M0xxx12.sct.diff
   endif
 endif
 
-PATCHES+=../tools/mbed-os-dns.diff
+PATCHES+=${PATCHDIR}/mbed-os-dns.diff
 
 # Builds the command to call 'mbed compile'.
 # $1: add extra options to the final command line
@@ -204,7 +205,7 @@ clean:
 .PHONY: patchclean
 patchclean:
 	@if [ -d mbed-os ]; then \
-		cd mbed-os && git apply -R ../tools/${PATCHES}; \
+		cd mbed-os && git apply -R ${PATCHES}; \
 	fi;
 	rm -f .patches
 
@@ -243,7 +244,7 @@ prepare: .mbed .deps update_default_resources.c .patches
 		(echo Error: could not detect mount path for the mbed board.  Verify that 'mbed detect' works.; exit 1)
 
 .patches: .deps
-	cd mbed-os && git apply ../tools/${PATCHES}
+	cd mbed-os && git apply ${PATCHES}
 	touch .patches
 
 ################################################################################
