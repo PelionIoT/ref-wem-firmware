@@ -18,9 +18,9 @@ HDRS:=$(wildcard $(SRCDIR)/*.h)
 LIBS:=$(wildcard $(SRCDIR)/*.lib)
 
 # The bootloader type and name
-BOOTLDR_TYPE:=restricted
-BOOTLDR_DIR:=mbed-bootloader-${BOOTLDR_TYPE}
+BOOTLDR_DIR:=mbed-bootloader
 BOOTLDR_PROG:=${BOOTLDR_DIR}.bin
+BOOTLOADER:=${CURDIR}/tools/${BOOTLDR_PROG}
 
 # Specify the path to the build profile.  If empty, the --profile option will
 # not be provided to 'mbed compile' which causes it to use the builtin default.
@@ -86,7 +86,6 @@ COMBINED_BIN_FILE:=${MBED_BUILD_DIR}/combined.bin
 # The linker script patch allows the compiled application to run after the mbed bootloader.
 # The ram patch gives us more than 130k of ram to use
 ifeq (${MBED_TARGET},K64F)
-  BOOTLOADER:=${CURDIR}/tools/${BOOTLDR_PROG}
   BOOTLOADER_SIZE=0x20000
   APP_OFFSET:=0x20400
   HEADER_OFFSET:=${BOOTLOADER_SIZE}
