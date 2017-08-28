@@ -1,5 +1,7 @@
 #include "displayman.h"
 
+#include "../compat.h"
+
 DisplayMan::DisplayMan() : _i2c(I2C_SDA, I2C_SCL), _lcd(&_i2c), _lcd_prog(_lcd)
 {
     _cycle_count = 0;

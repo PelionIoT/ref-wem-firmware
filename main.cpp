@@ -5,7 +5,7 @@
 //
 //  By the ARM Reference Design (Red) Team
 // ****************************************************************************
-#include "m2mclient.h"
+#include "compat.h"
 
 #include "commander.h"
 #include "DHT.h"
@@ -13,6 +13,7 @@
 #include "GL5528.h"
 #include "keystore.h"
 #include "lcdprogress.h"
+#include "m2mclient.h"
 
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
@@ -24,9 +25,14 @@
 #include <mbed-trace-helper.h>
 #include <mbed-trace/mbed_trace.h>
 
-#if MBED_CONF_APP_WIFI
+#if MBED_CONF_APP_WIFI && TARGET_UBLOX_EVK_ODIN_W2
+#include <OdinWiFiInterface.h>
+#elif MBED_CONF_APP_WIFI
 #include <ESP8266Interface.h>
 #else
+#if TARGET_UBLOX_EVK_ODIN_W2 && DEVICE_EMAC
+#error "to use Ethernet on ODIN, remove target.device_has EMAC in mbed_app.json"
+#endif
 #include <EthernetInterface.h>
 #endif
 
@@ -293,7 +299,10 @@ static void sensors_stop(struct sensors *s, EventQueue *q)
 // ****************************************************************************
 // Network
 // ****************************************************************************
-static void network_disconnect(NetworkInterface *net) { net->disconnect(); }
+static void network_disconnect(NetworkInterface *net)
+{
+    net->disconnect();
+}
 
 static char *network_get_macaddr(NetworkInterface *net, char *macstr)
 {
@@ -331,7 +340,21 @@ static nsapi_security_t wifi_security_str2sec(const char *security)
 /**
  * brings up wifi
  * */
-static NetworkInterface *network_create(void)
+#if TARGET_UBLOX_EVK_ODIN_W2
+static WiFiInterface *new_wifi_interface()
+{
+    return new OdinWiFiInterface();
+}
+#else
+static WiFiInterface *new_wifi_interface()
+{
+    return new ESP8266Interface(MBED_CONF_APP_WIFI_TX,
+                                MBED_CONF_APP_WIFI_RX,
+                                MBED_CONF_APP_WIFI_DEBUG);
+}
+#endif
+
+static WiFiInterface *network_create(void)
 {
     Keystore k;
     string ssid;
@@ -347,8 +370,7 @@ static NetworkInterface *network_create(void)
     display.init_network("WiFi");
     display.set_network_status(ssid);
 
-    return new ESP8266Interface(MBED_CONF_APP_WIFI_TX, MBED_CONF_APP_WIFI_RX,
-                                MBED_CONF_APP_WIFI_DEBUG);
+    return new_wifi_interface();
 }
 
 /** Scans the wireless network for nearby APs.
@@ -363,7 +385,7 @@ static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
     int reported;
     int available;
     WiFiAccessPoint *ap;
-    ESP8266Interface *wifi = (ESP8266Interface *)net;
+    WiFiInterface *wifi = (WiFiInterface *)net;
 
     /* scan for a list of available APs */
     available = wifi->scan(NULL, 0);
@@ -441,10 +463,10 @@ static int network_connect(NetworkInterface *net)
 {
     int ret;
     char macaddr[MACADDR_STRLEN];
-    ESP8266Interface *wifi;
+    WiFiInterface *wifi;
 
     /* code is compiled -fno-rtti so we have to use C cast */
-    wifi = (ESP8266Interface *)net;
+    wifi = (WiFiInterface *)net;
 
     //wifi login info set to default values
     string ssid     = MBED_CONF_APP_WIFI_SSID;
@@ -507,7 +529,7 @@ static int network_connect(NetworkInterface *net)
 /**
  * brings up Ethernet
  * */
-static NetworkInterface *network_create(void)
+static EthInterface *network_create(void)
 {
     display.init_network("Eth");
     return new EthernetInterface();

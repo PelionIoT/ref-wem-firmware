@@ -59,12 +59,12 @@ ifeq (${MBED_TARGET},)
   MBED_TARGET:=$(shell mbed detect 2>/dev/null | grep "Detected" | awk '{ print $$3 }' | sed 's/[,"]//g')
   ifeq (${MBED_TARGET},)
     MBED_TARGET:=${DEFAULT_TARGET}
-  else
-    # We only support K64F at this time
-    ifneq (${MBED_TARGET},K64F)
-      $(error We only support K64F at this time.)
-    endif
   endif
+endif
+
+# Make sure the board type is supported
+ifneq (${MBED_TARGET},$(filter ${MBED_TARGET},K64F UBLOX_EVK_ODIN_W2))
+  $(error Unsupported board type: ${MBED_TARGET})
 endif
 
 # Specifies the name of the toolchain to use for compilation
@@ -84,14 +84,20 @@ endif
 # Specifies the path to the directory containing build output files
 MBED_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}
 
+#
+# Determine the correct patches to use
+#
 
-# Determine the correct bootloader and patches to use
-# The linker script patch allows the compiled application to run after the mbed bootloader.
-# The ram patch gives us more than 130k of ram to use
+# TARGET=all
+PATCHES=${PATCHDIR}/mbed-os-dns.diff
+
 ifeq (${MBED_TARGET},K64F)
   BOOTLOADER_SIZE=0x20000
   APP_HEADER_OFFSET:=${BOOTLOADER_SIZE}
   APP_OFFSET:=0x20400
+  # The linker script patch allows the compiled application to run
+  # after the mbed bootloader.
+  # The ram patch gives us more than 130k of ram to use
   ifeq (${MBED_TOOLCHAIN},GCC_ARM)
     PATCHES:=${PATCHDIR}/MK64FN1M0xxx12.ld.diff ${PATCHDIR}/gcc_k64f_ram_patch.diff
   else ifeq (${MBED_TOOLCHAIN},IAR)
@@ -99,9 +105,16 @@ ifeq (${MBED_TARGET},K64F)
   else ifeq (${MBED_TOOLCHAIN},ARM)
     PATCHES:=${PATCHDIR}/MK64FN1M0xxx12.sct.diff
   endif
+else ifeq (${MBED_TARGET},UBLOX_EVK_ODIN_W2)
+  BOOTLOADER_SIZE=0x28000
+  APP_HEADER_OFFSET:=0x28000
+  APP_OFFSET:=0x28400
+  # The gcc patch allows the compiled application to run
+  # after the mbed bootloader.
+  ifeq (${MBED_TOOLCHAIN},GCC_ARM)
+    PATCHES:=${PATCHDIR}/ublox-evk-odin-w2-gcc.diff
+  endif
 endif
-
-PATCHES+=${PATCHDIR}/mbed-os-dns.diff
 
 # Builds the command to call 'mbed compile'.
 # $1: add extra options to the final command line
