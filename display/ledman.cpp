@@ -9,7 +9,11 @@
 
 #include <ws2801.h>
 
+#if TARGET_UBLOX_EVK_ODIN_W2
+static ws2801 led_strip(D7, D6, IND_NO_TYPES);
+#else
 static ws2801 led_strip(D3, D2, IND_NO_TYPES);
+#endif
 
 // colors being displayed
 static int LED_HARDWARE[IND_NO_TYPES] = {
