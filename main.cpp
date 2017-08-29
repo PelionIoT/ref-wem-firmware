@@ -1286,6 +1286,12 @@ int main()
     /* stack size 2048 is too small for fcc_developer_flow() */
     Thread thread(osPriorityNormal, 4096);
 
+    /* the bootloader doesn't seem to print a final newline before passing
+     * control to the app, which causes the version string to be mangled
+     * when printed on the console. if we print a newline first before
+     * printing anything else, we can work around the issue.
+     */
+    printf("\n");
     printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
     printf("     code version: " xstr(DEVTAG) "\n");
 
