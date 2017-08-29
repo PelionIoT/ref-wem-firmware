@@ -63,6 +63,10 @@ namespace json = rapidjson;
 #define GEO_LONG_KEY "geo.long"
 #define GEO_ACCURACY_KEY "geo.accuracy"
 
+#ifndef MBED_CONF_APP_MAX_REPORTED_APS
+#define MBED_CONF_APP_MAX_REPORTED_APS 8
+#endif
+
 enum FOTA_THREADS {
     FOTA_THREAD_DISPLAY = 0,
     FOTA_THREAD_SENSOR_LIGHT,
@@ -356,15 +360,20 @@ static NetworkInterface *network_create(void)
  */
 static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
 {
+    int reported;
+    int available;
     WiFiAccessPoint *ap;
     ESP8266Interface *wifi = (ESP8266Interface *)net;
 
     /* scan for a list of available APs */
-    int count = wifi->scan(NULL, 0);
+    available = wifi->scan(NULL, 0);
+
+    /* cap the number of APs reported */
+    reported = min(available, MBED_CONF_APP_MAX_REPORTED_APS);
 
     /* allocate and scan again */
-    ap = new WiFiAccessPoint[count];
-    count = wifi->scan(ap, count);
+    ap = new WiFiAccessPoint[reported];
+    reported = wifi->scan(ap, reported);
 
     /* setup the json document */
     json::Document doc;
@@ -373,9 +382,9 @@ static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
     /* create a json record for each AP which contains a
      * macAddress and signalStrength key.
      */
-    for (int idx = 0; idx < count; ++idx)
+    for (int idx = 0; idx < reported; ++idx)
     {
-        char macaddr[18] = {0};
+        char macaddr[MACADDR_STRLEN] = {0};
 
         snprintf(macaddr, sizeof(macaddr), "%02X:%02X:%02X:%02X:%02X:%02X",
             ap[idx].get_bssid()[0], ap[idx].get_bssid()[1], ap[idx].get_bssid()[2],
@@ -425,7 +434,7 @@ static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
     /* cleanup */
     delete []ap;
 
-    return count;
+    return reported;
 }
 
 static int network_connect(NetworkInterface *net)
