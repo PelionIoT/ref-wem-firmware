@@ -812,6 +812,11 @@ mbed_client_on_resource_updated(void *context,
     m2m = (M2MClient *)context;
 
     switch (resource) {
+    case M2MClient::M2MClientResourceAutoGeoLat:
+    case M2MClient::M2MClientResourceAutoGeoLong:
+    case M2MClient::M2MClientResourceAutoGeoAccuracy:
+        printf("INFO: auto geolocation data received\n");
+        break;
     case M2MClient::M2MClientResourceAppLabel:
         evq.call(mbed_client_handle_put_app_label, m2m);
         break;
