@@ -68,7 +68,7 @@
         "*": {
             "lwip.ipv4-enabled": true,
             "lwip.ipv6-enabled": false,
-            "mbed-client.sn-coap-max-blockwise-payload-size": 1024,
+            "mbed-client.sn-coap-max-blockwise-payload-size": 512,
             "mbed-trace.enable": null,
             "platform.stdio-baud-rate": 115200,
             "platform.stdio-convert-newlines": true,
