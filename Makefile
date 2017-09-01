@@ -274,7 +274,7 @@ MANIFEST_FILE=dev-manifest
 	python mbed-cloud-update-cli/upload-manifest.py ${MANIFEST_FILE} --key-file .mbed-cloud-key -o $@
 
 .firmware-url: .mbed-cloud-key ${COMBINED_BIN}
-	python mbed-cloud-update-cli/upload-firmware.py ${PROG_BIN}.bin --key-file .mbed-cloud-key -o $@
+	python mbed-cloud-update-cli/upload-firmware.py ${PROG_BIN} --key-file .mbed-cloud-key -o $@
 
 .PHONY: certclean
 certclean:
