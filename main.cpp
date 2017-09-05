@@ -317,7 +317,7 @@ static nsapi_security_t wifi_security_str2sec(const char *security)
         return NSAPI_SECURITY_WPA_WPA2;
 
     } else if (0 == strcmp("WPA2", security)) {
-        return NSAPI_SECURITY_WPA2;
+        return NSAPI_SECURITY_WPA_WPA2;
 
     } else if (0 == strcmp("WPA", security)) {
         return NSAPI_SECURITY_WPA;
