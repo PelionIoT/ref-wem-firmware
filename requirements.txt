@@ -1,2 +1,2 @@
 mbed-cli==1.2.0
-git+ssh://git@github.com/ARMmbed/manifest-tool-restricted.git@v1.2rc2
+git+ssh://git@github.com/ARMmbed/manifest-tool-restricted.git@v1.2rc4

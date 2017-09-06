@@ -5,7 +5,7 @@
 //
 //  By the ARM Reference Design (Red) Team
 // ****************************************************************************
-#include "m2mclient.h"
+#include "compat.h"
 
 #include "commander.h"
 #include "DHT.h"
@@ -13,6 +13,7 @@
 #include "GL5528.h"
 #include "keystore.h"
 #include "lcdprogress.h"
+#include "m2mclient.h"
 
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
@@ -24,9 +25,14 @@
 #include <mbed-trace-helper.h>
 #include <mbed-trace/mbed_trace.h>
 
-#if MBED_CONF_APP_WIFI
+#if MBED_CONF_APP_WIFI && TARGET_UBLOX_EVK_ODIN_W2
+#include <OdinWiFiInterface.h>
+#elif MBED_CONF_APP_WIFI
 #include <ESP8266Interface.h>
 #else
+#if TARGET_UBLOX_EVK_ODIN_W2 && DEVICE_EMAC
+#error "to use Ethernet on ODIN, remove target.device_has EMAC in mbed_app.json"
+#endif
 #include <EthernetInterface.h>
 #endif
 
@@ -62,6 +68,10 @@ namespace json = rapidjson;
 #define GEO_LAT_KEY "geo.lat"
 #define GEO_LONG_KEY "geo.long"
 #define GEO_ACCURACY_KEY "geo.accuracy"
+
+#ifndef MBED_CONF_APP_MAX_REPORTED_APS
+#define MBED_CONF_APP_MAX_REPORTED_APS 8
+#endif
 
 enum FOTA_THREADS {
     FOTA_THREAD_DISPLAY = 0,
@@ -289,7 +299,10 @@ static void sensors_stop(struct sensors *s, EventQueue *q)
 // ****************************************************************************
 // Network
 // ****************************************************************************
-static void network_disconnect(NetworkInterface *net) { net->disconnect(); }
+static void network_disconnect(NetworkInterface *net)
+{
+    net->disconnect();
+}
 
 static char *network_get_macaddr(NetworkInterface *net, char *macstr)
 {
@@ -304,7 +317,7 @@ static nsapi_security_t wifi_security_str2sec(const char *security)
         return NSAPI_SECURITY_WPA_WPA2;
 
     } else if (0 == strcmp("WPA2", security)) {
-        return NSAPI_SECURITY_WPA2;
+        return NSAPI_SECURITY_WPA_WPA2;
 
     } else if (0 == strcmp("WPA", security)) {
         return NSAPI_SECURITY_WPA;
@@ -327,7 +340,21 @@ static nsapi_security_t wifi_security_str2sec(const char *security)
 /**
  * brings up wifi
  * */
-static NetworkInterface *network_create(void)
+#if TARGET_UBLOX_EVK_ODIN_W2
+static WiFiInterface *new_wifi_interface()
+{
+    return new OdinWiFiInterface();
+}
+#else
+static WiFiInterface *new_wifi_interface()
+{
+    return new ESP8266Interface(MBED_CONF_APP_WIFI_TX,
+                                MBED_CONF_APP_WIFI_RX,
+                                MBED_CONF_APP_WIFI_DEBUG);
+}
+#endif
+
+static WiFiInterface *network_create(void)
 {
     Keystore k;
     string ssid;
@@ -343,8 +370,7 @@ static NetworkInterface *network_create(void)
     display.init_network("WiFi");
     display.set_network_status(ssid);
 
-    return new ESP8266Interface(MBED_CONF_APP_WIFI_TX, MBED_CONF_APP_WIFI_RX,
-                                MBED_CONF_APP_WIFI_DEBUG);
+    return new_wifi_interface();
 }
 
 /** Scans the wireless network for nearby APs.
@@ -356,15 +382,23 @@ static NetworkInterface *network_create(void)
  */
 static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
 {
+    int reported;
+    int available;
     WiFiAccessPoint *ap;
-    ESP8266Interface *wifi = (ESP8266Interface *)net;
+    WiFiInterface *wifi = (WiFiInterface *)net;
 
     /* scan for a list of available APs */
-    int count = wifi->scan(NULL, 0);
+    available = wifi->scan(NULL, 0);
+
+    /* cap the number of APs reported */
+    reported = min(available, MBED_CONF_APP_MAX_REPORTED_APS);
 
     /* allocate and scan again */
-    ap = new WiFiAccessPoint[count];
-    count = wifi->scan(ap, count);
+    ap = new WiFiAccessPoint[reported];
+    reported = wifi->scan(ap, reported);
+
+    printf("Found %d devices, reporting info on %d (max=%d)\n",
+           available, reported, MBED_CONF_APP_MAX_REPORTED_APS);
 
     /* setup the json document */
     json::Document doc;
@@ -373,9 +407,9 @@ static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
     /* create a json record for each AP which contains a
      * macAddress and signalStrength key.
      */
-    for (int idx = 0; idx < count; ++idx)
+    for (int idx = 0; idx < reported; ++idx)
     {
-        char macaddr[18] = {0};
+        char macaddr[MACADDR_STRLEN] = {0};
 
         snprintf(macaddr, sizeof(macaddr), "%02X:%02X:%02X:%02X:%02X:%02X",
             ap[idx].get_bssid()[0], ap[idx].get_bssid()[1], ap[idx].get_bssid()[2],
@@ -425,17 +459,17 @@ static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
     /* cleanup */
     delete []ap;
 
-    return count;
+    return reported;
 }
 
 static int network_connect(NetworkInterface *net)
 {
     int ret;
     char macaddr[MACADDR_STRLEN];
-    ESP8266Interface *wifi;
+    WiFiInterface *wifi;
 
     /* code is compiled -fno-rtti so we have to use C cast */
-    wifi = (ESP8266Interface *)net;
+    wifi = (WiFiInterface *)net;
 
     //wifi login info set to default values
     string ssid     = MBED_CONF_APP_WIFI_SSID;
@@ -498,7 +532,7 @@ static int network_connect(NetworkInterface *net)
 /**
  * brings up Ethernet
  * */
-static NetworkInterface *network_create(void)
+static EthInterface *network_create(void)
 {
     display.init_network("Eth");
     return new EthernetInterface();
@@ -812,6 +846,11 @@ mbed_client_on_resource_updated(void *context,
     m2m = (M2MClient *)context;
 
     switch (resource) {
+    case M2MClient::M2MClientResourceAutoGeoLat:
+    case M2MClient::M2MClientResourceAutoGeoLong:
+    case M2MClient::M2MClientResourceAutoGeoAccuracy:
+        printf("INFO: auto geolocation data received\n");
+        break;
     case M2MClient::M2MClientResourceAppLabel:
         evq.call(mbed_client_handle_put_app_label, m2m);
         break;
@@ -1227,8 +1266,6 @@ static void init_app(EventQueue *queue)
     ret = network_scan(net, m2mclient);
     if (0 > ret) {
         printf("WARN: failed to scan network! %d\n", ret);
-    } else {
-        printf("Found %d devices!\n", ret);
     }
 
     /* network_scan can take some time to perform when on WiFi, and since we
@@ -1286,6 +1323,12 @@ int main()
     /* stack size 2048 is too small for fcc_developer_flow() */
     Thread thread(osPriorityNormal, 4096);
 
+    /* the bootloader doesn't seem to print a final newline before passing
+     * control to the app, which causes the version string to be mangled
+     * when printed on the console. if we print a newline first before
+     * printing anything else, we can work around the issue.
+     */
+    printf("\n");
     printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
     printf("     code version: " xstr(DEVTAG) "\n");
 

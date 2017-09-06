@@ -1,5 +1,4 @@
-mbed-bootloader-restricted/*
-mbed-bootloader-internal/*
+mbed-bootloader/*
 rapidjson/test/*
 rapidjson/example/*
 rapidjson/include/rapidjson/msinttypes/*
