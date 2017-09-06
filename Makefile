@@ -226,16 +226,16 @@ patchclean:
 	rm -f .patches
 
 .PHONY: distclean
-distclean: clean
+distclean: clean certclean
 	for lib in ${LIBS}; do rm -rf $${lib%.lib}; done
 	rm -rf manifest-tool-restricted
-	rm -f update_default_resources.c
+	rm -rf mbed-cloud-client-restricted
+	rm -rf mbed-bootloader-restricted
 	rm -f .deps
 	rm -f .targetpath
 	rm -f .patches
 	rm -f .firmware-url
 	rm -f .manifest-id
-	rm -f .manifest_tool.json
 	rm -f ${MANIFEST_FILE}
 
 .PHONY: prepare
@@ -267,7 +267,7 @@ prepare: .mbed .deps update_default_resources.c .patches
 ################################################################################
 
 update_default_resources.c: .deps
-	@which manifest-tool || (echo Error: manifest-tool not found.  Install it with \"pip install git+ssh://git@github.com/ARMmbed/manifest-tool-restricted.git@v1.2rc2\"; exit 1)
+	@which manifest-tool || (echo Error: manifest-tool not found.  Install it with \"pip install -r requirements.txt\"; exit 1)
 	manifest-tool init -d "arm.com" -m "fota-demo" -q
 	touch update_default_resources.c
 
@@ -282,7 +282,7 @@ campaign: .deps .mbed-cloud-key .manifest-id
 
 MANIFEST_FILE=dev-manifest
 .manifest-id: .firmware-url .mbed-cloud-key ${COMBINED_BIN}
-	@which manifest-tool || (echo Error: manifest-tool not found.  Install it with \"pip install git+ssh://git@github.com/ARMmbed/manifest-tool-restricted.git@v1.2rc2\"; exit 1)
+	@which manifest-tool || (echo Error: manifest-tool not found.  Install it with \"pip install -r requirements.txt\"; exit 1)
 	manifest-tool create -u $$(cat .firmware-url) -p ${PROG_BIN} -o ${MANIFEST_FILE}
 	python mbed-cloud-update-cli/upload-manifest.py ${MANIFEST_FILE} --key-file .mbed-cloud-key -o $@
 
@@ -294,3 +294,6 @@ certclean:
 	rm -rf .update-certificates
 	rm -rf .manifest_tool.json
 	rm -f update_default_resources.c
+	rm -f .manifest-id
+	rm -f .firmware-url
+	rm -f ${MANIFEST_FILE}
