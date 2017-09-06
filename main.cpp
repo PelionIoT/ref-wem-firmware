@@ -397,6 +397,9 @@ static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
     ap = new WiFiAccessPoint[reported];
     reported = wifi->scan(ap, reported);
 
+    printf("Found %d devices, reporting info on %d (max=%d)\n",
+           available, reported, MBED_CONF_APP_MAX_REPORTED_APS);
+
     /* setup the json document */
     json::Document doc;
     doc.SetArray();
@@ -1263,8 +1266,6 @@ static void init_app(EventQueue *queue)
     ret = network_scan(net, m2mclient);
     if (0 > ret) {
         printf("WARN: failed to scan network! %d\n", ret);
-    } else {
-        printf("Found %d devices!\n", ret);
     }
 
     /* network_scan can take some time to perform when on WiFi, and since we
