@@ -106,9 +106,9 @@ ifeq (${MBED_TARGET},K64F)
     PATCHES:=${PATCHDIR}/MK64FN1M0xxx12.sct.diff
   endif
 else ifeq (${MBED_TARGET},UBLOX_EVK_ODIN_W2)
-  BOOTLOADER_SIZE=0x28000
-  APP_HEADER_OFFSET:=0x28000
-  APP_OFFSET:=0x28400
+  BOOTLOADER_SIZE=0x40000
+  APP_HEADER_OFFSET:=0x40000
+  APP_OFFSET:=0x40400
   # The gcc patch allows the compiled application to run
   # after the mbed bootloader.
   ifeq (${MBED_TOOLCHAIN},GCC_ARM)

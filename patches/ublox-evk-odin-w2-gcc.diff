@@ -5,7 +5,7 @@ index 86820f282..971b7af08 100644
 @@ -1,9 +1,9 @@
  #if !defined(MBED_APP_START)
 -  #define MBED_APP_START 0x08000000
-+  #define MBED_APP_START 0x08028400
++  #define MBED_APP_START 0x08040400
  #endif
  
  #if !defined(MBED_APP_SIZE)
