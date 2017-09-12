@@ -151,7 +151,7 @@ This is an overview of some of the common states the device may be in.
 | Wifi Connected  | Successful connection to Wifi access point | Green | Blue | OFF | OFF | OFF |
 | Cloud Connecting| Attempting to register with mbed cloud servers | Green | Blue | Flashing Yellow | Blue | OFF |
 | Cloud Connected | Successfull registration with mbed cloud servers | Green | Blue | Blue | Blue | OFF |
-| FOTA Download   | Received update compaign manifest and downloading firmware | Green | Blue | Blue | Blue | Flashing Yellow |
-| Firmware Update | Installing new firmware then rebooting | Green | Blue | Blue | Blue | Blue |
+| FOTA Download   | Received update compaign manifest, downloading firmware, and rebooting | Green | Blue | Blue | Blue | Flashing Yellow then Blue |
+| Firmware Update | After reboot to install firmware | Green | Blue | Blue | Blue | Flashing Yellow |
 | Wifi Failed     | Lost connection or failed to connect to wifi access point | Green | Red | OFF | OFF | OFF |
 | Cloud Failed    | Lost connection to mbed cloud | Green | Blue | Red | Blue | OFF |
