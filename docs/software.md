@@ -138,3 +138,20 @@ mbed client registered
     * Once the download has been completed the LCD should display "Saving..." then "Installing..." before rebooting.
 1. On reboot the device will go through several stages of verification while upgrading the image downloaded from mBed Cloud. The firmware indicator should be blinking YELLOW during this process.
 1. Upon a successful upgrade you should see the new version label you edited in the [previous step](#example-edit-version) on the LCD display next to "Version:" on the top line.
+
+## Device states and indicators
+
+This is an overview of some of the common states the device may be in.
+
+| State           | Description   | Power LED | WiFi LED | Cloud LED | Sensor LED | FOTA LED |
+| --------------- | ------------- | --------- | -------- | --------- | ---------- | -------- |
+| Power Off       | Power switch in off position | OFF | OFF | OFF | OFF | OFF |
+| Wifi Connecting | Attempting to connect to Wifi access point | Green | Flashing Yellow | OFF | OFF | OFF |
+| Network Scan    | Searching for Wifi access points | Green | Flashing Blue | OFF | OFF | OFF |
+| Wifi Connected  | Successful connection to Wifi access point | Green | Blue | OFF | OFF | OFF |
+| Cloud Connecting| Attempting to register with mbed cloud servers | Green | Blue | Flashing Yellow | Blue | OFF |
+| Cloud Connected | Successfull registration with mbed cloud servers | Green | Blue | Blue | Blue | OFF |
+| FOTA Download   | Received update compaign manifest and downloading firmware | Green | Blue | Blue | Blue | Flashing Yellow |
+| Firmware Update | Installing new firmware then rebooting | Green | Blue | Blue | Blue | Blue |
+| Wifi Failed     | Lost connection or failed to connect to wifi access point | Green | Red | OFF | OFF | OFF |
+| Cloud Failed    | Lost connection to mbed cloud | Green | Blue | Red | Blue | OFF |
