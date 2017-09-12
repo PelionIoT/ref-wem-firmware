@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <factory_configurator_client.h>
 #include <mbed_stats.h>
+#include <FATFileSystem.h>
 #include <mbed-trace-helper.h>
 #include <mbed-trace/mbed_trace.h>
 
@@ -114,7 +115,12 @@ struct sensors {
 // ****************************************************************************
 /* declared in pal_plat_fileSystem.cpp, which is included because COMMON_PAL
  * is defined in mbed_app.json */
-extern SDBlockDevice sd;
+SDBlockDevice sd(MBED_CONF_SD_SPI_MOSI,
+                 MBED_CONF_SD_SPI_MISO,
+                 MBED_CONF_SD_SPI_CLK,
+                 MBED_CONF_SD_SPI_CS);
+FATFileSystem fs("sd", &sd);
+
 static DisplayMan display;
 static M2MClient *m2mclient;
 static NetworkInterface *net;
@@ -1430,9 +1436,10 @@ int main()
     cmd.printf("init platform\n");
     ret = platform_init();
     if (0 != ret) {
-        return ret;
+        printf("init platform: FAIL\n");
+    } else {
+        printf("init platform: OK\n");
     }
-    cmd.printf("init platform: OK\n");
 
     /* set the refresh rate of the display. */
     display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);

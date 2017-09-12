@@ -64,7 +64,7 @@
         "PAL_USE_FATFS_SD=1",
         "SA_PV_OS_MBEDOS",
         "MBED_HEAP_STATS_ENABLED=1",
-        "MBED_STACK_STATS_ENABLED=1"
+        "MBED_STACK_STATS_ENABLED=0"
     ],
     "target_overrides": {
         "*": {
@@ -78,10 +78,12 @@
             ]
         },
         "K64F": {
-            "mbed-client-pal.update-active-metadata-header-offset": "0x00020000"
+            "update-client.application-details": "0x00020000",
+            "update-client.bootloader-details": "0x00016778"
         },
         "UBLOX_EVK_ODIN_W2": {
-            "mbed-client-pal.update-active-metadata-header-offset": "0x08040000"
+            "update-client.application-details": "0x08040000",
+            "update-client.bootloader-details": "0x08000000"
         }
     }
 }
