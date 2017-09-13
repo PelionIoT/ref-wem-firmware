@@ -1,7 +1,4 @@
 #include <string>
-#include <pal.h>
-#include <pal_plat_fileSystem.h>
-#include <pal_plat_rtos.h>
 #include <vector>
 #include <map>
 
@@ -46,6 +43,11 @@ public:
         destructor
     */
     ~Keystore();
+
+    /*
+     * performs initialization of underlying storage
+     */
+    static int init();
 
     /*
         Function: open
@@ -260,18 +262,18 @@ protected:
     std::map<std::string, std::string> _mapdb;
 
     /*
-        variable: std::string _strfilename
+        variable: std::string _strfilepath
 
-        the default filename for the database
+        the absolute path to the database file
     */
-    std::string _strfilename;
+    static std::string _strfilepath;
 
     /*
         variable: std::string _strdir
 
         the default directory for the database file
     */
-    std::string _strdir;
+    static std::string _strdir;
 
 };
 

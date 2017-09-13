@@ -1,12 +1,27 @@
 #include "keystore.h"
 
+#include <pal.h>
+#include <pal_plat_fileSystem.h>
+#include <pal_plat_rtos.h>
+#include <SDBlockDevice.h>
+#include <FATFileSystem.h>
+
 using namespace std;
+
+#define KEYSTORE_SUBDIR "keystore"
+#define KEYSTORE_FILENAME "keystore.data"
+
+string Keystore::_strdir;
+string Keystore::_strfilepath;
+
+extern SDBlockDevice sd(MBED_CONF_SD_SPI_MOSI,
+                        MBED_CONF_SD_SPI_MISO,
+                        MBED_CONF_SD_SPI_CLK,
+                        MBED_CONF_SD_SPI_CS);
+FATFileSystem fs("sd", &sd);
 
 Keystore::Keystore()
 {
-    //init the name/file info
-    _strdir      = "keystore";
-    _strfilename = "keystore.data";
 }
 
 Keystore::~Keystore()
@@ -14,9 +29,42 @@ Keystore::~Keystore()
     //do cleanup
 }
 
+int Keystore::init()
+{
+    int ret;
+    palStatus_t pal_status;
+    char mount_path[PAL_MAX_FOLDER_DEPTH_CHAR] = { 0 };
+
+    ret = sd.init();
+    if (ret != BD_ERROR_OK) {
+        return ret;
+    }
+
+    pal_status = pal_fsGetMountPoint(PAL_FS_PARTITION_PRIMARY,
+                                     sizeof(mount_path),
+                                     mount_path);
+    if (pal_status != PAL_SUCCESS) {
+        return pal_status;
+    }
+
+    Keystore::_strdir = mount_path;
+    Keystore::_strdir += "/";
+    Keystore::_strdir += KEYSTORE_SUBDIR;
+
+    pal_status = pal_fsMkDir(Keystore::_strdir.c_str());
+    if ((pal_status != PAL_SUCCESS)
+        && (pal_status != PAL_ERR_FS_NAME_ALREADY_EXIST)) {
+        return pal_status;
+    }
+
+    Keystore::_strfilepath = Keystore::_strdir + "/" + KEYSTORE_FILENAME;
+
+    return 0;
+}
+
 void Keystore::kill_all()
 {
-    pal_fsRmFiles(_strdir.c_str());
+    pal_fsRmFiles(Keystore::_strdir.c_str());
 }
 
 void Keystore::open()
@@ -30,11 +78,8 @@ void Keystore::open()
     //file operation status
     palStatus_t rt = PAL_SUCCESS;
 
-    //create our dir/file as a single string
-    string filepath = _strdir + "/" + _strfilename;
-
     //open our file
-    rt = pal_fsFopen(filepath.c_str(), PAL_FS_FLAG_READONLY, &fd);
+    rt = pal_fsFopen(Keystore::_strfilepath.c_str(), PAL_FS_FLAG_READONLY, &fd);
 
     //if it worked
     if(rt == PAL_SUCCESS) {
@@ -82,14 +127,10 @@ void Keystore::close()
     //file operation status
     palStatus_t rt = PAL_SUCCESS;
 
-    //try to make our directory to make sure it exists
-    rt = pal_fsMkDir(_strdir.c_str());
-
-    //create our dir/name single string
-    string filepath = _strdir + "/" + _strfilename;
-
     //open the file
-    rt = pal_fsFopen(filepath.c_str(), PAL_FS_FLAG_READWRITETRUNC, &fd);
+    rt = pal_fsFopen(Keystore::_strfilepath.c_str(),
+                     PAL_FS_FLAG_READWRITETRUNC,
+                     &fd);
 
     //if we succed
     if (rt == PAL_SUCCESS) {

@@ -21,11 +21,9 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 
-#include <SDBlockDevice.h>
 #include <errno.h>
 #include <factory_configurator_client.h>
 #include <mbed_stats.h>
-#include <FATFileSystem.h>
 #include <mbed-trace-helper.h>
 #include <mbed-trace/mbed_trace.h>
 
@@ -113,14 +111,6 @@ struct sensors {
 // ****************************************************************************
 // Globals
 // ****************************************************************************
-/* declared in pal_plat_fileSystem.cpp, which is included because COMMON_PAL
- * is defined in mbed_app.json */
-SDBlockDevice sd(MBED_CONF_SD_SPI_MOSI,
-                 MBED_CONF_SD_SPI_MISO,
-                 MBED_CONF_SD_SPI_CLK,
-                 MBED_CONF_SD_SPI_CS);
-FATFileSystem fs("sd", &sd);
-
 static DisplayMan display;
 static M2MClient *m2mclient;
 static NetworkInterface *net;
@@ -976,13 +966,13 @@ static int platform_init(void)
     mbed_trace_mutex_release_function_set(mbed_trace_helper_mutex_release);
 #endif
 
-    /* init the sd card */
-    ret = sd.init();
-    if (ret != BD_ERROR_OK) {
-        cmd.printf("ERROR: sd init failed: %d\n", ret);
+    /* init the keystore */
+    ret = Keystore::init();
+    if (0 != ret) {
+        printf("ERROR: keystore init failed: %d\n", ret);
         return ret;
     }
-    cmd.printf("sd init OK\n");
+    printf("keystore init OK\n");
 
     return 0;
 }
@@ -1436,9 +1426,9 @@ int main()
     cmd.printf("init platform\n");
     ret = platform_init();
     if (0 != ret) {
-        printf("init platform: FAIL\n");
+        cmd.printf("init platform: FAIL\n");
     } else {
-        printf("init platform: OK\n");
+        cmd.printf("init platform: OK\n");
     }
 
     /* set the refresh rate of the display. */
