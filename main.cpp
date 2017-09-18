@@ -602,6 +602,13 @@ static void sync_network_connect(NetworkInterface *net)
 // ****************************************************************************
 // Cloud
 // ****************************************************************************
+static void mbed_client_keep_alive(M2MClient *m2m)
+{
+    if (m2m->is_client_registered()) {
+        m2m->keep_alive();
+    }
+}
+
 /**
  * Handles a M2M PUT request on the app label resource
  */
@@ -893,6 +900,11 @@ static int register_mbed_client(NetworkInterface *iface, M2MClient *mbed_client)
     display.set_cloud_in_progress();
     mbed_client->call_register(iface);
 
+    /* set up a keep-alive interval to send registration updates to the
+     * mbed cloud server to avoid deregistration/registration issues. */
+    evq.call_every((MBED_CLOUD_CLIENT_LIFETIME / 4) * 1000,
+                   mbed_client_keep_alive,
+                   mbed_client);
     return 0;
 }
 
