@@ -15,6 +15,7 @@
 #include "lcdprogress.h"
 #include "m2mclient.h"
 
+#include "rapidjson/allocators.h"
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
@@ -72,6 +73,8 @@ namespace json = rapidjson;
 #ifndef MBED_CONF_APP_MAX_REPORTED_APS
 #define MBED_CONF_APP_MAX_REPORTED_APS 8
 #endif
+
+#define JSON_MEM_POOL_INC 64
 
 enum FOTA_THREADS {
     FOTA_THREAD_DISPLAY = 0,
@@ -400,8 +403,9 @@ static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
     printf("Found %d devices, reporting info on %d (max=%d)\n",
            available, reported, MBED_CONF_APP_MAX_REPORTED_APS);
 
-    /* setup the json document */
-    json::Document doc;
+    /* setup the json document and custom allocator */
+    json::MemoryPoolAllocator<json::CrtAllocator> allocator(JSON_MEM_POOL_INC);
+    json::Document doc(&allocator);
     doc.SetArray();
 
     /* create a json record for each AP which contains a
