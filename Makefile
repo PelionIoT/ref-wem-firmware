@@ -163,16 +163,13 @@ define Build/Bootloader/CheckSize
 endef
 
 .PHONY: all
-all: build
-
-.PHONY: build
-build: prepare ${COMBINED_BIN}
+all: ${COMBINED_BIN}
 
 ${COMBINED_BIN}: ${BOOTLDR_BIN} ${PROG_BIN}
 	$(call Build/Bootloader/CheckSize,${BOOTLOADER_SIZE})
 	tools/combine_bootloader_with_app.py -b ${BOOTLDR_BIN} -a ${PROG_BIN} --app-offset ${APP_OFFSET} --header-offset ${APP_HEADER_OFFSET} -o ${COMBINED_BIN}
 
-${PROG_BIN}: prepare ${SRCS} ${HDRS} mbed_app.json
+${PROG_BIN}: prepare ${SRCS} ${HDRS}
 	@$(call Build/Compile,"-DDEVTAG=${DEVTAG}")
 	cp ${MBED_BUILD_DIR}/${PROG}.bin $@
 
@@ -227,8 +224,20 @@ distclean: clean certclean
 	rm -f .manifest-id
 	rm -f ${MANIFEST_FILE}
 
+.PHONY: mbed_app.json
+mbed_app.json:
+	@if [ -e mbed_app_local.json ]; then \
+		echo "applying mbed_app_local.json"; \
+		python tools/merge_json.py mbed_app.json mbed_app_local.json > mbed_app_merged.json; \
+		if cat mbed_app_merged.json | python -m json.tool >/dev/null 2>&1; then \
+			mv mbed_app_merged.json mbed_app.json; \
+		else \
+			echo "Error: failed to merge $@ with mbed_app_local.json"; \
+		fi; \
+	fi
+
 .PHONY: prepare
-prepare: .mbed .deps update_default_resources.c .patches
+prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 	mkdir -p ${BINDIR}
 
 .mbed:
