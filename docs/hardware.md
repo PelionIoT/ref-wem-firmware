@@ -105,6 +105,19 @@ Open your printer software, then:
 
 The remaining five STL files can be printed separately. The "body" takes the longest amount of time to print. The externally visible parts (top, middle, and bottom) should be printed using fine-grained settings to ensure as smooth a finish as possible.
 
+### Manufacturing choices
+
+The top part has built-in light channels, so manufacturing choices are split in two categories:
+
+1. Printing the top part without light channels and adding them in-house, either via translucent material pouring (e.g. epoxy or silicone gel), or via press-fitting acrylic cut parts. Both these variants are difficult and are likely to yield low quality results such as uneven surfaces or gaps.
+1. Printing the top part with a dual material process. This is the recommended action, even though it comes with a severe limitation in manufacturing processes.
+
+Only fused deposition modeling (FDM) and PolyJet are able to embed translucent material into a part. Of the two, FDM is the most cost effective, and PolyJet is the better looking. The exact difference in unfinished quality will vary with the manufacturer. The recommended course of action is to get one unit with each of the two processes, and pick one to move forward based on visual inspection.
+
+### Finishing choices
+
+We have used manual sanding and painting for the best results. Manufacturing houses all want to avoid this, because of the high and non-scalable cost. Some houses offer automatic sanding and some mention the ability to paint, but without specific pricing. The recommendation is to manufacture the parts with no finish or with only automatic sanding, and see whether the outcome looks satisfactory enough.
+
 ## Gluing LEDs into the case
 
 ![](leds.jpg)

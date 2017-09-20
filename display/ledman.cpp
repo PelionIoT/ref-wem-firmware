@@ -10,7 +10,7 @@
 #include <ws2801.h>
 
 #if TARGET_UBLOX_EVK_ODIN_W2
-static ws2801 led_strip(D7, D6, IND_NO_TYPES);
+static ws2801 led_strip(D7, D6, IND_NO_TYPES * 2);
 #else
 static ws2801 led_strip(D3, D2, IND_NO_TYPES);
 #endif
@@ -19,6 +19,13 @@ static ws2801 led_strip(D3, D2, IND_NO_TYPES);
 static int LED_HARDWARE[IND_NO_TYPES] = {
     IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF,
     IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF};
+#if TARGET_UBLOX_EVK_ODIN_W2
+static int LED_HARDWARE_ODIN[IND_NO_TYPES * 2] = {
+    IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF,
+    IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF,
+    IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF, IND_COLOR_OFF,
+    IND_COLOR_OFF, IND_COLOR_OFF};
+#endif
 /* really poor design, but we store the indicator flags in the upper 8-bits
  * and the color in the lower 24-bits. Once blinking is disabled then we
  * just update the LED_HARDWARE field with the original color.
@@ -91,7 +98,46 @@ void led_post(void)
         }
         LED_HARDWARE[idx] = color & 0x00FFFFFF;
     }
+#if TARGET_UBLOX_EVK_ODIN_W2
+    for (idx = 0; idx < IND_NO_TYPES; ++idx) {
+        switch (LED_HARDWARE[idx]) {
+        case COMMI_RED:
+            LED_HARDWARE_ODIN[2 * idx] = COMMI_RED_HI;
+            LED_HARDWARE_ODIN[2 * idx + 1] = COMMI_RED_LO;
+            break;
+        case CANADIAN_BLUE:
+            LED_HARDWARE_ODIN[2 * idx] = CANADIAN_BLUE_HI;
+            LED_HARDWARE_ODIN[2 * idx + 1] = CANADIAN_BLUE_LO;
+            break;
+        case SLIMER_GREEN:
+            LED_HARDWARE_ODIN[2 * idx] = SLIMER_GREEN_HI;
+            LED_HARDWARE_ODIN[2 * idx + 1] = SLIMER_GREEN_LO;
+            break;
+        case SNOW_YELLOW:
+            LED_HARDWARE_ODIN[2 * idx] = SNOW_YELLOW_HI;
+            LED_HARDWARE_ODIN[2 * idx + 1] = SNOW_YELLOW_LO;
+            break;
+        case MIDNIGHT_GREEN:
+            LED_HARDWARE_ODIN[2 * idx] = MIDNIGHT_GREEN_HI;
+            LED_HARDWARE_ODIN[2 * idx + 1] = MIDNIGHT_GREEN_LO;
+            break;
+        case MIDNIGHT_BLUE:
+            LED_HARDWARE_ODIN[2 * idx] = MIDNIGHT_BLUE_HI;
+            LED_HARDWARE_ODIN[2 * idx + 1] = MIDNIGHT_BLUE_LO;
+            break;
+        case SUMMER_BLUE:
+            LED_HARDWARE_ODIN[2 * idx] = SUMMER_BLUE_HI;
+            LED_HARDWARE_ODIN[2 * idx + 1] = SUMMER_BLUE_LO;
+            break;
+        default:
+            LED_HARDWARE_ODIN[2 * idx] = 0;
+            LED_HARDWARE_ODIN[2 * idx + 1] = 0;
+        }
+    }
+    led_strip.post(LED_HARDWARE_ODIN);
+#else
     led_strip.post(LED_HARDWARE);
+#endif
 }
 
 void led_setup(void)
