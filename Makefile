@@ -147,6 +147,7 @@ define Build/Bootloader/Compile
 	ln -fs ../TextLCD ; \
 	ln -fs ../ws2801  ; \
 	ln -fs ../.mbed ; \
+	mbed update; \
 	cmd="mbed compile $${opts}"; \
 	echo "$${cmd}"; \
 	$${cmd};
