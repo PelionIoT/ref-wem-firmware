@@ -248,7 +248,7 @@ prepare: .mbed .deps update_default_resources.c .patches
 		(echo Error: could not detect mount path for the mbed board.  Verify that 'mbed detect' works.; exit 1)
 
 .patches: .deps
-	@for target in ${PATCHDIR}/{COMMON,${MBED_TARGET}}; do \
+	@[ -f .patches ] || for target in ${PATCHDIR}/{COMMON,${MBED_TARGET}}; do \
 		for patchdir in $${target}/*; do \
 			for patch in $${patchdir}/*; do \
 				patch -d $${patchdir##*/} -p1 < $${patch}; \
