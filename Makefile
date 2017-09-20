@@ -88,32 +88,14 @@ MBED_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}
 # Determine the correct patches to use
 #
 
-# TARGET=all
-PATCHES=${PATCHDIR}/mbed-os-dns.diff
-
 ifeq (${MBED_TARGET},K64F)
   BOOTLOADER_SIZE=0x20000
   APP_HEADER_OFFSET:=${BOOTLOADER_SIZE}
   APP_OFFSET:=0x20400
-  # The linker script patch allows the compiled application to run
-  # after the mbed bootloader.
-  # The ram patch gives us more than 130k of ram to use
-  ifeq (${MBED_TOOLCHAIN},GCC_ARM)
-    PATCHES:=${PATCHDIR}/MK64FN1M0xxx12.ld.diff ${PATCHDIR}/gcc_k64f_ram_patch.diff
-  else ifeq (${MBED_TOOLCHAIN},IAR)
-    PATCHES:=${PATCHDIR}/MK64FN1M0xxx12.icf.diff
-  else ifeq (${MBED_TOOLCHAIN},ARM)
-    PATCHES:=${PATCHDIR}/MK64FN1M0xxx12.sct.diff
-  endif
 else ifeq (${MBED_TARGET},UBLOX_EVK_ODIN_W2)
   BOOTLOADER_SIZE=0x40000
   APP_HEADER_OFFSET:=0x40000
   APP_OFFSET:=0x40400
-  # The gcc patch allows the compiled application to run
-  # after the mbed bootloader.
-  ifeq (${MBED_TOOLCHAIN},GCC_ARM)
-    PATCHES:=${PATCHDIR}/ublox-evk-odin-w2-gcc.diff
-  endif
 endif
 
 # Builds the command to call 'mbed compile'.
@@ -220,9 +202,15 @@ clean:
 
 .PHONY: patchclean
 patchclean:
-	@if [ -d mbed-os ]; then \
-		cd mbed-os && git apply -R ${PATCHES}; \
-	fi;
+	@for target in ${PATCHDIR}/{COMMON,${MBED_TARGET}}; do \
+		for patchdir in $${target}/*; do \
+			for patch in $${patchdir}/*; do \
+				if [ -d $${patchdir##*/} ]; then \
+					patch -R -d $${patchdir##*/} -p1 < $${patch}; \
+				fi; \
+			done; \
+		done; \
+	done && \
 	rm -f .patches
 
 .PHONY: distclean
@@ -259,8 +247,14 @@ prepare: .mbed .deps update_default_resources.c .patches
 		(echo Error: could not detect mount path for the mbed board.  Verify that 'mbed detect' works.; exit 1)
 
 .patches: .deps
-	cd mbed-os && git apply ${PATCHES}
-	touch .patches
+	@for target in ${PATCHDIR}/{COMMON,${MBED_TARGET}}; do \
+		for patchdir in $${target}/*; do \
+			for patch in $${patchdir}/*; do \
+				patch -d $${patchdir##*/} -p1 < $${patch}; \
+			done; \
+		done; \
+	done && \
+    touch .patches
 
 ################################################################################
 # Update related rules
