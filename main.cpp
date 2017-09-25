@@ -5,6 +5,7 @@
 //
 //  By the ARM Reference Design (Red) Team
 // ****************************************************************************
+#include <mbed.h>
 #include "compat.h"
 
 #include "commander.h"
