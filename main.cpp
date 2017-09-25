@@ -1327,13 +1327,6 @@ static void init_app(EventQueue *queue)
 {
     int ret;
 
-    m2mclient = new M2MClient();
-    m2mclient->init();
-
-    init_app_label(m2mclient);
-    init_geo(m2mclient);
-    init_commander();
-
     /* create the network */
     printf("init network\n");
     net = network_create();
@@ -1342,6 +1335,13 @@ static void init_app(EventQueue *queue)
         display.set_network_fail();
         return;
     }
+
+    m2mclient = new M2MClient();
+    m2mclient->init();
+
+    init_app_label(m2mclient);
+    init_geo(m2mclient);
+    init_commander();
 
     /* workaround: go ahead and connect the network.  it doesn't like being
      * polled for status before a connect() is attempted.
