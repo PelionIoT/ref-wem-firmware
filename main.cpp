@@ -24,6 +24,7 @@
 #include <SDBlockDevice.h>
 #include <errno.h>
 #include <factory_configurator_client.h>
+#include <mbed_stats.h>
 #include <mbed-trace-helper.h>
 #include <mbed-trace/mbed_trace.h>
 
@@ -987,6 +988,73 @@ static void platform_shutdown()
 // ****************************************************************************
 // call back handlers for commandline interface
 // ****************************************************************************
+static void cmd_cb_mstat(vector<string>& params)
+{
+#if MBED_HEAP_STATS_ENABLED == 1
+    mbed_stats_heap_t heap_stats;
+
+    mbed_stats_heap_get(&heap_stats);
+    /* heap_stats.current_size: bytes allocated currently */
+    cmd.printf("heap used: %lu\n", heap_stats.current_size);
+    /* heap_stats.max_size: max bytes allocated at a given time */
+    cmd.printf("heap high: %lu\n", heap_stats.max_size);
+    /* heap_stats.reserved_size: current bytes allocated for the heap */
+    cmd.printf("heap total: %lu\n", heap_stats.reserved_size);
+    /* heap_stats.total_size: cumulative sum of bytes ever allocated */
+    cmd.printf("heap cumulative: %lu\n", heap_stats.total_size);
+    /* heap_stats.alloc_cnt: current number of allocations */
+    cmd.printf("heap allocs: %lu\n", heap_stats.alloc_cnt);
+    /* heap_stats.alloc_fail_cnt: number of failed allocations */
+    cmd.printf("heap fails: %lu\n", heap_stats.alloc_fail_cnt);
+#endif
+
+#if MBED_STACK_STATS_ENABLED == 1
+    osEvent info;
+    osThreadEnumId id;
+    osThreadId thread;
+    osThreadId main_thread;
+
+    id = _osThreadsEnumStart();
+    main_thread = osThreadGetId();
+    while ( (thread = _osThreadEnumNext(id)) != NULL) {
+        if (main_thread == thread) {
+            cmd.printf("thread[%lu]: %p (main)\n", *id, thread);
+        } else {
+            cmd.printf("thread[%lu]: %p\n", *id, thread);
+        }
+
+        info = _osThreadGetInfo(thread, osThreadInfoEntry);
+        if (info.status == osOK) {
+            cmd.printf("thread[%lu] entry: %p\n", *id, info.value.p);
+        } else {
+            cmd.printf("thread[%lu] entry:\n", *id);
+        }
+
+        info = _osThreadGetInfo(thread, osThreadInfoState);
+        if (info.status == osOK) {
+            cmd.printf("thread[%lu] state: %lu\n", *id, info.value.v);
+        } else {
+            cmd.printf("thread[%lu] state:\n", *id);
+        }
+
+        info = _osThreadGetInfo(thread, osThreadInfoStackMax);
+        if (info.status == osOK) {
+            cmd.printf("thread[%lu] stack high: %lu\n", *id, info.value.v);
+        } else {
+            cmd.printf("thread[%lu] stack high:\n", *id);
+        }
+
+        info = _osThreadGetInfo(thread, osThreadInfoStackSize);
+        if (info.status == osOK) {
+            cmd.printf("thread[%lu] stack total: %lu\n", *id, info.value.v);
+        } else {
+            cmd.printf("thread[%lu] stack total:\n", *id);
+        }
+    }
+    _osThreadEnumFree(id);
+#endif
+}
+
 static void cmd_cb_del(vector<string>& params)
 {
     //check params
@@ -1184,6 +1252,12 @@ void init_commander(void)
     cmd.add("reset",
             "Reset configuration options and/or certificates. Usage: reset [options|certs|all] defaults to options",
             cmd_cb_reset);
+
+#if MBED_STACK_STATS_ENABLED == 1 || MBED_HEAP_STATS_ENABLED == 1
+    cmd.add("mstat",
+            "Show runtime heap and stack statistics.",
+            cmd_cb_mstat);
+#endif
 
     //display the banner
     cmd.banner();
