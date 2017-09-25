@@ -32,7 +32,7 @@ To build this project, you need to install the following:
 
 Here is an example showing how to install on a Mac:
 ```
-brew tap https://github.com/ARMmbed/homebrew-formulae
+brew tap ARMmbed/homebrew-formulae
 brew install arm-none-eabi-gcc
 ```
 
