@@ -73,7 +73,6 @@
             "mbed-client.sn-coap-max-blockwise-payload-size": 512,
             "mbed-trace.enable": null,
             "platform.stdio-baud-rate": 115200,
-            "platform.stdio-convert-newlines": true,
             "target.features_add": [
                 "COMMON_PAL"
             ]

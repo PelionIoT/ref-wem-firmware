@@ -55,7 +55,7 @@ public:
     */
     Commander(PinName tx  = USBTX,
               PinName rx  = USBRX,
-              int baud    = 115200);
+              int baud    = MBED_CONF_PLATFORM_STDIO_BAUD_RATE);
 
     /*
         destructor
