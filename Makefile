@@ -192,6 +192,9 @@ install flash: .targetpath ${COMBINED_BIN}
 tags: Makefile $(SRCS) $(HDRS)
 	ctags -R
 
+hooks:
+	cp tools/pre-commit.sh .git/hooks/pre-commit
+
 .PHONY: clean
 clean:
 	rm -rf BUILD
