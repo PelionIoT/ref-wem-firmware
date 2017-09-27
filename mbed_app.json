@@ -64,7 +64,7 @@
         "PAL_USE_FATFS_SD=1",
         "SA_PV_OS_MBEDOS",
         "MBED_HEAP_STATS_ENABLED=1",
-        "MBED_STACK_STATS_ENABLED=0"
+        "MBED_STACK_STATS_ENABLED=1"
     ],
     "target_overrides": {
         "*": {

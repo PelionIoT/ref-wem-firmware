@@ -1007,49 +1007,21 @@ static void cmd_cb_mstat(vector<string>& params)
 #endif
 
 #if MBED_STACK_STATS_ENABLED == 1
-    osEvent info;
-    osThreadEnumId id;
-    osThreadId thread;
-    osThreadId main_thread;
+    int count;
+    mbed_stats_stack_t *stats;
 
-    id = _osThreadsEnumStart();
-    main_thread = osThreadGetId();
-    while ( (thread = _osThreadEnumNext(id)) != NULL) {
-        if (main_thread == thread) {
-            cmd.printf("thread[%lu]: %p (main)\n", *id, thread);
-        } else {
-            cmd.printf("thread[%lu]: %p\n", *id, thread);
-        }
+    count = osThreadGetCount();
+    stats = (mbed_stats_stack_t *)malloc(count * sizeof(*stats));
 
-        info = _osThreadGetInfo(thread, osThreadInfoEntry);
-        if (info.status == osOK) {
-            cmd.printf("thread[%lu] entry: %p\n", *id, info.value.p);
-        } else {
-            cmd.printf("thread[%lu] entry:\n", *id);
-        }
-
-        info = _osThreadGetInfo(thread, osThreadInfoState);
-        if (info.status == osOK) {
-            cmd.printf("thread[%lu] state: %lu\n", *id, info.value.v);
-        } else {
-            cmd.printf("thread[%lu] state:\n", *id);
-        }
-
-        info = _osThreadGetInfo(thread, osThreadInfoStackMax);
-        if (info.status == osOK) {
-            cmd.printf("thread[%lu] stack high: %lu\n", *id, info.value.v);
-        } else {
-            cmd.printf("thread[%lu] stack high:\n", *id);
-        }
-
-        info = _osThreadGetInfo(thread, osThreadInfoStackSize);
-        if (info.status == osOK) {
-            cmd.printf("thread[%lu] stack total: %lu\n", *id, info.value.v);
-        } else {
-            cmd.printf("thread[%lu] stack total:\n", *id);
-        }
+    count = mbed_stats_stack_get_each(stats, count);
+    for (int i = 0; i < count; i++) {
+        cmd.printf("thread[%d] id: 0x%08x\n", i, stats[i].thread_id);
+        cmd.printf("thread[%d] stack high: %u\n", i, stats[i].max_size);
+        cmd.printf("thread[%d] stack total: %u\n", i, stats[i].reserved_size);
     }
-    _osThreadEnumFree(id);
+
+    free(stats);
+    stats = NULL;
 #endif
 }
 
