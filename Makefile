@@ -269,7 +269,7 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 				for patch in $${patchdir}/*; do \
 					patch -d $${patchdir##*/} -p1 < $${patch}; \
 					if git -C $${patchdir##*/} diff --name-only | grep ".lib"; then \
-						mbed update; \
+						mbed update --protocol ssh; \
 					fi; \
 				done; \
 			done; \
