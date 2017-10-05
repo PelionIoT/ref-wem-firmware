@@ -36,7 +36,7 @@ Commander::Commander(PinName tx,
     _banner += "\n\n\n";
 
     //set the line rate of the serial
-    _serial.baud(115200);
+    _serial.baud(baud);
 
     //hook up our help
     add("help",
@@ -53,13 +53,13 @@ void Commander::help()
 {
     map<string, Command>::const_iterator it;
 
-    _serial.printf("Help:\n");
+    printf("Help:\n");
 
     //walk our commands and print the cmd and it's description for help
     for (it = _cmds.begin(); it != _cmds.end(); ++it) {
-        _serial.printf("%-12s - %s\n",
-                        it->second.strname.c_str(),
-                        it->second.strdesc.c_str());
+        printf("%-12s - %s\n",
+               it->second.strname.c_str(),
+               it->second.strdesc.c_str());
     }
 }
 
@@ -81,7 +81,7 @@ int Commander::add(string strname, string strdesc, pFuncCB pcallback)
 void Commander::banner()
 {
     //print our welcome banner
-    _serial.printf(_banner.c_str());
+    printf(_banner.c_str());
 }
 
 void Commander::input_handler()
@@ -121,7 +121,7 @@ void Commander::init()
     _serial.attach(&input_handler);
 
     //print the prompt!
-    _serial.printf(_prompt.c_str());
+    printf(_prompt.c_str());
 };
 
 bool Commander::pump()
@@ -142,17 +142,16 @@ bool Commander::pump()
         //if this is enter then process!
         if (nInput == 13) {
             //do we have a blank command?
-            if (_strcommand == "") {
-                _serial.printf("\n");
+            if (_strcommand.length() == 0) {
+                printf("\n");
             } else {
                 process(_strcommand);
+                //clear the command
+                _strcommand = "";
             }
 
-            //kill the command
-            _strcommand = "";
-
             //print the prompt!
-            _serial.printf(_prompt.c_str());
+            printf(_prompt.c_str());
 
         } else if (nInput == 8 && _strcommand.length() > 0) {
             //if this is delete then truncate our string!
@@ -160,6 +159,8 @@ bool Commander::pump()
             _strcommand = _strcommand.substr(0, _strcommand.length() - 1);
 
             //print the output to the backspace
+            _serial.putc(nInput);
+            _serial.putc(' ');
             _serial.putc(nInput);
 
         } else {
@@ -188,7 +189,7 @@ int Commander::process(string& strcommand)
 
     //if we got anything
     if (lsresults.size() > 0) {
-        _serial.printf("\n");
+        printf("\n");
 
         //get our element
         it = _cmds.find(lsresults[0]);
@@ -197,12 +198,12 @@ int Commander::process(string& strcommand)
             it->second.pCB(lsresults);
         } else {
             //we have an unknown command
-            _serial.printf("Error Unknown Command!\n");
+            printf("Error Unknown Command!\n");
             for (vector<string>::iterator it = lsresults.begin();
                  it != lsresults.end();
                  ++it) {
-                _serial.printf(it->c_str());
-                _serial.printf("\n");
+                printf(it->c_str());
+                printf("\n");
             }
         }
     }

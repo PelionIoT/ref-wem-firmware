@@ -32,7 +32,7 @@ To build this project, you need to install the following:
 
 Here is an example showing how to install on a Mac:
 ```
-brew tap https://github.com/ARMmbed/homebrew-formulae
+brew tap ARMmbed/homebrew-formulae
 brew install arm-none-eabi-gcc
 ```
 
@@ -74,6 +74,11 @@ If downloading an existing certificate, click the name of the appropriate certif
 ## Compiling
 
 The fota-demo project uses a Makefile to compile the source code.  The Makefile attempts to detect the toolchain and target and calls the mbed compiler with appropriate options.
+
+**NOTE:** Versions prior to v1.7.0 no longer build due to outdated SHA references for the ws2801 and DHT libraries.
+As a workaround, please update the corresponding .lib files with the following refs:
+* ws2801 9706013b3a6aea3397320ba2383b9e2c924b64b8
+* DHT f6cd0c6d7abdf3b570687f89839e0ca5e24c6b3f
 
 ```
 make

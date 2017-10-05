@@ -5,6 +5,7 @@
 //
 //  By the ARM Reference Design (Red) Team
 // ****************************************************************************
+#include <mbed.h>
 #include "compat.h"
 
 #include "commander.h"
@@ -23,6 +24,7 @@
 #include <SDBlockDevice.h>
 #include <errno.h>
 #include <factory_configurator_client.h>
+#include <mbed_stats.h>
 #include <mbed-trace-helper.h>
 #include <mbed-trace/mbed_trace.h>
 
@@ -281,7 +283,7 @@ static void sensors_init(struct sensors *sensors, M2MClient *mbed_client)
  */
 static void sensors_start(struct sensors *s, EventQueue *q)
 {
-    printf("starting all sensors\n");
+    cmd.printf("starting all sensors\n");
     // the periods are prime number multiples so that the LED flashing is more appealing
     s->event_queue_id_light = q->call_every(4700, light_read, &s->light);
     s->event_queue_id_dht = q->call_every(5300, dht_read, &s->dht);
@@ -292,7 +294,7 @@ static void sensors_start(struct sensors *s, EventQueue *q)
  */
 static void sensors_stop(struct sensors *s, EventQueue *q)
 {
-    printf("stopping all sensors\n");
+    cmd.printf("stopping all sensors\n");
     q->cancel(s->event_queue_id_light);
     q->cancel(s->event_queue_id_dht);
     s->event_queue_id_light = 0;
@@ -335,7 +337,7 @@ static nsapi_security_t wifi_security_str2sec(const char *security)
         return NSAPI_SECURITY_NONE;
     }
 
-    printf("warning: unknown wifi security type (%s), assuming NONE\n",
+    cmd.printf("warning: unknown wifi security type (%s), assuming NONE\n",
            security);
     return NSAPI_SECURITY_NONE;
 }
@@ -400,8 +402,8 @@ static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
     ap = new WiFiAccessPoint[reported];
     reported = wifi->scan(ap, reported);
 
-    printf("Found %d devices, reporting info on %d (max=%d)\n",
-           available, reported, MBED_CONF_APP_MAX_REPORTED_APS);
+    cmd.printf("Found %d devices, reporting info on %d (max=%d)\n",
+               available, reported, MBED_CONF_APP_MAX_REPORTED_APS);
 
     /* setup the json document and custom allocator */
     json::MemoryPoolAllocator<json::CrtAllocator> allocator(JSON_MEM_POOL_INC);
@@ -451,7 +453,7 @@ static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
     doc.Accept(writer);
 
 #if MBED_CONF_APP_WIFI_DEBUG
-    printf("%s\n", buf.GetString());
+    cmd.printf("%s\n", buf.GetString());
 #endif
 
     /* update the M2MClient resource for network data and send it as a JSON array */
@@ -488,47 +490,49 @@ static int network_connect(NetworkInterface *net)
 
     //use the keystore for ssid?
     if (k.exists(SSID_KEY)) {
-        printf("Using %s from keystore\n", SSID_KEY);
+        cmd.printf("Using %s from keystore\n", SSID_KEY);
         ssid = k.get(SSID_KEY);
     } else {
-        printf("Using default %s\n", SSID_KEY);
+        cmd.printf("Using default %s\n", SSID_KEY);
     }
 
     //use the keystore for pass?
     if (k.exists(PASSWORD_KEY)) {
-        printf("Using %s from keystore\n", PASSWORD_KEY);
+        cmd.printf("Using %s from keystore\n", PASSWORD_KEY);
         pass = k.get(PASSWORD_KEY);
     } else {
-        printf("Using default %s\n", PASSWORD_KEY);
+        cmd.printf("Using default %s\n", PASSWORD_KEY);
     }
 
     //use the keystor for security?
     if (k.exists(SECURITY_KEY)) {
-        printf("Using %s from keystore\n", SECURITY_KEY);
+        cmd.printf("Using %s from keystore\n", SECURITY_KEY);
         security = k.get(SECURITY_KEY);
     } else {
-        printf("Using default %s\n", SECURITY_KEY);
+        cmd.printf("Using default %s\n", SECURITY_KEY);
     }
 
     display.set_network_status(ssid);
-    printf("[WIFI] connecting: mac=%s, ssid=%s, encryption=%s\n",
-           network_get_macaddr(wifi, macaddr), ssid.c_str(), security.c_str());
+    cmd.printf("[WIFI] connecting: mac=%s, ssid=%s, encryption=%s\n",
+               network_get_macaddr(wifi, macaddr),
+               ssid.c_str(),
+               security.c_str());
 
     ret = wifi->connect(ssid.c_str(),
                         pass.c_str(),
                         wifi_security_str2sec(security.c_str()));
     if (0 != ret) {
-        printf("[WIFI] Failed to connect to: %s (%d)\n",
-               ssid.c_str(), ret);
+        cmd.printf("[WIFI] Failed to connect to: %s (%d)\n",
+                   ssid.c_str(), ret);
         return ret;
     }
 
-    printf("[WIFI] connected: mac=%s, ssid=%s, ip=%s, netmask=%s, gateway=%s\n",
-           network_get_macaddr(net, macaddr),
-           ssid.c_str(),
-           net->get_ip_address(),
-           net->get_netmask(),
-           net->get_gateway());
+    cmd.printf("[WIFI] connected: mac=%s, ssid=%s, ip=%s, netmask=%s, gateway=%s\n",
+               network_get_macaddr(net, macaddr),
+               ssid.c_str(),
+               net->get_ip_address(),
+               net->get_netmask(),
+               net->get_gateway());
 
     return 0;
 }
@@ -566,17 +570,17 @@ static int network_connect(NetworkInterface *net)
      * EthernetInterface::connect(), so the first time we attempt to
      * connect this will print a NULL mac, but will work after a retry */
     display.set_network_status("connecting");
-    printf("[ETH] obtaining IP address: mac=%s\n",
-           network_get_macaddr(net, macaddr));
+    cmd.printf("[ETH] obtaining IP address: mac=%s\n",
+               network_get_macaddr(net, macaddr));
     ret = net->connect();
     if (0 != ret) {
-        printf("ERROR: [ETH] Failed to connect! %d\n", ret);
+        cmd.printf("ERROR: [ETH] Failed to connect! %d\n", ret);
         return ret;
     }
     display.set_network_status("connected");
-    printf("[ETH] connected: mac%s, ip=%s, netmask=%s, gateway=%s\n",
-           network_get_macaddr(net, macaddr), net->get_ip_address(),
-           net->get_netmask(), net->get_gateway());
+    cmd.printf("[ETH] connected: mac%s, ip=%s, netmask=%s, gateway=%s\n",
+               network_get_macaddr(net, macaddr), net->get_ip_address(),
+               net->get_netmask(), net->get_gateway());
 
     return ret;
 }
@@ -593,7 +597,7 @@ static void sync_network_connect(NetworkInterface *net)
         ret = network_connect(net);
         if (0 != ret) {
             display.set_network_fail();
-            printf("WARN: failed to init network, retrying...\n");
+            cmd.printf("WARN: failed to init network, retrying...\n");
             Thread::wait(2000);
         }
     } while (0 != ret);
@@ -602,6 +606,13 @@ static void sync_network_connect(NetworkInterface *net)
 // ****************************************************************************
 // Cloud
 // ****************************************************************************
+static void mbed_client_keep_alive(M2MClient *m2m)
+{
+    if (m2m->is_client_registered()) {
+        m2m->keep_alive();
+    }
+}
+
 /**
  * Handles a M2M PUT request on the app label resource
  */
@@ -699,7 +710,7 @@ mbed_client_handle_put_geo_accuracy(M2MClient *m2m)
  */
 void fota_auth_download(M2MClient *mbed_client)
 {
-    printf("Firmware download requested\n");
+    cmd.printf("Firmware download requested\n");
 
     sensors_stop(&sensors, &evq);
     /* we'll need to manually refresh the display until the firmware
@@ -712,7 +723,7 @@ void fota_auth_download(M2MClient *mbed_client)
     display.refresh();
     mbed_client->update_authorize(MbedCloudClient::UpdateRequestDownload);
 
-    printf("Authorization granted\n");
+    cmd.printf("Authorization granted\n");
 }
 
 /**
@@ -720,17 +731,17 @@ void fota_auth_download(M2MClient *mbed_client)
  */
 void fota_auth_install(M2MClient *mbed_client)
 {
-    printf("Firmware install requested\n");
+    cmd.printf("Firmware install requested\n");
 
     display.set_installing();
     /* firmware download is complete, restart the auto display updates */
     display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);
 
-    printf("Disconnecting network...\n");
+    cmd.printf("Disconnecting network...\n");
     network_disconnect(net);
 
     mbed_client->update_authorize(MbedCloudClient::UpdateRequestInstall);
-    printf("Authorization granted\n");
+    cmd.printf("Authorization granted\n");
 }
 
 /**
@@ -765,7 +776,7 @@ void mbed_client_on_update_authorize(int32_t request)
             break;
 
         default:
-            printf("ERROR: unknown request\n");
+            cmd.printf("ERROR: unknown request\n");
             led_set_color(IND_FWUP, IND_COLOR_FAILED);
             led_post();
             break;
@@ -785,11 +796,11 @@ void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
     display.set_progress(dl_message, progress, total);
 
     if (last_percent < percent) {
-        printf("Downloading: %lu\n", percent);
+        cmd.printf("Downloading: %lu\n", percent);
     }
 
     if (progress == total) {
-        printf("\nDownload completed\n");
+        cmd.printf("\nDownload completed\n");
         display.set_progress(done_message, 0, 100);
         display.set_download_complete();
     }
@@ -800,28 +811,28 @@ void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
 
 static void mbed_client_on_registered(void *context)
 {
-    printf("mbed client registered\n");
+    cmd.printf("mbed client registered\n");
     display.set_cloud_registered();
 }
 
 static void mbed_client_on_unregistered(void *context)
 {
-    printf("mbed client unregistered\n");
+    cmd.printf("mbed client unregistered\n");
     display.set_cloud_unregistered();
 }
 
 static void mbed_client_on_error(void *context, int err_code,
                                  const char *err_name, const char *err_desc)
 {
-    printf("ERROR: mbed client (%d) %s\n", err_code, err_name);
-    printf("    Error details : %s\n", err_desc);
+    cmd.printf("ERROR: mbed client (%d) %s\n", err_code, err_name);
+    cmd.printf("    Error details : %s\n", err_desc);
     display.set_cloud_error();
     if ((err_code == MbedCloudClient::ConnectNetworkError) ||
         (err_code == MbedCloudClient::ConnectDnsResolvingFailed)) {
         network_disconnect(net);
         display.set_network_fail();
         display.set_cloud_unregistered();
-        printf("Network connection failed.  Attempting to reconnect.\n");
+        cmd.printf("Network connection failed.  Attempting to reconnect.\n");
         /* Because we are running in the mbed client thread context
          * we want to disable our sensors from modifying the mbed
          * client queue while we mess with the network.  This will
@@ -853,7 +864,7 @@ mbed_client_on_resource_updated(void *context,
     case M2MClient::M2MClientResourceAutoGeoLat:
     case M2MClient::M2MClientResourceAutoGeoLong:
     case M2MClient::M2MClientResourceAutoGeoAccuracy:
-        printf("INFO: auto geolocation data received\n");
+        cmd.printf("INFO: auto geolocation data received\n");
         break;
     case M2MClient::M2MClientResourceAppLabel:
         evq.call(mbed_client_handle_put_app_label, m2m);
@@ -870,11 +881,11 @@ mbed_client_on_resource_updated(void *context,
     default:
         res = m2m->get_resource(resource);
         if (NULL != res) {
-            printf("WARN: unsupported PUT request: resource=%d, uri_path=%s\n",
-                   resource, res->uri_path());
+            cmd.printf("WARN: unsupported PUT request: resource=%d, uri_path=%s\n",
+                       resource, res->uri_path());
         } else {
-            printf("WARN: unsupported PUT request on unregistered resource=%d\n",
-                   resource);
+            cmd.printf("WARN: unsupported PUT request on unregistered resource=%d\n",
+                       resource);
         }
         break;
     }
@@ -893,6 +904,11 @@ static int register_mbed_client(NetworkInterface *iface, M2MClient *mbed_client)
     display.set_cloud_in_progress();
     mbed_client->call_register(iface);
 
+    /* set up a keep-alive interval to send registration updates to the
+     * mbed cloud server to avoid deregistration/registration issues. */
+    evq.call_every((MBED_CLOUD_CLIENT_LIFETIME / 4) * 1000,
+                   mbed_client_keep_alive,
+                   mbed_client);
     return 0;
 }
 
@@ -903,27 +919,27 @@ static int init_fcc(void)
 #if MBED_CONF_APP_FCC_WIPE
     ret = fcc_storage_delete();
     if (ret != FCC_STATUS_SUCCESS) {
-        printf("ERROR: fcc delete failed: %d\n", ret);
+        cmd.printf("ERROR: fcc delete failed: %d\n", ret);
     }
 #endif
 
     ret = fcc_init();
     if (ret != FCC_STATUS_SUCCESS) {
-        printf("ERROR: fcc init failed: %d\n", ret);
+        cmd.printf("ERROR: fcc init failed: %d\n", ret);
         return ret;
     }
 
     ret = fcc_developer_flow();
     if (ret == FCC_STATUS_KCM_FILE_EXIST_ERROR) {
-        printf("fcc: developer credentials already exists\n");
+        cmd.printf("fcc: developer credentials already exists\n");
     } else if (ret != FCC_STATUS_SUCCESS) {
-        printf("ERROR: fcc failed to load developer credentials\n");
+        cmd.printf("ERROR: fcc failed to load developer credentials\n");
         return ret;
     }
 
     ret = fcc_verify_device_configured_4mbed_cloud();
     if (ret != FCC_STATUS_SUCCESS) {
-        printf("ERROR: fcc device not configured for mbed cloud\n");
+        cmd.printf("ERROR: fcc device not configured for mbed cloud\n");
         return ret;
     }
 
@@ -944,7 +960,7 @@ static int platform_init(void)
 #if MBED_CONF_MBED_TRACE_ENABLE
     /* Create mutex for tracing to avoid broken lines in logs */
     if (!mbed_trace_helper_create_mutex()) {
-        printf("ERROR: Mutex creation for mbed_trace failed!\n");
+        cmd.printf("ERROR: Mutex creation for mbed_trace failed!\n");
         return -EACCES;
     }
 
@@ -957,10 +973,10 @@ static int platform_init(void)
     /* init the sd card */
     ret = sd.init();
     if (ret != BD_ERROR_OK) {
-        printf("ERROR: sd init failed: %d\n", ret);
+        cmd.printf("ERROR: sd init failed: %d\n", ret);
         return ret;
     }
-    printf("sd init OK\n");
+    cmd.printf("sd init OK\n");
 
     return 0;
 }
@@ -974,6 +990,73 @@ static void platform_shutdown()
 // ****************************************************************************
 // call back handlers for commandline interface
 // ****************************************************************************
+static void cmd_cb_mstat(vector<string>& params)
+{
+#if MBED_HEAP_STATS_ENABLED == 1
+    mbed_stats_heap_t heap_stats;
+
+    mbed_stats_heap_get(&heap_stats);
+    /* heap_stats.current_size: bytes allocated currently */
+    cmd.printf("heap used: %lu\n", heap_stats.current_size);
+    /* heap_stats.max_size: max bytes allocated at a given time */
+    cmd.printf("heap high: %lu\n", heap_stats.max_size);
+    /* heap_stats.reserved_size: current bytes allocated for the heap */
+    cmd.printf("heap total: %lu\n", heap_stats.reserved_size);
+    /* heap_stats.total_size: cumulative sum of bytes ever allocated */
+    cmd.printf("heap cumulative: %lu\n", heap_stats.total_size);
+    /* heap_stats.alloc_cnt: current number of allocations */
+    cmd.printf("heap allocs: %lu\n", heap_stats.alloc_cnt);
+    /* heap_stats.alloc_fail_cnt: number of failed allocations */
+    cmd.printf("heap fails: %lu\n", heap_stats.alloc_fail_cnt);
+#endif
+
+#if MBED_STACK_STATS_ENABLED == 1
+    osEvent info;
+    osThreadEnumId id;
+    osThreadId thread;
+    osThreadId main_thread;
+
+    id = _osThreadsEnumStart();
+    main_thread = osThreadGetId();
+    while ( (thread = _osThreadEnumNext(id)) != NULL) {
+        if (main_thread == thread) {
+            cmd.printf("thread[%lu]: %p (main)\n", *id, thread);
+        } else {
+            cmd.printf("thread[%lu]: %p\n", *id, thread);
+        }
+
+        info = _osThreadGetInfo(thread, osThreadInfoEntry);
+        if (info.status == osOK) {
+            cmd.printf("thread[%lu] entry: %p\n", *id, info.value.p);
+        } else {
+            cmd.printf("thread[%lu] entry:\n", *id);
+        }
+
+        info = _osThreadGetInfo(thread, osThreadInfoState);
+        if (info.status == osOK) {
+            cmd.printf("thread[%lu] state: %lu\n", *id, info.value.v);
+        } else {
+            cmd.printf("thread[%lu] state:\n", *id);
+        }
+
+        info = _osThreadGetInfo(thread, osThreadInfoStackMax);
+        if (info.status == osOK) {
+            cmd.printf("thread[%lu] stack high: %lu\n", *id, info.value.v);
+        } else {
+            cmd.printf("thread[%lu] stack high:\n", *id);
+        }
+
+        info = _osThreadGetInfo(thread, osThreadInfoStackSize);
+        if (info.status == osOK) {
+            cmd.printf("thread[%lu] stack total: %lu\n", *id, info.value.v);
+        } else {
+            cmd.printf("thread[%lu] stack total:\n", *id);
+        }
+    }
+    _osThreadEnumFree(id);
+#endif
+}
+
 static void cmd_cb_del(vector<string>& params)
 {
     //check params
@@ -1172,6 +1255,12 @@ void init_commander(void)
             "Reset configuration options and/or certificates. Usage: reset [options|certs|all] defaults to options",
             cmd_cb_reset);
 
+#if MBED_STACK_STATS_ENABLED == 1 || MBED_HEAP_STATS_ENABLED == 1
+    cmd.add("mstat",
+            "Show runtime heap and stack statistics.",
+            cmd_cb_mstat);
+#endif
+
     //display the banner
     cmd.banner();
 
@@ -1240,6 +1329,15 @@ static void init_app(EventQueue *queue)
 {
     int ret;
 
+    /* create the network */
+    cmd.printf("init network\n");
+    net = network_create();
+    if (NULL == net) {
+        cmd.printf("ERROR: failed to create network stack\n");
+        display.set_network_fail();
+        return;
+    }
+
     m2mclient = new M2MClient();
     m2mclient->init();
 
@@ -1247,29 +1345,20 @@ static void init_app(EventQueue *queue)
     init_geo(m2mclient);
     init_commander();
 
-    /* create the network */
-    printf("init network\n");
-    net = network_create();
-    if (NULL == net) {
-        printf("ERROR: failed to create network stack\n");
-        display.set_network_fail();
-        return;
-    }
-
     /* workaround: go ahead and connect the network.  it doesn't like being
      * polled for status before a connect() is attempted.
      * in addition, the fcc code requires a connected network when generating
      * creds the first time, so we need to spin here until we have an active
      * network. */
     sync_network_connect(net);
-    printf("init network: OK\n");
+    cmd.printf("init network: OK\n");
 
     /* scan the network for nearby devices or APs. */
-    printf("scanning network for nearby devices...\n");
+    cmd.printf("scanning network for nearby devices...\n");
     display.set_network_scanning();
     ret = network_scan(net, m2mclient);
     if (0 > ret) {
-        printf("WARN: failed to scan network! %d\n", ret);
+        cmd.printf("WARN: failed to scan network! %d\n", ret);
     }
 
     /* network_scan can take some time to perform when on WiFi, and since we
@@ -1282,20 +1371,21 @@ static void init_app(EventQueue *queue)
      * WARNING: the network must be connected first, otherwise this
      * will not return if creds haven't been provisioned for the first time.
      * */
-    printf("init factory configuration client\n");
+    cmd.printf("init factory configuration client\n");
     ret = init_fcc();
     if (0 != ret) {
-        printf("ERROR: failed to init factory configuration client: %d\n", ret);
+        cmd.printf("ERROR: failed to init factory configuration client: %d\n",
+                   ret);
         return;
     }
-    printf("init factory configuration client: OK\n");
+    cmd.printf("init factory configuration client: OK\n");
 
-    printf("init sensors\n");
+    cmd.printf("init sensors\n");
     sensors_init(&sensors, m2mclient);
     sensors_start(&sensors, &evq);
 
     /* connect to mbed cloud */
-    printf("init mbed client\n");
+    cmd.printf("init mbed client\n");
     /* WARNING: the sensor resources must be added to the mbed client
      * before the mbed client connects to the cloud, otherwise the
      * sensor resources will not exist in the portal. */
@@ -1332,17 +1422,17 @@ int main()
      * when printed on the console. if we print a newline first before
      * printing anything else, we can work around the issue.
      */
-    printf("\n");
-    printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
-    printf("     code version: " xstr(DEVTAG) "\n");
+    cmd.printf("\n");
+    cmd.printf("FOTA demo version: %s\n", MBED_CONF_APP_VERSION);
+    cmd.printf("     code version: " xstr(DEVTAG) "\n");
 
     /* minimal init sequence */
-    printf("init platform\n");
+    cmd.printf("init platform\n");
     ret = platform_init();
     if (0 != ret) {
         return ret;
     }
-    printf("init platform: OK\n");
+    cmd.printf("init platform: OK\n");
 
     /* set the refresh rate of the display. */
     display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);
@@ -1351,11 +1441,11 @@ int main()
      * can continue to refresh the display */
     thread.start(callback(init_app, &evq));
 
-    printf("entering run loop\n");
+    cmd.printf("entering run loop\n");
     evq.dispatch();
-    printf("exited run loop\n");
+    cmd.printf("exited run loop\n");
 
     platform_shutdown();
-    printf("exiting main\n");
+    cmd.printf("exiting main\n");
     return 0;
 }

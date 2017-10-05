@@ -8,16 +8,16 @@
             "help": "Wipe the FCC credentials stored on the device",
             "value": "false"
         },
+        "geo-accuracy": {
+            "help": "Sets the accuracy of geo-lat and geo-lon, in meters",
+            "value": null
+        },
         "geo-lat": {
             "help": "Sets the device latitude, from -90.0 to 90.0",
             "value": null
         },
         "geo-long": {
             "help": "Sets the device longitude, from -180 to 180",
-            "value": null
-        },
-        "geo-accuracy": {
-            "help": "Sets the accuracy of geo-lat and geo-lon, in meters",
             "value": null
         },
         "self-test": {
@@ -62,7 +62,9 @@
         "MBED_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
         "MBED_CLOUD_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
         "PAL_USE_FATFS_SD=1",
-        "SA_PV_OS_MBEDOS"
+        "SA_PV_OS_MBEDOS",
+        "MBED_HEAP_STATS_ENABLED=1",
+        "MBED_STACK_STATS_ENABLED=1"
     ],
     "target_overrides": {
         "*": {
@@ -71,7 +73,6 @@
             "mbed-client.sn-coap-max-blockwise-payload-size": 512,
             "mbed-trace.enable": null,
             "platform.stdio-baud-rate": 115200,
-            "platform.stdio-convert-newlines": true,
             "target.features_add": [
                 "COMMON_PAL"
             ]
