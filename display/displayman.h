@@ -67,8 +67,9 @@ private:
         DISPLAY_VIEW_INSTALL,
         DISPLAY_VIEW_SELF_TEST
     };
-
+#if !TARGET_UBLOX_EVK_ODIN_W2
     I2C _i2c;
+#endif
     MultiAddrLCD _lcd;
     LCDProgress _lcd_prog;
 
