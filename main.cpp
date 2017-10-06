@@ -77,6 +77,13 @@ namespace json = rapidjson;
 
 #define JSON_MEM_POOL_INC 64
 
+#define FOTA_VERBOSE_PRINTF(type, fmt, ...) \
+    do {\
+        if (fota_ ##type ## _verbose_enabled) {\
+            cmd.printf(fmt, __VA_ARGS__); \
+        }\
+    } while(0)
+
 enum FOTA_THREADS {
     FOTA_THREAD_DISPLAY = 0,
     FOTA_THREAD_SENSOR_LIGHT,
@@ -118,6 +125,7 @@ static EventQueue evq;
 static struct sensors sensors;
 /* used to stop auto display refresh during firmware downloads */
 static int display_evq_id;
+static bool fota_sensors_verbose_enabled = false;
 
 // ****************************************************************************
 // Generic Helpers
@@ -205,6 +213,8 @@ static void light_read(struct light_sensor *s)
 
     tr_debug("light: %5.4f --> %u\n",  reading, lux);
 
+    FOTA_VERBOSE_PRINTF(sensors, "light: %5.4f --> %u\n",  reading, lux);
+
     size = snprintf(res_buffer, sizeof(res_buffer), "%s%u lux",
                     ((reading >= 1.0)?">":""), lux);
 
@@ -253,6 +263,9 @@ static void dht_read(struct dht_sensor *dht)
         humidity = dht->dev->ReadHumidity();
         tr_debug("DHT: temp = %fC, humi = %f%%\n", temperature, humidity);
 
+        /* verbose printing to screen of sensor values */
+        FOTA_VERBOSE_PRINTF(sensors, "DHT: temp = %.2fC, humidity = %.2f%%\n", temperature, humidity);
+
         size = snprintf(res_buffer, sizeof(res_buffer), "%.1f C", temperature);
         m2mclient->set_resource_value(dht->t_res, res_buffer, size);
         display.set_sensor_status(dht->t_id, (char *)res_buffer);
@@ -262,6 +275,7 @@ static void dht_read(struct dht_sensor *dht)
         display.set_sensor_status(dht->h_id, (char *)res_buffer);
     } else {
         tr_error("DHT: readData() failed with %d\n", readError);
+        FOTA_VERBOSE_PRINTF(sensors, "DHT: readData() failed with %d\n", readError);
     }
 }
 
@@ -1185,6 +1199,42 @@ static void cmd_cb_reset(vector<string>& params)
     }
 }
 
+static void cmd_cb_verbose(vector<string>& params)
+{
+    if (params.size() < 2) {
+        cmd.printf("ERROR: Invalid usage of verbose!\n");
+        cmd.printf("Usage: verbose <type> [off|on], defaults to off.\n");
+        cmd.printf("    Current types supported: sensors\n");
+        return;
+    }
+
+    if (params[1] == "sensors") {
+        /* print the current status of verbosity */
+        if (params.size() < 3) {
+            cmd.printf("Sensor verbosity is currently %s\n",
+                    fota_sensors_verbose_enabled ? "enabled" : "disabled");
+            return;
+        }
+
+        /* if an additional parameter was supplied the check that */
+        if (params[2] == "on") {
+            fota_sensors_verbose_enabled = true;
+            cmd.printf("verbose sensor printing enabled\n");
+        } else if (params[2] == "off") {
+            fota_sensors_verbose_enabled = false;
+            cmd.printf("verbose sensor printing disabled\n");
+        } else {
+            cmd.printf("ERROR: Invalid parameter supplied! %s\n", params[1].c_str());
+            return;
+        }
+    } else {
+        /* if we add more than just sensors we should use
+         * this as a catch all to enable or disable all
+         */
+        cmd.printf("ERROR: unsupported option %s!\n", params[1].c_str());
+    }
+}
+
 static void cmd_pump(Commander *cmd)
 {
     cmd->pump();
@@ -1228,6 +1278,10 @@ void init_commander(void)
             "Show runtime heap and stack statistics.",
             cmd_cb_mstat);
 #endif
+
+    cmd.add("verbose",
+            "Enables verbose printing of sensor values when set 'on'. Usage: verbose <type> [off|on], defeaults to off",
+            cmd_cb_verbose);
 
     //display the banner
     cmd.banner();
