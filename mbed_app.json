@@ -24,6 +24,10 @@
             "help": "Run a self-test upon boot",
             "value": "false"
         },
+        "use-spi-flash": {
+            "help": "Set to true to use SPI Flash or false to use SD card.",
+            "value": "true"
+        },
         "version": {
             "help": "Display this version string on the device",
             "value": "\"1.0\""
@@ -75,6 +79,9 @@
             "target.features_add": [
                 "COMMON_PAL"
             ]
+        },
+        "K64F": {
+            "app.use-spi-flash": false
         }
     }
 }

@@ -11,6 +11,7 @@
 #include "commander.h"
 #include "DHT.h"
 #include "displayman.h"
+#include "fs.h"
 #include "GL5528.h"
 #include "keystore.h"
 #include "lcdprogress.h"
@@ -999,6 +1000,7 @@ static void platform_shutdown()
 {
     /* stop the EventQueue */
     evq.break_dispatch();
+    Keystore::shutdown();
 }
 
 // ****************************************************************************
@@ -1163,6 +1165,66 @@ static void cmd_cb_reboot(vector<string>& params)
     NVIC_SystemReset();
 }
 
+static void cmd_cb_format(vector<string>& params)
+{
+    int ret;
+
+    ret = fs_format();
+    if (0 != ret) {
+        cmd.printf("ERROR: keystore format failed: %d\n", ret);
+        return;
+    }
+    cmd.printf("SUCCESS\n");
+}
+
+static void cmd_cb_test(vector<string>& params)
+{
+    fs_test();
+}
+
+static void cmd_cb_ls(vector<string>& params)
+{
+    std::string path;
+
+    if (params.size() > 1) {
+        path = params[1];
+    } else {
+        path = "/";
+    }
+
+    fs_ls(path);
+}
+
+static void cmd_cb_cat(vector<string>& params)
+{
+    if (params.size() <= 1) {
+        cmd.printf("Not enough arguments!\n");
+        return;
+    }
+
+    fs_cat(params[1]);
+}
+
+static void cmd_cb_rm(vector<string>& params)
+{
+    if (params.size() <= 1) {
+        cmd.printf("Not enough arguments!\n");
+        return;
+    }
+
+    fs_remove(params[1]);
+}
+
+static void cmd_cb_mkdir(vector<string>& params)
+{
+    if (params.size() <= 1) {
+        cmd.printf("Not enough arguments!\n");
+        return;
+    }
+
+    fs_mkdir(params[1]);
+}
+
 static void cmd_cb_reset(vector<string>& params)
 {
     Keystore k;
@@ -1288,6 +1350,30 @@ void init_commander(void)
     cmd.add("verbose",
             "Enables verbose printing of sensor values when set 'on'. Usage: verbose <type> [off|on], defeaults to off",
             cmd_cb_verbose);
+
+    cmd.add("format",
+            "Format the internal file system. Usage: format",
+            cmd_cb_format);
+
+    cmd.add("ls",
+            "List directory entries. Usage: ls <path>",
+            cmd_cb_ls);
+
+    cmd.add("cat",
+            "Read the contents of a file. Usage: cat <path>",
+            cmd_cb_cat);
+
+    cmd.add("rm",
+            "Remove a file. Usage: rm <path>",
+            cmd_cb_rm);
+
+    cmd.add("mkdir",
+            "Make a directory. Usage: mkdir <path>",
+            cmd_cb_mkdir);
+
+    cmd.add("test",
+            "Run the keystore tests. Usage: test",
+            cmd_cb_test);
 
     //display the banner
     cmd.banner();

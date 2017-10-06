@@ -1,3 +1,4 @@
+#include "fs.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -48,6 +49,11 @@ public:
      * performs initialization of underlying storage
      */
     static int init();
+
+    /*
+     * performs de-initialization of underlying storage
+     */
+    static void shutdown();
 
     /*
         Function: open
@@ -288,6 +294,7 @@ protected:
     */
     static std::string _strdir;
 
+    static char *mktmp(char *out);
 };
 
 
