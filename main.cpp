@@ -638,6 +638,7 @@ static void mbed_client_handle_put_app_label(M2MClient *m2m)
 
     k.open();
     k.set(APP_LABEL_KEY, label);
+    k.write();
     k.close();
 
     set_app_label(m2m, label.c_str());
@@ -664,6 +665,7 @@ mbed_client_handle_put_geo_lat(M2MClient *m2m)
     } else {
         k.set(GEO_LAT_KEY, val);
     }
+    k.write();
     k.close();
 }
 
@@ -688,6 +690,7 @@ mbed_client_handle_put_geo_long(M2MClient *m2m)
     } else {
         k.set(GEO_LONG_KEY, val);
     }
+    k.write();
     k.close();
 }
 
@@ -712,6 +715,7 @@ mbed_client_handle_put_geo_accuracy(M2MClient *m2m)
     } else {
         k.set(GEO_ACCURACY_KEY, val);
     }
+    k.write();
     k.close();
 }
 
@@ -1053,6 +1057,7 @@ static void cmd_cb_del(vector<string>& params)
         k.del(params[1]);
 
         //write the changes back out
+        k.write();
         k.close();
 
         //let user know
@@ -1139,6 +1144,7 @@ static void cmd_cb_set(vector<string>& params)
         k.set(params[1], strvalue);
 
         //write the file back out
+        k.write();
         k.close();
 
         //return just the value

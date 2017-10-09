@@ -24,8 +24,8 @@
         //get a keys value
         string val = k.get("testkey");
 
-        //close and write the changes out
-        k.close();
+        //write the changes out
+        k.write();
 
         return 0;
     }
@@ -63,9 +63,9 @@ public:
     void open();
 
     /*
-        Function: close
+        Function: write
 
-        closes the database and writes the values back to storage.
+        writes the values back to storage.
 
         Params:
         none.
@@ -73,7 +73,20 @@ public:
         Returns:
         nothing.
     */
-    void close();
+    void write();
+
+    /*
+        Function: close
+
+        closes the database
+
+        Params:
+        none.
+
+        Returns:
+        nothing.
+    */
+    void close() { return; };
 
     /*
         Function: get

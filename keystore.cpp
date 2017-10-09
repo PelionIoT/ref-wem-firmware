@@ -116,7 +116,7 @@ void Keystore::open()
     pal_fsFclose(&fd);
 };
 
-void Keystore::close()
+void Keystore::write()
 {
     //convert the database to file writable string
     std::string strfile = to_file();
