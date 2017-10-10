@@ -1,7 +1,7 @@
 #include <string>
 #include <FATFileSystem.h>
 
-#define FS_NAME "fs"
+#define FS_NAME "sd"
 #define FS_MOUNT_POINT "/" FS_NAME
 
 int fs_init();
