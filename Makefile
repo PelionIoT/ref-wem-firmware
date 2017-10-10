@@ -267,7 +267,10 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 		for target in ${PATCHDIR}/{COMMON,${MBED_TARGET}}; do \
 			for patchdir in $${target}/*; do \
 				for patch in $${patchdir}/*; do \
-					patch -d $${patchdir##*/} -p1 < $${patch}; \
+					git -C $${patchdir##*/} am $${patch} || { \
+						git -C $${patchdir##*/} apply $${patch} \
+							&& git -C $${patchdir##*/} commit -am "$${patch}"; \
+					}; \
 					if git -C $${patchdir##*/} diff --name-only | grep ".lib"; then \
 						pushd $${patchdir##*/} && { \
 							mbed update --protocol ssh; \
