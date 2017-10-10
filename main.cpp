@@ -41,6 +41,7 @@
 
 #if TARGET_UBLOX_EVK_ODIN_W2
 #include "TSL2591.h"
+#include "Sht31/Sht31.h"
 #endif
 
 #define TRACE_GROUP "main"
@@ -100,7 +101,11 @@ struct dht_sensor {
     uint8_t h_id;
     uint8_t t_id;
 
+#if TARGET_UBLOX_EVK_ODIN_W2
+    Sht31 *sensor;
+#else
     DHT *dev;
+#endif
 
     M2MResource *h_res;
     M2MResource *t_res;
@@ -139,6 +144,7 @@ static bool fota_sensors_verbose_enabled = false;
 #if TARGET_UBLOX_EVK_ODIN_W2
 static I2C i2c(I2C_SDA, I2C_SCL);
 static TSL2591 tsl2591(i2c, TSL2591_ADDR);
+static Sht31 sht31(I2C_SDA, I2C_SCL);
 #endif
 
 
@@ -261,7 +267,11 @@ static void dht_init(struct dht_sensor *s, M2MClient *mbed_client)
     s->h_id = display.register_sensor("Humidity", IND_HUMIDITY);
 
     /* init the driver */
+#if TARGET_UBLOX_EVK_ODIN_W2
+    s->sensor = &sht31;
+#else
     s->dev = new DHT(D4, AM2302);
+#endif
 
     s->t_res = mbed_client->get_resource(
                     M2MClient::M2MClientResourceTempValue);
@@ -282,14 +292,22 @@ static void dht_init(struct dht_sensor *s, M2MClient *mbed_client)
 static void dht_read(struct dht_sensor *dht)
 {
     int size = 0;
-    eError readError;
+    eError readError = ERROR_NONE;
     float temperature, humidity;
     char res_buffer[33] = {0};
 
+#if !TARGET_UBLOX_EVK_ODIN_W2
     readError = dht->dev->readData();
+#endif
+
     if (readError == ERROR_NONE) {
+#if TARGET_UBLOX_EVK_ODIN_W2
+        temperature = dht->sensor->readTemperature();
+        humidity = dht->sensor->readHumidity();
+#else
         temperature = dht->dev->ReadTemperature(CELCIUS);
         humidity = dht->dev->ReadHumidity();
+#endif
         tr_debug("DHT: temp = %fC, humi = %f%%\n", temperature, humidity);
 
         /* verbose printing to screen of sensor values */
