@@ -39,6 +39,10 @@
 #include <EthernetInterface.h>
 #endif
 
+#if TARGET_UBLOX_EVK_ODIN_W2
+#include "TSL2591.h"
+#endif
+
 #define TRACE_GROUP "main"
 
 // Convert the value of a C macro to a string that can be printed.  This trick
@@ -105,7 +109,11 @@ struct dht_sensor {
 struct light_sensor {
     uint8_t id;
 
+#if TARGET_UBLOX_EVK_ODIN_W2
+    TSL2591 *sensor;
+#else
     AnalogIn *dev;
+#endif
 
     M2MResource *res;
 };
@@ -127,6 +135,13 @@ static struct sensors sensors;
 /* used to stop auto display refresh during firmware downloads */
 static int display_evq_id;
 static bool fota_sensors_verbose_enabled = false;
+
+#if TARGET_UBLOX_EVK_ODIN_W2
+static I2C i2c(I2C_SDA, I2C_SCL);
+static TSL2591 tsl2591(i2c, TSL2591_ADDR);
+#endif
+
+
 
 // ****************************************************************************
 // Generic Helpers
@@ -160,7 +175,13 @@ static void light_init(struct light_sensor *s, M2MClient *mbed_client)
     s->id = display.register_sensor("Light", IND_LIGHT);
 
     /* init the driver */
+#if TARGET_UBLOX_EVK_ODIN_W2
+    s->sensor = &tsl2591;
+    s->sensor->init();
+    s->sensor->enable();
+#else
     s->dev = new AnalogIn(A0);
+#endif
 
     s->res = m2mclient->get_resource(M2MClient::M2MClientResourceLightValue);
     m2mclient->set_resource_value(s->res, "0", 1);
@@ -207,17 +228,24 @@ static void light_read(struct light_sensor *s)
 {
     size_t size;
     char res_buffer[33] = {0};
+    unsigned int lux;
 
+#if TARGET_UBLOX_EVK_ODIN_W2
+    s->sensor->getALS();
+    s->sensor->calcLux();
+    lux = s->sensor->lux;
+    FOTA_VERBOSE_PRINTF(sensors, "light: %u\n", lux);
+    size = snprintf(res_buffer, sizeof(res_buffer), "%u lux", lux);
+#else
     float reading = s->dev->read();
-
-    unsigned int lux = light_sensor_to_lux(reading);
-
+    lux = light_sensor_to_lux(reading);
     tr_debug("light: %5.4f --> %u\n",  reading, lux);
 
     FOTA_VERBOSE_PRINTF(sensors, "light: %5.4f --> %u\n",  reading, lux);
 
     size = snprintf(res_buffer, sizeof(res_buffer), "%s%u lux",
                     ((reading >= 1.0)?">":""), lux);
+#endif
 
     display.set_sensor_status(s->id, res_buffer);
     m2mclient->set_resource_value(s->res, res_buffer, size);
