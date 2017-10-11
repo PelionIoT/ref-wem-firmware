@@ -1,7 +1,7 @@
-From eeac8f0d2bd977889f571e08aece84e071156609 Mon Sep 17 00:00:00 2001
+From 8486df92171d1ed9dfd7df9d1c6196a3a45bb6e7 Mon Sep 17 00:00:00 2001
 From: Nic Costa <nic.costa@arm.com>
 Date: Wed, 27 Sep 2017 22:28:20 -0500
-Subject: [PATCH] [fota] Adding FOTA progress
+Subject: [PATCH] Adding FOTA progress
 
 This patch adds support for re-using the display manager interface
 with the FOTA sales tool demo. This allows us to see progress for
@@ -29,13 +29,13 @@ Signed-off-by: Nic Costa <nic.costa@arm.com>
  create mode 100644 source/fota.h
 
 diff --git a/mbed_app.json b/mbed_app.json
-index 08fa314..6a59b44 100755
+index 2924f13..df35db3 100755
 --- a/mbed_app.json
 +++ b/mbed_app.json
-@@ -39,8 +39,8 @@
-             "firmware_metadata_header_size": "0x400"
+@@ -45,8 +45,8 @@
          },
          "UBLOX_EVK_ODIN_W2": {
+             "target.extra_labels_add": ["STM32F4", "STM32F439", "STM32F439ZI","STM32F439xx", "STM32F439xI", "FLASH_CMSIS_ALGO"],
 -            "firmware_metadata_header_address": "0x08020000",
 -            "update-client.application-details": "0x08020000",
 +            "firmware_metadata_header_address": "0x08040000",
@@ -321,5 +321,5 @@ index e05e24b..57e852f 100755
                                                              &imageDetails);
  
 -- 
-2.14.1
+2.14.2
 

@@ -1,0 +1,482 @@
+From cf1ccdc47408427405e1b7c3a64f835da54fc7f8 Mon Sep 17 00:00:00 2001
+From: Nic Costa <nic.costa@arm.com>
+Date: Fri, 13 Oct 2017 09:36:04 -0500
+Subject: [PATCH] downrev FlashIAP for ODIN W2
+
+The FlashIAP driver does not work properly on mbed-os-5.6.2, so
+downrev to an older version to fix the issue.
+
+Signed-off-by: Nic Costa <nic.costa@arm.com>
+---
+ drivers/FlashIAP.cpp                               |   5 +-
+ drivers/FlashIAP.h                                 |  24 +-
+ hal/flash_api.h                                    |  17 +-
+ targets/TARGET_STM/TARGET_STM32F4/common_objects.h |   6 +-
+ targets/TARGET_STM/TARGET_STM32F4/flash_api.c      | 286 +++++----------------
+ 5 files changed, 84 insertions(+), 254 deletions(-)
+
+diff --git a/drivers/FlashIAP.cpp b/drivers/FlashIAP.cpp
+index 9677e383d..5a8e1c420 100644
+--- a/drivers/FlashIAP.cpp
++++ b/drivers/FlashIAP.cpp
+@@ -75,11 +75,10 @@ int FlashIAP::deinit()
+ 
+ int FlashIAP::read(void *buffer, uint32_t addr, uint32_t size)
+ {
+-    int32_t ret = -1;
+     _mutex->lock();
+-    ret = flash_read(&_flash, addr, (uint8_t *) buffer, size);
++    memcpy(buffer, (const void *)addr, size);
+     _mutex->unlock();
+-    return ret;
++    return 0;
+ }
+ 
+ int FlashIAP::program(const void *buffer, uint32_t addr, uint32_t size)
+diff --git a/drivers/FlashIAP.h b/drivers/FlashIAP.h
+index a6acc1bed..45bdd3450 100644
+--- a/drivers/FlashIAP.h
++++ b/drivers/FlashIAP.h
+@@ -22,23 +22,22 @@
+ #ifndef MBED_FLASHIAP_H
+ #define MBED_FLASHIAP_H
+ 
+-#if defined (DEVICE_FLASH) || defined(DOXYGEN_ONLY)
++#ifdef DEVICE_FLASH
+ 
+ #include "flash_api.h"
+ #include "platform/SingletonPtr.h"
+ #include "platform/PlatformMutex.h"
+-#include "platform/NonCopyable.h"
+ 
+ namespace mbed {
+ 
+ /** \addtogroup drivers */
++/** @{*/
+ 
+ /** Flash IAP driver. It invokes flash HAL functions.
+  *
+- * @note Synchronization level: Thread safe
+- * @ingroup drivers
++ * Note Synchronization level: Thread safe
+  */
+-class FlashIAP : private NonCopyable<FlashIAP> {
++class FlashIAP {
+ public:
+     FlashIAP();
+     ~FlashIAP();
+@@ -56,7 +55,7 @@ public:
+      */
+     int deinit();
+ 
+-    /** Read data from a flash device. 
++    /** Read data from a flash device.
+      *
+      *  This method invokes memcpy - reads number of bytes from the address
+      *
+@@ -90,7 +89,7 @@ public:
+ 
+     /** Get the sector size at the defined address
+      *
+-     *  Sector size might differ at address ranges. 
++     *  Sector size might differ at address ranges.
+      *  An example <0-0x1000, sector size=1024; 0x10000-0x20000, size=2048>
+      *
+      *  @param addr Address of or inside the sector to query
+@@ -98,28 +97,27 @@ public:
+      */
+     uint32_t get_sector_size(uint32_t addr) const;
+ 
+-    /** Get the flash start address 
++    /** Get the flash start address
+      *
+-     *  @return Flash start address 
++     *  @return Flash start address
+      */
+     uint32_t get_flash_start() const;
+ 
+     /** Get the flash size
+      *
+-     *  @return Flash size 
++     *  @return Flash size
+      */
+     uint32_t get_flash_size() const;
+ 
+     /** Get the program page size
+      *
+-     *  The page size defines the writable page size
+      *  @return Size of a program page in bytes
+      */
+     uint32_t get_page_size() const;
+ 
+ private:
+ 
+-    /* Check if address and size are aligned to a sector
++    /** Check if address and size are aligned to a sector
+      *
+      *  @param addr Address of block to check for alignment
+      *  @param size Size of block to check for alignment
+@@ -136,3 +134,5 @@ private:
+ #endif  /* DEVICE_FLASH */
+ 
+ #endif  /* MBED_FLASHIAP_H */
++
++/** @}*/
+diff --git a/hal/flash_api.h b/hal/flash_api.h
+index 4231c083b..fa88861e7 100644
+--- a/hal/flash_api.h
++++ b/hal/flash_api.h
+@@ -64,20 +64,9 @@ int32_t flash_free(flash_t *obj);
+  */
+ int32_t flash_erase_sector(flash_t *obj, uint32_t address);
+ 
+-/** Read data starting at defined address
++/** Program one page starting at defined address
+  *
+- * This function has a WEAK implementation using memcpy for backwards compatibility.
+- * @param obj The flash object
+- * @param address Address to begin reading from
+- * @param data The buffer to read data into
+- * @param size The number of bytes to read
+- * @return 0 for success, -1 for error
+- */
+-int32_t flash_read(flash_t *obj, uint32_t address, uint8_t *data, uint32_t size);
+-
+-/** Program pages starting at defined address
+- *
+- * The pages should not cross multiple sectors.
++ * The page should be at page boundary, should not cross multiple sectors.
+  * This function does not do any check for address alignments or if size is aligned to a page size.
+  * @param obj The flash object
+  * @param address The sector starting address
+@@ -97,8 +86,8 @@ uint32_t flash_get_sector_size(const flash_t *obj, uint32_t address);
+ 
+ /** Get page size
+  *
+- * The page size defines the writable page size
+  * @param obj The flash object
++ * @param address The page starting address
+  * @return The size of a page
+  */
+ uint32_t flash_get_page_size(const flash_t *obj);
+diff --git a/targets/TARGET_STM/TARGET_STM32F4/common_objects.h b/targets/TARGET_STM/TARGET_STM32F4/common_objects.h
+index 3f39a9ce5..807bf5be0 100644
+--- a/targets/TARGET_STM/TARGET_STM32F4/common_objects.h
++++ b/targets/TARGET_STM/TARGET_STM32F4/common_objects.h
+@@ -111,9 +111,9 @@ struct i2c_s {
+ };
+ 
+ #if DEVICE_FLASH
+-struct flash_s {
+-    uint32_t dummy;
+-};
++//struct flash_s {
++//    uint32_t dummy;
++//};
+ #endif
+ 
+ struct analogin_s {
+diff --git a/targets/TARGET_STM/TARGET_STM32F4/flash_api.c b/targets/TARGET_STM/TARGET_STM32F4/flash_api.c
+index 1455f07aa..b88f51714 100644
+--- a/targets/TARGET_STM/TARGET_STM32F4/flash_api.c
++++ b/targets/TARGET_STM/TARGET_STM32F4/flash_api.c
+@@ -1,232 +1,74 @@
+ /* mbed Microcontroller Library
+- *******************************************************************************
+- * Copyright (c) 2017, STMicroelectronics
+- * All rights reserved.
++ * Copyright (c) 2017 ARM Limited
+  *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are met:
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
+  *
+- * 1. Redistributions of source code must retain the above copyright notice,
+- *    this list of conditions and the following disclaimer.
+- * 2. Redistributions in binary form must reproduce the above copyright notice,
+- *    this list of conditions and the following disclaimer in the documentation
+- *    and/or other materials provided with the distribution.
+- * 3. Neither the name of STMicroelectronics nor the names of its contributors
+- *    may be used to endorse or promote products derived from this software
+- *    without specific prior written permission.
++ *     http://www.apache.org/licenses/LICENSE-2.0
+  *
+- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- *******************************************************************************
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
+  */
+ 
+-#if DEVICE_FLASH
+ #include "flash_api.h"
+ #include "flash_data.h"
+-#include "platform/mbed_critical.h"
+-
+-// This file is automatically generated
+-
+-
+-static uint32_t GetSector(uint32_t Address);
+-static uint32_t GetSectorSize(uint32_t Sector);
+-
+-int32_t flash_init(flash_t *obj)
+-{
+-    return 0;
+-}
+-
+-int32_t flash_free(flash_t *obj)
+-{
+-    return 0;
+-}
+-
+-static int32_t flash_unlock(void)
+-{
+-    /* Allow Access to Flash control registers and user Falsh */
+-    if (HAL_FLASH_Unlock()) {
+-        return -1;
+-    } else {
+-        return 0;
+-    }
+-}
+-
+-static int32_t flash_lock(void)
+-{
+-    /* Disable the Flash option control register access (recommended to protect
+-    the option Bytes against possible unwanted operations) */
+-    if (HAL_FLASH_Lock()) {
+-        return -1;
+-    } else {
+-        return 0;
+-    }
+-}
+-
+-int32_t flash_erase_sector(flash_t *obj, uint32_t address)
+-{
+-    /*Variable used for Erase procedure*/
+-    static FLASH_EraseInitTypeDef EraseInitStruct;
+-    uint32_t FirstSector;
+-    uint32_t SectorError = 0;
+-    int32_t status = 0;
+-
+-    if ((address >= (FLASH_BASE + FLASH_SIZE)) || (address < FLASH_BASE)) {
+-        return -1;
+-    }
+-
+-    if (flash_unlock() != HAL_OK) {
+-        return -1;
+-    }
+-
+-    /* Get the 1st sector to erase */
+-    FirstSector = GetSector(address);
+-
+-    /* Fill EraseInit structure*/
+-    EraseInitStruct.TypeErase = FLASH_TYPEERASE_SECTORS;
+-    EraseInitStruct.VoltageRange = FLASH_VOLTAGE_RANGE_3;
+-    EraseInitStruct.Sector = FirstSector;
+-    EraseInitStruct.NbSectors = 1;
+-    if(HAL_FLASHEx_Erase(&EraseInitStruct, &SectorError) != HAL_OK){
+-        status = -1;
+-    }
+-
+-    flash_lock();
+-
+-    return status;
+-}
+-
+-int32_t flash_program_page(flash_t *obj, uint32_t address, const uint8_t *data, uint32_t size)
+-{
+-    int32_t status = 0;
+-
+-    if ((address >= (FLASH_BASE + FLASH_SIZE)) || (address < FLASH_BASE)) {
+-        return -1;
+-    }
+-
+-    if (flash_unlock() != HAL_OK) {
+-        return -1;
+-    }
+-
+-  /* Note: If an erase operation in Flash memory also concerns data in the data or instruction cache,
+-     you have to make sure that these data are rewritten before they are accessed during code
+-     execution. If this cannot be done safely, it is recommended to flush the caches by setting the
+-     DCRST and ICRST bits in the FLASH_CR register. */
+-    __HAL_FLASH_DATA_CACHE_DISABLE();
+-    __HAL_FLASH_INSTRUCTION_CACHE_DISABLE();
+-
+-    __HAL_FLASH_DATA_CACHE_RESET();
+-    __HAL_FLASH_INSTRUCTION_CACHE_RESET();
+-
+-    __HAL_FLASH_INSTRUCTION_CACHE_ENABLE();
+-    __HAL_FLASH_DATA_CACHE_ENABLE();
+-
+-    while ((size > 0) && (status == 0)) {
+-        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, address, (uint64_t)*data) != HAL_OK) {
+-            status = -1;
+-        } else {
+-            size--;
+-            address++;
+-            data++;
+-        }
+-    }
+-
+-    flash_lock();
+-
+-    return status;
+-}
+-
+-uint32_t flash_get_sector_size(const flash_t *obj, uint32_t address)
+-{
+-    
+-    if ((address >= (FLASH_BASE + FLASH_SIZE)) || (address < FLASH_BASE)) {
+-        return MBED_FLASH_INVALID_SIZE;
+-    }
+-
+-    return (GetSectorSize(GetSector(address)));
+-}
+-
+-uint32_t flash_get_page_size(const flash_t *obj)
+-{
+-    // Flash of STM32F4 devices can be programed 1 byte at a time
+-    return (1);
+-}
+-
+-uint32_t flash_get_start_address(const flash_t *obj)
++#include "mbed_critical.h"
++
++// This file is automagically generated
++
++// This is a flash algo binary blob. It is PIC (position independent code) that should be stored in RAM
++static uint32_t FLASH_ALGO[] = {
++    0xf3c04601, 0x28203007, 0x2204bf24, 0x1050eb02, 0x2810d205, 0x2203bf26, 0x1010eb02, 0xf4110880,
++    0xbf181f80, 0x0010f040, 0x48714770, 0x6001496f, 0x60014970, 0x68014870, 0x01f0f041, 0x486f6001,
++    0xf0106800, 0xd1080f20, 0xf245486d, 0x60015155, 0x60412106, 0x71fff640, 0x20006081, 0x49694770,
++    0xf4206808, 0x600a52f8, 0x48676008, 0xf0416801, 0x60014100, 0x47702000, 0xc18cf8df, 0x0000f8dc,
++    0x0004f040, 0x0000f8cc, 0x0000f8dc, 0x4000f440, 0x0000f8cc, 0x0000f8dc, 0x3080f440, 0x0000f8cc,
++    0x0004f1ac, 0xf4116801, 0xbf1c3f80, 0x21aaf64a, 0xd0044a53, 0x68036011, 0x3f80f413, 0xf8dcd1fa,
++    0xf0200000, 0xf8cc0004, 0xf8dc0000, 0xf4200000, 0xf8cc4000, 0x20000000, 0xf3c04770, 0x29203107,
++    0x2204bf24, 0x1151eb02, 0x2910d205, 0x2203bf26, 0x1111eb02, 0xf4100889, 0xbf181f80, 0x0110f041,
++    0x6802483d, 0x02f0f042, 0xf1006002, 0x22020c04, 0x2000f8cc, 0x2000f8dc, 0xea0323f8, 0x431101c1,
++    0x1000f8cc, 0x1000f8dc, 0x3180f441, 0x1000f8cc, 0xf4116801, 0xbf1c3f80, 0x21aaf64a, 0xd0044a30,
++    0x68036011, 0x3f80f413, 0xf8dcd1fa, 0xf0211000, 0xf8cc0102, 0x68011000, 0x0ff0f011, 0x2000bf04,
++    0x68014770, 0x01f0f041, 0x20016001, 0x4b224770, 0x1cc9b430, 0xc000f8d3, 0x0103f031, 0x0cf0f04c,
++    0xc000f8c3, 0x0404f103, 0x0c00f04f, 0xc000f8c4, 0xf240bf18, 0xd0252501, 0xc000f8d4, 0x0c05ea4c,
++    0xc000f8c4, 0xc000f8d2, 0xc000f8c0, 0xc000f8d3, 0x3f80f41c, 0xf8d4d1fa, 0xf02cc000, 0xf8c40c01,
++    0xf8d3c000, 0xf01cc000, 0xd0060ff0, 0xf0406818, 0x601800f0, 0x2001bc30, 0x1d004770, 0xf1021f09,
++    0xd1d90204, 0x2000bc30, 0x00004770, 0x45670123, 0x40023c04, 0xcdef89ab, 0x40023c0c, 0x40023c14,
++    0x40003000, 0x40023c00, 0x40023c10, 0x00000000
++};
++
++static const flash_algo_t flash_algo_config = {
++    .init = 0x2b,
++    .uninit = 0x5f,
++    .erase_sector = 0xdb,
++    .program_page = 0x16f,
++    .static_base = 0x20c,
++    .algo_blob = FLASH_ALGO
++};
++
++static const sector_info_t sectors_info[] = {
++    {0x8000000, 0x4000},
++    {0x8010000, 0x10000},
++    {0x8020000, 0x20000},
++    {0x8100000, 0x4000},
++    {0x8110000, 0x10000},
++    {0x8120000, 0x20000},
++};
++
++static const flash_target_config_t flash_target_config = {
++    .page_size  = 0x400,
++    .flash_start = 0x8000000,
++    .flash_size = 0x200000,
++    .sectors = sectors_info,
++    .sector_info_count = sizeof(sectors_info) / sizeof(sector_info_t)
++};
++
++void flash_set_target_config(flash_t *obj)
+ {
+-    return FLASH_BASE;
++    obj->flash_algo = &flash_algo_config;
++    obj->target_config = &flash_target_config;
+ }
+-uint32_t flash_get_size(const flash_t *obj)
+-{
+-    return FLASH_SIZE;    
+-}
+-
+-/**
+-  * @brief  Gets the sector of a given address
+-  * @param  None
+-  * @retval The sector of a given address
+-  */
+-static uint32_t GetSector(uint32_t address)
+-{
+-    uint32_t sector = 0; 
+-    uint32_t tmp = address - ADDR_FLASH_SECTOR_0;
+-    /* This function supports 1Mb and 2Mb flash sizes */
+-#if defined(ADDR_FLASH_SECTOR_16)
+-    if (address & 0x100000) { // handle 2nd bank
+-        sector = FLASH_SECTOR_12;
+-        tmp = address - ADDR_FLASH_SECTOR_12;
+-    }
+-#endif
+-    if (address < ADDR_FLASH_SECTOR_4) { // 16k sectorsize
+-        sector += tmp >>14;
+-    }
+-#if defined(ADDR_FLASH_SECTOR_5)
+-    else if (address < ADDR_FLASH_SECTOR_5) { //64k sector size
+-        sector += FLASH_SECTOR_4; 
+-    } else {
+-        sector += 4 + (tmp >>17);
+-    }
+-#else
+-    // In case ADDR_FLASH_SECTOR_5 is not defined, sector 4 is the last one.
+-    else { //64k sector size
+-        sector += FLASH_SECTOR_4; 
+-    }
+-#endif
+-    return sector;
+-}
+-
+-/**
+-  * @brief  Gets sector Size
+-  * @param  None
+-  * @retval The size of a given sector
+-  */
+-static uint32_t GetSectorSize(uint32_t Sector)
+-{
+-    uint32_t sectorsize = 0x00;
+-#if defined(FLASH_SECTOR_16)
+-    if((Sector == FLASH_SECTOR_0) || (Sector == FLASH_SECTOR_1) || (Sector == FLASH_SECTOR_2) ||\
+-       (Sector == FLASH_SECTOR_3) || (Sector == FLASH_SECTOR_12) || (Sector == FLASH_SECTOR_13) ||\
+-       (Sector == FLASH_SECTOR_14) || (Sector == FLASH_SECTOR_15)) {
+-           sectorsize = 16 * 1024;
+-       } else if((Sector == FLASH_SECTOR_4) || (Sector == FLASH_SECTOR_16)) {
+-#else
+-if((Sector == FLASH_SECTOR_0) || (Sector == FLASH_SECTOR_1) || (Sector == FLASH_SECTOR_2) ||\
+-   (Sector == FLASH_SECTOR_3)) {
+-       sectorsize = 16 * 1024;
+-   } else if(Sector == FLASH_SECTOR_4) {
+-#endif
+-        sectorsize = 64 * 1024;
+-    } else {
+-        sectorsize = 128 * 1024;
+-    }  
+-    return sectorsize;
+-}
+-
+-#endif
+-- 
+2.14.2
+
