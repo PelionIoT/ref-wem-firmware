@@ -202,13 +202,22 @@ clean:
 
 .PHONY: patchclean
 patchclean:
-	@for target in ${PATCHDIR}/{COMMON,${MBED_TARGET}}; do \
+	@for target in $$(ls -r -d ${PATCHDIR}/{COMMON,${MBED_TARGET}}); do \
 		for patchdir in $${target}/*; do \
-			for patch in $${patchdir}/*; do \
-				if [ -d $${patchdir##*/} ]; then \
-					patch -R -d $${patchdir##*/} -p1 < $${patch}; \
-				fi; \
-			done; \
+			pushd $${patchdir##*/} && { \
+				for patch in $$(ls -r $${patchdir}/*); do \
+					echo "reversing $${patch}"; \
+					git apply -R $${patch} && { \
+						for lib in $$(git diff --name-only | grep ".lib$$"); do \
+							echo "$$lib changed"; \
+							rm -rf $$(basename $$lib .lib); \
+							mbed deploy --protocol ssh; \
+						done; \
+						git reset HEAD~1; \
+					}; \
+				done; \
+				popd; \
+			}; \
 		done; \
 	done && \
 	rm -f .patches
@@ -266,18 +275,21 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 	@if [ ! -f .patches ]; then \
 		for target in ${PATCHDIR}/{COMMON,${MBED_TARGET}}; do \
 			for patchdir in $${target}/*; do \
-				for patch in $${patchdir}/*; do \
-					git -C $${patchdir##*/} am $${patch} || { \
-						git -C $${patchdir##*/} apply $${patch} \
-							&& git -C $${patchdir##*/} commit -am "$${patch}"; \
-					}; \
-					if git -C $${patchdir##*/} diff --name-only | grep ".lib"; then \
-						pushd $${patchdir##*/} && { \
-							mbed update --protocol ssh; \
-							popd; \
+				echo "applying patches: $${patchdir}"; \
+				pushd $${patchdir##*/} && { \
+					for patch in $${patchdir}/*; do \
+						git am $${patch} || { \
+							git apply $${patch} \
+								&& git commit -am "$${patch}"; \
 						}; \
-					fi; \
-				done; \
+						for lib in $$(git diff-tree HEAD --name-only --no-commit-id | grep ".lib$$"); do \
+							echo "$$lib changed"; \
+							rm -rf $$(basename $$lib .lib); \
+							mbed deploy --protocol ssh; \
+						done; \
+					done; \
+					popd; \
+				}; \
 			done; \
 		done; \
 		touch .patches; \
