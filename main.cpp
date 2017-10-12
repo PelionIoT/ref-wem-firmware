@@ -1214,13 +1214,41 @@ static void cmd_cb_reboot(vector<string>& params)
 static void cmd_cb_format(vector<string>& params)
 {
     int ret;
+    string type;
 
-    ret = fs_format();
-    if (0 != ret) {
-        cmd.printf("ERROR: keystore format failed: %d\n", ret);
+    string usage = "usage: format <type>\n"
+                   "    supported types: fat";
+
+    if (params.size() < 2) {
+        cmd.printf("ERROR: missing fs type\n");
         return;
     }
-    cmd.printf("SUCCESS\n");
+
+    if (params.size() > 2) {
+        cmd.printf("ERROR: too many parameters\n");
+        return;
+    }
+
+    type = params[1];
+    if (type == "fat") {
+        fs_unmount();
+        ret = fs_format();
+        fs_mount();
+
+        if (0 != ret) {
+            cmd.printf("ERROR: keystore format failed: %d\n", ret);
+            return;
+        }
+
+        cmd.printf("SUCCESS\n");
+
+    } else if (type == "-h" || type == "--help") {
+        cmd.printf("%s\n", usage.c_str());
+
+    } else {
+        cmd.printf("ERROR: unsupported fs type: %s\n", params[1].c_str());
+        cmd.printf("%s\n", usage.c_str());
+    }
 }
 
 static void cmd_cb_test(vector<string>& params)
@@ -1398,7 +1426,7 @@ void init_commander(void)
             cmd_cb_verbose);
 
     cmd.add("format",
-            "Format the internal file system. Usage: format",
+            "Format the internal file system. Usage: format <fs-type>",
             cmd_cb_format);
 
     cmd.add("ls",
