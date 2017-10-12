@@ -6,14 +6,18 @@
 //  By the ARM Reference Design (Red) Team
 // ****************************************************************************
 #include "ledman.h"
+#include "../compat.h"
 
 #include <ws2801.h>
+#include "PCA9956A.h"
+#include "PinNames.h"
 
 /* Supported boards for different LEDControllers
  */
 enum TARGET_BOARDS {
     TARGET_BOARD_K64F,
     TARGET_BOARD_UBLOX_EVK,
+    TARGET_BOARD_ODIN_DEMO,
     TARGET_BOARD_COUNT
 };
 
@@ -153,13 +157,13 @@ public:
 protected:
     /** Updates the hardware LEDs based on the internal colors and flags set.
      */
-    void led_post(void) {
+    void led_update(void) {
         led_strip.post(LED_HARDWARE);
     }
 
     /** Setup the internal state of the LED colors and flags.
      */
-    void led_setup(void) {
+    void led_init(void) {
         led_strip.clear();
         led_strip.level(100);
     }
@@ -234,8 +238,101 @@ protected:
     ws2801 led_strip;
 };
 
+template<>
+class LEDController<TARGET_BOARD_ODIN_DEMO> : public BaseController
+{
+public:
+    LEDController() : led_ctrl(I2C_SDA, I2C_SCL, 0x02), /* SDA, SCL, Slave address */
+        led_strip({
+                { // POWER
+                    .red = LedPwmOutCC(led_ctrl, L0),
+                    .green = LedPwmOutCC(led_ctrl, L1),
+                    .blue = LedPwmOutCC(led_ctrl, L2)
+                },
+                { // WIFI
+                    .red = LedPwmOutCC(led_ctrl, L3),
+                    .green = LedPwmOutCC(led_ctrl, L4),
+                    .blue = LedPwmOutCC(led_ctrl, L5)
+                },
+                { // CLOUD
+                    .red = LedPwmOutCC(led_ctrl, L6),
+                    .green = LedPwmOutCC(led_ctrl, L7),
+                    .blue = LedPwmOutCC(led_ctrl, L8)
+                },
+                { // FWUP
+                    .red = LedPwmOutCC(led_ctrl, L9),
+                    .green = LedPwmOutCC(led_ctrl, L10),
+                    .blue = LedPwmOutCC(led_ctrl, L11)
+                },
+                { // LIGHT
+                    .red = LedPwmOutCC(led_ctrl, L12),
+                    .green = LedPwmOutCC(led_ctrl, L13),
+                    .blue = LedPwmOutCC(led_ctrl, L14)
+                },
+                { // TEMP / HUMIDITY
+                    .red = LedPwmOutCC(led_ctrl, L15),
+                    .green = LedPwmOutCC(led_ctrl, L16),
+                    .blue = LedPwmOutCC(led_ctrl, L17)
+                },
+                { // SOUND
+                    .red = LedPwmOutCC(led_ctrl, L18),
+                    .green = LedPwmOutCC(led_ctrl, L19),
+                    .blue = LedPwmOutCC(led_ctrl, L20)
+                },
+        })
+    {
+    }
+
+    ~LEDController() { }
+
+private:
+    /** Updates the hardware LEDs based on the internal colors and flags set.
+     */
+    void led_update(void) {
+        int idx;
+
+        for (idx = 0; idx < IND_NO_TYPES; ++idx) {
+            /* set the hardware LEDs */
+            led_strip[idx].red.pwm(getRed(idx));
+            led_strip[idx].green.pwm(getGreen(idx));
+            led_strip[idx].blue.pwm(getBlue(idx));
+        }
+    }
+
+    /** Setup the internal state of the LED colors and flags.
+     */
+    void led_init(void) {
+        for (int i = 0; i < IND_NO_TYPES; i++) {
+            led_strip[i].red.current(1.0f);
+            led_strip[i].green.current(1.0f);
+            led_strip[i].blue.current(1.0f);
+        }
+    }
+
+    /** Struct definition for the PWM LEDs
+     */
+    struct RGBLED {
+        LedPwmOutCC red;
+        LedPwmOutCC green;
+        LedPwmOutCC blue;
+    };
+    PCA9956A led_ctrl; /* physical PWM LED controller */
+    struct RGBLED led_strip[IND_NO_TYPES]; /* set of RGB LEDs attached to controller */
+
+    /* simple helper functions for converting 24-bit color to 8-bit, then floats */
+    float getRed(int led_name) {
+        return (float)(LED_HARDWARE[led_name] & 0x000000FF) / 256.0f;
+    }
+    float getGreen(int led_name) {
+        return (float)((LED_HARDWARE[led_name] & 0x0000FF00) >> 8) / 256.0f;
+    }
+    float getBlue(int led_name) {
+        return (float)((LED_HARDWARE[led_name] & 0x00FF0000) >> 16) / 256.0f;
+    }
+};
+
 #if TARGET_UBLOX_EVK_ODIN_W2
-LEDController<TARGET_BOARD_UBLOX_EVK> ledctrl;
+LEDController<TARGET_BOARD_ODIN_DEMO> ledctrl;
 #else
 LEDController<TARGET_BOARD_K64F> ledctrl;
 #endif
