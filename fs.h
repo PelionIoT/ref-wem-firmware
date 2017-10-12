@@ -13,3 +13,5 @@ int fs_cat(std::string &path);
 int fs_mkdir(std::string &path);
 int fs_remove(std::string &path);
 int fs_format();
+int fs_mount();
+int fs_unmount();

@@ -35,7 +35,7 @@ int fs_init()
     }
 
     /* mount the filesystem */
-    ret = fs.mount(&bd);
+    ret = fs_mount();
     if (0 != ret) {
         printf("fs.mount failed\n");
         return ret;
@@ -122,7 +122,17 @@ int fs_mkdir(std::string &path)
 
 int fs_format()
 {
-    return FATFileSystem::format(&bd);
+    return fs.format(&bd);
+}
+
+int fs_mount()
+{
+    return fs.mount(&bd);
+}
+
+int fs_unmount()
+{
+    return fs.unmount();
 }
 
 int fs_test()
