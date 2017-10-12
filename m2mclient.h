@@ -99,7 +99,7 @@ public:
 
     void close() { _cloud_client.close(); }
 
-    void keep_alive() { _cloud_client.keep_alive(); }
+    void keep_alive() { _cloud_client.register_update(); }
 
     void client_registered()
     {
