@@ -1603,7 +1603,7 @@ int main()
     int ret;
 
     /* stack size 2048 is too small for fcc_developer_flow() */
-    Thread thread(osPriorityNormal, 4096);
+    Thread thread(osPriorityNormal, 4224);
 
     /* the bootloader doesn't seem to print a final newline before passing
      * control to the app, which causes the version string to be mangled
