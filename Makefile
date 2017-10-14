@@ -12,7 +12,7 @@ DEFAULT_TARGET:=K64F
 DEFAULT_TOOLCHAIN:=GCC_ARM
 
 SRCDIR:=.
-PATCHDIR:=${CURDIR}/patches
+PATCHDIR:=patches
 SRCS:=$(wildcard $(SRCDIR)/*.cpp)
 HDRS:=$(wildcard $(SRCDIR)/*.h)
 LIBS:=$(wildcard $(SRCDIR)/*.lib)
@@ -202,10 +202,10 @@ clean:
 
 .PHONY: patchclean
 patchclean:
-	@for target in $$(ls -r -d ${PATCHDIR}/{COMMON,${MBED_TARGET}}); do \
-		for patchdir in $${target}/*; do \
-			pushd $${patchdir##*/} && { \
-				for patch in $$(ls -r $${patchdir}/*); do \
+	@for target in ${PATCHDIR}/{${MBED_TARGET},COMMON}; do \
+		for patchdir in $$(find $${target} -type d -print | sort -r); do \
+			for patch in $$(find ${CURDIR}/$${patchdir} -type f -depth 1 -print | sort -r); do \
+				pushd $${patchdir##*/} && { \
 					echo "reversing $${patch}"; \
 					git apply -R $${patch} && { \
 						for lib in $$(git diff --name-only | grep ".lib$$"); do \
@@ -215,9 +215,9 @@ patchclean:
 						done; \
 						git reset HEAD~1; \
 					}; \
-				done; \
-				popd; \
-			}; \
+					popd; \
+				}; \
+			done; \
 		done; \
 	done && \
 	rm -f .patches
@@ -274,10 +274,10 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 .patches: .deps
 	@if [ ! -f .patches ]; then \
 		for target in ${PATCHDIR}/{COMMON,${MBED_TARGET}}; do \
-			for patchdir in $${target}/*; do \
-				echo "applying patches: $${patchdir}"; \
-				pushd $${patchdir##*/} && { \
-					for patch in $${patchdir}/*; do \
+			for patchdir in $$(find $${target} -type d -print | sort); do \
+				for patch in $$(find ${CURDIR}/$${patchdir} -type f -depth 1 -print | sort); do \
+					pushd .$${patchdir#$${target}} && { \
+						echo "applying $${patch}"; \
 						git am $${patch} || { \
 							git apply $${patch} \
 								&& git commit -am "$${patch}"; \
@@ -287,9 +287,9 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 							rm -rf $$(basename $$lib .lib); \
 							mbed deploy --protocol ssh; \
 						done; \
-					done; \
-					popd; \
-				}; \
+						popd; \
+					}; \
+				done; \
 			done; \
 		done; \
 		touch .patches; \
