@@ -15,7 +15,7 @@ SRCDIR:=.
 PATCHDIR:=patches
 SRCS:=$(wildcard $(SRCDIR)/*.cpp)
 HDRS:=$(wildcard $(SRCDIR)/*.h)
-LIBS:=$(wildcard $(SRCDIR)/*.lib)
+LIBS:=$(wildcard $(SRCDIR)/*.lib) display/PCA9956xA.lib
 
 # The bootloader type and name
 BOOTLDR_DIR:=mbed-bootloader
