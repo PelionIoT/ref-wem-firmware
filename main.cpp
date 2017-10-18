@@ -22,9 +22,12 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 
+#include <algorithm> /* std::min */
 #include <errno.h>
 #include <factory_configurator_client.h>
+#include <fcc_defs.h>
 #include <mbed_stats.h>
+#include <mbedtls/sha256.h>
 #include <mbed-trace-helper.h>
 #include <mbed-trace/mbed_trace.h>
 
@@ -1072,6 +1075,131 @@ static void platform_shutdown()
 // ****************************************************************************
 // call back handlers for commandline interface
 // ****************************************************************************
+static void print_sha256(uint8_t *sha)
+{
+    for (size_t i = 0; i < 32; ++i) {
+        cmd.printf("%02x", sha[i]);
+    }
+}
+
+static void print_hex(uint8_t *buf, size_t len)
+{
+    for (size_t i = 0; i < len;) {
+        cmd.printf("%02x ", buf[i]);
+        if (++i % 16 == 0) cmd.printf("\n");
+    }
+}
+
+static void cmd_cb_kcmls(vector<string>& params)
+{
+    uint8_t *buf;
+    size_t real_size = 0;
+    const size_t buf_size = 2048;
+    uint8_t sha[32]; /* SHA256 outputs 32 bytes */
+
+    buf = (uint8_t *)malloc(buf_size);
+    if (buf == NULL) {
+        cmd.printf("ERROR: failed to allocate tmp buffer\n");
+        return;
+    }
+
+#define PRINT_CONFIG_ITEM(x) \
+    do { \
+        memset(buf, 0, buf_size); \
+        int pcpret = get_config_parameter(x, buf, buf_size, &real_size); \
+        if (pcpret == CCS_STATUS_SUCCESS) { \
+            cmd.printf("%s: %s\n", x, buf); \
+        } else { \
+            cmd.printf("%s: FAIL (%d)\n", x, pcpret); \
+        } \
+    } while (false);
+
+#define PRINT_CONFIG_CERT(x) \
+    do { \
+        memset(buf, 0, buf_size); \
+        int pccret = get_config_certificate(x, buf, buf_size, &real_size); \
+        if (pccret == CCS_STATUS_SUCCESS) { \
+            cmd.printf("%s: \n", x); \
+            cmd.printf("sha="); \
+            mbedtls_sha256(buf, std::min(real_size, buf_size), sha, 0); \
+            print_sha256(sha); \
+            cmd.printf("\n"); \
+            print_hex(buf, std::min(real_size, buf_size)); \
+            cmd.printf("\n"); \
+        } else { \
+            cmd.printf("%s: FAIL (%d)\n", x, pccret); \
+        } \
+    } while (false)
+
+#define PRINT_CONFIG_KEY(x) \
+    do { \
+        memset(buf, 0, buf_size); \
+        int pccret = get_config_private_key(x, buf, buf_size, &real_size); \
+        if (pccret == CCS_STATUS_SUCCESS) { \
+            cmd.printf("%s: \n", x); \
+            cmd.printf("sha="); \
+            mbedtls_sha256(buf, std::min(real_size, buf_size), sha, 0); \
+            cmd.printf("\n"); \
+            print_sha256(sha); \
+            print_hex(buf, std::min(real_size, buf_size)); \
+            cmd.printf("\n"); \
+        } else { \
+            cmd.printf("%s: FAIL (%d)\n", x, pccret); \
+        } \
+    } while (false)
+
+    /**
+    * Device general info
+    */
+    PRINT_CONFIG_ITEM(g_fcc_use_bootstrap_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_endpoint_parameter_name);
+    PRINT_CONFIG_ITEM(KEY_INTERNAL_ENDPOINT); /*"mbed.InternalEndpoint"*/
+    PRINT_CONFIG_ITEM(KEY_ACCOUNT_ID); /* "mbed.AccountID" */
+
+    /**
+    * Device meta data
+    */
+    PRINT_CONFIG_ITEM(g_fcc_manufacturer_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_model_number_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_device_type_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_hardware_version_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_memory_size_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_device_serial_number_parameter_name);
+    PRINT_CONFIG_ITEM(KEY_DEVICE_SOFTWAREVERSION);/* "mbed.SoftwareVersion" */
+
+    /**
+    * Time Synchronization
+    */
+    PRINT_CONFIG_ITEM(g_fcc_current_time_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_device_time_zone_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_offset_from_utc_parameter_name);
+
+    /**
+    * Bootstrap configuration
+    */
+    PRINT_CONFIG_CERT(g_fcc_bootstrap_server_ca_certificate_name);
+    PRINT_CONFIG_ITEM(g_fcc_bootstrap_server_crl_name);
+    PRINT_CONFIG_ITEM(g_fcc_bootstrap_server_uri_name);
+    PRINT_CONFIG_CERT(g_fcc_bootstrap_device_certificate_name);
+    PRINT_CONFIG_CERT(g_fcc_bootstrap_device_private_key_name);
+
+    /**
+    * LWm2m configuration
+    */
+    PRINT_CONFIG_CERT(g_fcc_lwm2m_server_ca_certificate_name);
+    PRINT_CONFIG_ITEM(g_fcc_lwm2m_server_crl_name);
+    PRINT_CONFIG_ITEM(g_fcc_lwm2m_server_uri_name);
+    PRINT_CONFIG_CERT(g_fcc_lwm2m_device_certificate_name);
+    PRINT_CONFIG_KEY(g_fcc_lwm2m_device_private_key_name);
+
+    /**
+    * Firmware update
+    */
+    PRINT_CONFIG_CERT(g_fcc_update_authentication_certificate_name);
+
+    free(buf);
+}
+
 static void cmd_cb_mstat(vector<string>& params)
 {
 #if MBED_HEAP_STATS_ENABLED == 1
@@ -1468,6 +1596,10 @@ void init_commander(void)
     cmd.add("test",
             "Run the keystore tests. Usage: test",
             cmd_cb_test);
+
+    cmd.add("kcmls",
+            "Show KCM config parameters",
+            cmd_cb_kcmls);
 
     //display the banner
     cmd.banner();
