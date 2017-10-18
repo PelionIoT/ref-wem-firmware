@@ -1,12 +1,19 @@
 #include "keystore.h"
+#include "compat.h"
+
+#include <errno.h>
+#include <stdio.h>
 
 using namespace std;
 
+#define KEYSTORE_SUBDIR "keystore"
+#define KEYSTORE_FILENAME "keystore.data"
+
+string Keystore::_strdir;
+string Keystore::_strfilepath;
+
 Keystore::Keystore()
 {
-    //init the name/file info
-    _strdir      = "keystore";
-    _strfilename = "keystore.data";
 }
 
 Keystore::~Keystore()
@@ -14,99 +21,129 @@ Keystore::~Keystore()
     //do cleanup
 }
 
+void Keystore::shutdown()
+{
+    fs_shutdown();
+}
+
+int Keystore::init()
+{
+    int ret;
+
+    /* init our internal file name variables */
+    Keystore::_strdir = FS_MOUNT_POINT;
+    Keystore::_strdir += "/";
+    Keystore::_strdir += KEYSTORE_SUBDIR;
+    Keystore::_strfilepath = Keystore::_strdir + "/" + KEYSTORE_FILENAME;
+
+    printf("keystore path: %s\n", Keystore::_strfilepath.c_str());
+
+    ret = fs_init();
+    if (0 != ret) {
+        printf("fs_init failed: %d\n", ret);
+        return ret;
+    }
+
+    /* make our keystore directory */
+    ret = ::mkdir(Keystore::_strdir.c_str(), 0777);
+    if (0 != ret && EEXIST != errno) {
+        printf("failed mkdir %s: %d\n", Keystore::_strdir.c_str(), errno);
+        return ret;
+    }
+
+    return 0;
+}
+
 void Keystore::kill_all()
 {
-    pal_fsRmFiles(_strdir.c_str());
+    remove(Keystore::_strfilepath.c_str());
 }
 
 void Keystore::open()
 {
+    FILE *fp;
+    char buffer[64];
+    size_t bytes_read = 0;
+
     //read the file into this
     std::string strfile;
 
-    //our file*
-    palFileDescriptor_t fd = (uintptr_t)NULL;
+    fp = fopen(Keystore::_strfilepath.c_str(), "r");
+    if (NULL == fp) {
+        return;
+    }
 
-    //file operation status
-    palStatus_t rt = PAL_SUCCESS;
+    //start reading
+    for (;;) {
 
-    //create our dir/file as a single string
-    string filepath = _strdir + "/" + _strfilename;
+        //clear our buffer
+        memset(buffer, 0, sizeof(buffer));
 
-    //open our file
-    rt = pal_fsFopen(filepath.c_str(), PAL_FS_FLAG_READONLY, &fd);
+        //Read a chunk of the database
+        bytes_read = fread(buffer, 1, sizeof(buffer) - 1, fp);
 
-    //if it worked
-    if(rt == PAL_SUCCESS) {
-        //buffer to read into
-        char buffer[64];
+        //are we done reading?
+        if (bytes_read <= 0) {
+            //convert the file to the internal state
+            to_db(strfile);
 
-        //bytes read on last pass
-        size_t bytes_read = 0;
-
-        //start reading
-        for (;;) {
-
-            //clear our buffer
-            memset(buffer, 0, sizeof(buffer));
-
-            //Read a chunk of the database
-            rt = pal_fsFread(&fd, buffer, sizeof(buffer) - 1, &bytes_read);
-
-            //are we done reading?
-            if (rt || bytes_read == 0) {
-                //convert the file to the internal state
-                to_db(strfile);
-
-                //exit the loop
-                break;
-            }
-
-            //append the read to the file string
-            strfile += buffer;
+            //exit the loop
+            break;
         }
+
+        //append the read to the file string
+        strfile += buffer;
     }
 
     //close the file
-    pal_fsFclose(&fd);
+    fclose(fp);
 };
 
-void Keystore::close()
+/* mbed-os does not implement tmpnam or tmpfile */
+char *Keystore::mktmp(char *out)
 {
+    snprintf(out, L_tmpnam, "%s", FS_MOUNT_POINT "/keystore.tmp");
+    return out;
+}
+
+void Keystore::write()
+{
+    int ret;
+    FILE *fp;
+    size_t bytes;
+    char fname[L_tmpnam] = {0};
+
     //convert the database to file writable string
     std::string strfile = to_file();
 
-    //our file pointer
-    palFileDescriptor_t fd = (uintptr_t)NULL;
-
-    //file operation status
-    palStatus_t rt = PAL_SUCCESS;
-
-    //try to make our directory to make sure it exists
-    rt = pal_fsMkDir(_strdir.c_str());
-
-    //create our dir/name single string
-    string filepath = _strdir + "/" + _strfilename;
-
     //open the file
-    rt = pal_fsFopen(filepath.c_str(), PAL_FS_FLAG_READWRITETRUNC, &fd);
-
-    //if we succed
-    if (rt == PAL_SUCCESS) {
-        //bytes written
-        size_t numberOfBytesWritten = 0;
-
-        //write the file at once
-        rt = pal_fsFwrite(&fd,
-                          strfile.c_str(),
-                          strfile.length(),
-                          &numberOfBytesWritten);
+    mktmp(fname);
+    if (strlen(fname) == 0) {
+        printf("ERROR: failed to generate tmp file name\n");
+        return;
     }
 
-    //close the file
-    pal_fsFclose(&fd);
+    fp = fopen(fname, "w");
+    if (NULL == fp) {
+        printf("ERROR: failed to open tmp file %s: %d\n", fname, -errno);
+        return;
+    }
 
-};
+    //write the file at once
+    bytes = fwrite(strfile.c_str(), 1, strfile.length(), fp);
+    fclose(fp);
+    if (bytes == strfile.length()) {
+        remove(Keystore::_strfilepath.c_str());
+        ret = rename(fname, Keystore::_strfilepath.c_str());
+        if (0 != ret) {
+            printf("ERROR: failed to rename tmp file %s to real file %s\n",
+                   fname, Keystore::_strfilepath.c_str());
+        }
+    } else {
+        printf("ERROR: failed to write contents. length=%d, written=%u\n",
+               strfile.length(), bytes);
+    }
+}
 
 std::string Keystore::get(const char* szkey)
 {

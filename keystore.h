@@ -1,7 +1,5 @@
+#include "fs.h"
 #include <string>
-#include <pal.h>
-#include <pal_plat_fileSystem.h>
-#include <pal_plat_rtos.h>
 #include <vector>
 #include <map>
 
@@ -27,8 +25,8 @@
         //get a keys value
         string val = k.get("testkey");
 
-        //close and write the changes out
-        k.close();
+        //write the changes out
+        k.write();
 
         return 0;
     }
@@ -48,6 +46,16 @@ public:
     ~Keystore();
 
     /*
+     * performs initialization of underlying storage
+     */
+    static int init();
+
+    /*
+     * performs de-initialization of underlying storage
+     */
+    static void shutdown();
+
+    /*
         Function: open
 
         opens the database and pulls the values internally to this class
@@ -61,9 +69,9 @@ public:
     void open();
 
     /*
-        Function: close
+        Function: write
 
-        closes the database and writes the values back to storage.
+        writes the values back to storage.
 
         Params:
         none.
@@ -71,7 +79,20 @@ public:
         Returns:
         nothing.
     */
-    void close();
+    void write();
+
+    /*
+        Function: close
+
+        closes the database
+
+        Params:
+        none.
+
+        Returns:
+        nothing.
+    */
+    void close() { return; };
 
     /*
         Function: get
@@ -260,19 +281,20 @@ protected:
     std::map<std::string, std::string> _mapdb;
 
     /*
-        variable: std::string _strfilename
+        variable: std::string _strfilepath
 
-        the default filename for the database
+        the absolute path to the database file
     */
-    std::string _strfilename;
+    static std::string _strfilepath;
 
     /*
         variable: std::string _strdir
 
         the default directory for the database file
     */
-    std::string _strdir;
+    static std::string _strdir;
 
+    static char *mktmp(char *out);
 };
 
 

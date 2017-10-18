@@ -24,6 +24,10 @@
             "help": "Run a self-test upon boot",
             "value": "false"
         },
+        "use-spi-flash": {
+            "help": "Set to true to use SPI Flash or false to use SD card.",
+            "value": "true"
+        },
         "version": {
             "help": "Display this version string on the device",
             "value": "\"1.0\""
@@ -61,10 +65,10 @@
         "MBEDTLS_USER_CONFIG_FILE=\"mbedtls_mbed_client_config.h\"",
         "MBED_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
         "MBED_CLOUD_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
-        "PAL_USE_FATFS_SD=1",
         "SA_PV_OS_MBEDOS",
         "MBED_HEAP_STATS_ENABLED=1",
-        "MBED_STACK_STATS_ENABLED=1"
+        "MBED_STACK_STATS_ENABLED=1",
+        "MBED_CONF_APP_MAIN_STACK_SIZE=4608"
     ],
     "target_overrides": {
         "*": {
@@ -78,10 +82,11 @@
             ]
         },
         "K64F": {
-            "mbed-client-pal.update-active-metadata-header-offset": "0x00020000"
+            "app.use-spi-flash": false,
+            "target.mbed_app_start": "0x20400"
         },
         "UBLOX_EVK_ODIN_W2": {
-            "mbed-client-pal.update-active-metadata-header-offset": "0x08040000"
+            "target.mbed_app_start": "0x08040400"
         }
     }
 }

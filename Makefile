@@ -12,10 +12,10 @@ DEFAULT_TARGET:=K64F
 DEFAULT_TOOLCHAIN:=GCC_ARM
 
 SRCDIR:=.
-PATCHDIR:=${CURDIR}/patches
+PATCHDIR:=patches
 SRCS:=$(wildcard $(SRCDIR)/*.cpp)
 HDRS:=$(wildcard $(SRCDIR)/*.h)
-LIBS:=$(wildcard $(SRCDIR)/*.lib)
+LIBS:=$(wildcard $(SRCDIR)/*.lib) display/PCA9956xA.lib
 
 # The bootloader type and name
 BOOTLDR_DIR:=mbed-bootloader
@@ -147,7 +147,6 @@ define Build/Bootloader/Compile
 	ln -fs ../TextLCD ; \
 	ln -fs ../ws2801  ; \
 	ln -fs ../.mbed ; \
-	mbed update; \
 	cmd="mbed compile $${opts}"; \
 	echo "$${cmd}"; \
 	$${cmd};
@@ -203,12 +202,21 @@ clean:
 
 .PHONY: patchclean
 patchclean:
-	@for target in ${PATCHDIR}/{COMMON,${MBED_TARGET}}; do \
-		for patchdir in $${target}/*; do \
-			for patch in $${patchdir}/*; do \
-				if [ -d $${patchdir##*/} ]; then \
-					patch -R -d $${patchdir##*/} -p1 < $${patch}; \
-				fi; \
+	@for target in ${PATCHDIR}/{${MBED_TARGET},COMMON}; do \
+		for patchdir in $$(find $${target} -type d -print | sort -r); do \
+			for patch in $$(find ${CURDIR}/$${patchdir} -type f -depth 1 -print | sort -r); do \
+				pushd $${patchdir##*/} && { \
+					echo "reversing $${patch}"; \
+					git apply -R $${patch} && { \
+						for lib in $$(git diff --name-only | grep ".lib$$"); do \
+							echo "$$lib changed"; \
+							rm -rf $$(basename $$lib .lib); \
+							mbed deploy --protocol ssh; \
+						done; \
+						git reset HEAD~1; \
+					}; \
+					popd; \
+				}; \
 			done; \
 		done; \
 	done && \
@@ -233,7 +241,11 @@ mbed_app.json:
 		echo "applying mbed_app_local.json"; \
 		python tools/merge_json.py mbed_app.json mbed_app_local.json > mbed_app_merged.json; \
 		if cat mbed_app_merged.json | python -m json.tool >/dev/null 2>&1; then \
-			mv mbed_app_merged.json mbed_app.json; \
+			if ! diff mbed_app_merged.json mbed_app.json; then \
+				mv mbed_app_merged.json mbed_app.json; \
+			else \
+				rm mbed_app_merged.json; \
+			fi; \
 		else \
 			echo "Error: failed to merge $@ with mbed_app_local.json"; \
 		fi; \
@@ -248,7 +260,7 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 	mbed target ${MBED_TARGET}
 	mbed toolchain ${MBED_TOOLCHAIN}
 
-.deps: .mbed ${LIBS}
+.deps: ${LIBS}
 	mbed deploy --protocol ssh && touch .deps
 
 # Acquire (and cache) the mount point of the board.
@@ -260,14 +272,28 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 		(echo Error: could not detect mount path for the mbed board.  Verify that 'mbed detect' works.; exit 1)
 
 .patches: .deps
-	@[ -f .patches ] || for target in ${PATCHDIR}/{COMMON,${MBED_TARGET}}; do \
-		for patchdir in $${target}/*; do \
-			for patch in $${patchdir}/*; do \
-				patch -d $${patchdir##*/} -p1 < $${patch}; \
+	@if [ ! -f .patches ]; then \
+		for target in ${PATCHDIR}/{COMMON,${MBED_TARGET}}; do \
+			for patchdir in $$(find $${target} -type d -print | sort); do \
+				for patch in $$(find ${CURDIR}/$${patchdir} -type f -depth 1 -print | sort); do \
+					pushd .$${patchdir#$${target}} && { \
+						echo "applying $${patch}"; \
+						git am $${patch} || { \
+							git apply $${patch} \
+								&& git commit -am "$${patch}"; \
+						}; \
+						for lib in $$(git diff-tree HEAD --name-only --no-commit-id | grep ".lib$$"); do \
+							echo "$$lib changed"; \
+							rm -rf $$(basename $$lib .lib); \
+							mbed deploy --protocol ssh; \
+						done; \
+						popd; \
+					}; \
+				done; \
 			done; \
 		done; \
-	done && \
-    touch .patches
+		touch .patches; \
+	fi
 
 ################################################################################
 # Update related rules
@@ -276,7 +302,6 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 update_default_resources.c: .deps
 	@which manifest-tool || (echo Error: manifest-tool not found.  Install it with \"pip install -r requirements.txt\"; exit 1)
 	manifest-tool init -d "arm.com" -m "fota-demo" -q
-	touch update_default_resources.c
 
 .mbed-cloud-key:
 	@echo "Error: You need to save an mbed cloud API key in .mbed-cloud-key"

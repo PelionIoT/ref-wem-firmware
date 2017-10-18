@@ -11,6 +11,7 @@
 #include "commander.h"
 #include "DHT.h"
 #include "displayman.h"
+#include "fs.h"
 #include "GL5528.h"
 #include "keystore.h"
 #include "lcdprogress.h"
@@ -21,7 +22,6 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 
-#include <SDBlockDevice.h>
 #include <errno.h>
 #include <factory_configurator_client.h>
 #include <mbed_stats.h>
@@ -37,6 +37,11 @@
 #error "to use Ethernet on ODIN, remove target.device_has EMAC in mbed_app.json"
 #endif
 #include <EthernetInterface.h>
+#endif
+
+#if TARGET_UBLOX_EVK_ODIN_W2
+#include "TSL2591.h"
+#include "Sht31/Sht31.h"
 #endif
 
 #define TRACE_GROUP "main"
@@ -78,6 +83,13 @@ namespace json = rapidjson;
 
 #define JSON_MEM_POOL_INC 64
 
+#define FOTA_VERBOSE_PRINTF(type, fmt, ...) \
+    do {\
+        if (fota_ ##type ## _verbose_enabled) {\
+            cmd.printf(fmt, __VA_ARGS__); \
+        }\
+    } while(0)
+
 enum FOTA_THREADS {
     FOTA_THREAD_DISPLAY = 0,
     FOTA_THREAD_SENSOR_LIGHT,
@@ -89,7 +101,11 @@ struct dht_sensor {
     uint8_t h_id;
     uint8_t t_id;
 
+#if TARGET_UBLOX_EVK_ODIN_W2
+    Sht31 *sensor;
+#else
     DHT *dev;
+#endif
 
     M2MResource *h_res;
     M2MResource *t_res;
@@ -98,7 +114,11 @@ struct dht_sensor {
 struct light_sensor {
     uint8_t id;
 
+#if TARGET_UBLOX_EVK_ODIN_W2
+    TSL2591 *sensor;
+#else
     AnalogIn *dev;
+#endif
 
     M2MResource *res;
 };
@@ -112,9 +132,6 @@ struct sensors {
 // ****************************************************************************
 // Globals
 // ****************************************************************************
-/* declared in pal_plat_fileSystem.cpp, which is included because COMMON_PAL
- * is defined in mbed_app.json */
-extern SDBlockDevice sd;
 static DisplayMan display;
 static M2MClient *m2mclient;
 static NetworkInterface *net;
@@ -122,6 +139,15 @@ static EventQueue evq;
 static struct sensors sensors;
 /* used to stop auto display refresh during firmware downloads */
 static int display_evq_id;
+static bool fota_sensors_verbose_enabled = false;
+
+#if TARGET_UBLOX_EVK_ODIN_W2
+static I2C i2c(I2C_SDA, I2C_SCL);
+static TSL2591 tsl2591(i2c, TSL2591_ADDR);
+static Sht31 sht31(I2C_SDA, I2C_SCL);
+#endif
+
+
 
 // ****************************************************************************
 // Generic Helpers
@@ -155,7 +181,13 @@ static void light_init(struct light_sensor *s, M2MClient *mbed_client)
     s->id = display.register_sensor("Light", IND_LIGHT);
 
     /* init the driver */
+#if TARGET_UBLOX_EVK_ODIN_W2
+    s->sensor = &tsl2591;
+    s->sensor->init();
+    s->sensor->enable();
+#else
     s->dev = new AnalogIn(A0);
+#endif
 
     s->res = m2mclient->get_resource(M2MClient::M2MClientResourceLightValue);
     m2mclient->set_resource_value(s->res, "0", 1);
@@ -202,15 +234,24 @@ static void light_read(struct light_sensor *s)
 {
     size_t size;
     char res_buffer[33] = {0};
+    unsigned int lux;
 
+#if TARGET_UBLOX_EVK_ODIN_W2
+    s->sensor->getALS();
+    s->sensor->calcLux();
+    lux = s->sensor->lux;
+    FOTA_VERBOSE_PRINTF(sensors, "light: %u\n", lux);
+    size = snprintf(res_buffer, sizeof(res_buffer), "%u lux", lux);
+#else
     float reading = s->dev->read();
-
-    unsigned int lux = light_sensor_to_lux(reading);
-
+    lux = light_sensor_to_lux(reading);
     tr_debug("light: %5.4f --> %u\n",  reading, lux);
+
+    FOTA_VERBOSE_PRINTF(sensors, "light: %5.4f --> %u\n",  reading, lux);
 
     size = snprintf(res_buffer, sizeof(res_buffer), "%s%u lux",
                     ((reading >= 1.0)?">":""), lux);
+#endif
 
     display.set_sensor_status(s->id, res_buffer);
     m2mclient->set_resource_value(s->res, res_buffer, size);
@@ -226,7 +267,11 @@ static void dht_init(struct dht_sensor *s, M2MClient *mbed_client)
     s->h_id = display.register_sensor("Humidity", IND_HUMIDITY);
 
     /* init the driver */
+#if TARGET_UBLOX_EVK_ODIN_W2
+    s->sensor = &sht31;
+#else
     s->dev = new DHT(D4, AM2302);
+#endif
 
     s->t_res = mbed_client->get_resource(
                     M2MClient::M2MClientResourceTempValue);
@@ -247,15 +292,26 @@ static void dht_init(struct dht_sensor *s, M2MClient *mbed_client)
 static void dht_read(struct dht_sensor *dht)
 {
     int size = 0;
-    eError readError;
+    eError readError = ERROR_NONE;
     float temperature, humidity;
     char res_buffer[33] = {0};
 
+#if !TARGET_UBLOX_EVK_ODIN_W2
     readError = dht->dev->readData();
+#endif
+
     if (readError == ERROR_NONE) {
+#if TARGET_UBLOX_EVK_ODIN_W2
+        temperature = dht->sensor->readTemperature();
+        humidity = dht->sensor->readHumidity();
+#else
         temperature = dht->dev->ReadTemperature(CELCIUS);
         humidity = dht->dev->ReadHumidity();
+#endif
         tr_debug("DHT: temp = %fC, humi = %f%%\n", temperature, humidity);
+
+        /* verbose printing to screen of sensor values */
+        FOTA_VERBOSE_PRINTF(sensors, "DHT: temp = %.2fC, humidity = %.2f%%\n", temperature, humidity);
 
         size = snprintf(res_buffer, sizeof(res_buffer), "%.1f C", temperature);
         m2mclient->set_resource_value(dht->t_res, res_buffer, size);
@@ -266,6 +322,7 @@ static void dht_read(struct dht_sensor *dht)
         display.set_sensor_status(dht->h_id, (char *)res_buffer);
     } else {
         tr_error("DHT: readData() failed with %d\n", readError);
+        FOTA_VERBOSE_PRINTF(sensors, "DHT: readData() failed with %d\n", readError);
     }
 }
 
@@ -628,6 +685,7 @@ static void mbed_client_handle_put_app_label(M2MClient *m2m)
 
     k.open();
     k.set(APP_LABEL_KEY, label);
+    k.write();
     k.close();
 
     set_app_label(m2m, label.c_str());
@@ -654,6 +712,7 @@ mbed_client_handle_put_geo_lat(M2MClient *m2m)
     } else {
         k.set(GEO_LAT_KEY, val);
     }
+    k.write();
     k.close();
 }
 
@@ -678,6 +737,7 @@ mbed_client_handle_put_geo_long(M2MClient *m2m)
     } else {
         k.set(GEO_LONG_KEY, val);
     }
+    k.write();
     k.close();
 }
 
@@ -702,6 +762,7 @@ mbed_client_handle_put_geo_accuracy(M2MClient *m2m)
     } else {
         k.set(GEO_ACCURACY_KEY, val);
     }
+    k.write();
     k.close();
 }
 
@@ -970,13 +1031,13 @@ static int platform_init(void)
     mbed_trace_mutex_release_function_set(mbed_trace_helper_mutex_release);
 #endif
 
-    /* init the sd card */
-    ret = sd.init();
-    if (ret != BD_ERROR_OK) {
-        cmd.printf("ERROR: sd init failed: %d\n", ret);
+    /* init the keystore */
+    ret = Keystore::init();
+    if (0 != ret) {
+        printf("ERROR: keystore init failed: %d\n", ret);
         return ret;
     }
-    cmd.printf("sd init OK\n");
+    printf("keystore init OK\n");
 
     return 0;
 }
@@ -985,6 +1046,7 @@ static void platform_shutdown()
 {
     /* stop the EventQueue */
     evq.break_dispatch();
+    Keystore::shutdown();
 }
 
 // ****************************************************************************
@@ -1011,49 +1073,21 @@ static void cmd_cb_mstat(vector<string>& params)
 #endif
 
 #if MBED_STACK_STATS_ENABLED == 1
-    osEvent info;
-    osThreadEnumId id;
-    osThreadId thread;
-    osThreadId main_thread;
+    int count;
+    mbed_stats_stack_t *stats;
 
-    id = _osThreadsEnumStart();
-    main_thread = osThreadGetId();
-    while ( (thread = _osThreadEnumNext(id)) != NULL) {
-        if (main_thread == thread) {
-            cmd.printf("thread[%lu]: %p (main)\n", *id, thread);
-        } else {
-            cmd.printf("thread[%lu]: %p\n", *id, thread);
-        }
+    count = osThreadGetCount();
+    stats = (mbed_stats_stack_t *)malloc(count * sizeof(*stats));
 
-        info = _osThreadGetInfo(thread, osThreadInfoEntry);
-        if (info.status == osOK) {
-            cmd.printf("thread[%lu] entry: %p\n", *id, info.value.p);
-        } else {
-            cmd.printf("thread[%lu] entry:\n", *id);
-        }
-
-        info = _osThreadGetInfo(thread, osThreadInfoState);
-        if (info.status == osOK) {
-            cmd.printf("thread[%lu] state: %lu\n", *id, info.value.v);
-        } else {
-            cmd.printf("thread[%lu] state:\n", *id);
-        }
-
-        info = _osThreadGetInfo(thread, osThreadInfoStackMax);
-        if (info.status == osOK) {
-            cmd.printf("thread[%lu] stack high: %lu\n", *id, info.value.v);
-        } else {
-            cmd.printf("thread[%lu] stack high:\n", *id);
-        }
-
-        info = _osThreadGetInfo(thread, osThreadInfoStackSize);
-        if (info.status == osOK) {
-            cmd.printf("thread[%lu] stack total: %lu\n", *id, info.value.v);
-        } else {
-            cmd.printf("thread[%lu] stack total:\n", *id);
-        }
+    count = mbed_stats_stack_get_each(stats, count);
+    for (int i = 0; i < count; i++) {
+        cmd.printf("thread[%d] id: 0x%08x\n", i, stats[i].thread_id);
+        cmd.printf("thread[%d] stack high: %u\n", i, stats[i].max_size);
+        cmd.printf("thread[%d] stack total: %u\n", i, stats[i].reserved_size);
     }
-    _osThreadEnumFree(id);
+
+    free(stats);
+    stats = NULL;
 #endif
 }
 
@@ -1071,6 +1105,7 @@ static void cmd_cb_del(vector<string>& params)
         k.del(params[1]);
 
         //write the changes back out
+        k.write();
         k.close();
 
         //let user know
@@ -1157,6 +1192,7 @@ static void cmd_cb_set(vector<string>& params)
         k.set(params[1], strvalue);
 
         //write the file back out
+        k.write();
         k.close();
 
         //return just the value
@@ -1173,6 +1209,94 @@ static void cmd_cb_reboot(vector<string>& params)
 {
     cmd.printf("\nRebooting...");
     NVIC_SystemReset();
+}
+
+static void cmd_cb_format(vector<string>& params)
+{
+    int ret;
+    string type;
+
+    string usage = "usage: format <type>\n"
+                   "    supported types: fat";
+
+    if (params.size() < 2) {
+        cmd.printf("ERROR: missing fs type\n");
+        return;
+    }
+
+    if (params.size() > 2) {
+        cmd.printf("ERROR: too many parameters\n");
+        return;
+    }
+
+    type = params[1];
+    if (type == "fat") {
+        fs_unmount();
+        ret = fs_format();
+        fs_mount();
+
+        if (0 != ret) {
+            cmd.printf("ERROR: keystore format failed: %d\n", ret);
+            return;
+        }
+
+        cmd.printf("SUCCESS\n");
+
+    } else if (type == "-h" || type == "--help") {
+        cmd.printf("%s\n", usage.c_str());
+
+    } else {
+        cmd.printf("ERROR: unsupported fs type: %s\n", params[1].c_str());
+        cmd.printf("%s\n", usage.c_str());
+    }
+}
+
+static void cmd_cb_test(vector<string>& params)
+{
+    fs_test();
+}
+
+static void cmd_cb_ls(vector<string>& params)
+{
+    std::string path;
+
+    if (params.size() > 1) {
+        path = params[1];
+    } else {
+        path = "/";
+    }
+
+    fs_ls(path);
+}
+
+static void cmd_cb_cat(vector<string>& params)
+{
+    if (params.size() <= 1) {
+        cmd.printf("Not enough arguments!\n");
+        return;
+    }
+
+    fs_cat(params[1]);
+}
+
+static void cmd_cb_rm(vector<string>& params)
+{
+    if (params.size() <= 1) {
+        cmd.printf("Not enough arguments!\n");
+        return;
+    }
+
+    fs_remove(params[1]);
+}
+
+static void cmd_cb_mkdir(vector<string>& params)
+{
+    if (params.size() <= 1) {
+        cmd.printf("Not enough arguments!\n");
+        return;
+    }
+
+    fs_mkdir(params[1]);
 }
 
 static void cmd_cb_reset(vector<string>& params)
@@ -1214,6 +1338,42 @@ static void cmd_cb_reset(vector<string>& params)
     //delete from keystore?
     if (boptions) {
         k.kill_all();
+    }
+}
+
+static void cmd_cb_verbose(vector<string>& params)
+{
+    if (params.size() < 2) {
+        cmd.printf("ERROR: Invalid usage of verbose!\n");
+        cmd.printf("Usage: verbose <type> [off|on], defaults to off.\n");
+        cmd.printf("    Current types supported: sensors\n");
+        return;
+    }
+
+    if (params[1] == "sensors") {
+        /* print the current status of verbosity */
+        if (params.size() < 3) {
+            cmd.printf("Sensor verbosity is currently %s\n",
+                    fota_sensors_verbose_enabled ? "enabled" : "disabled");
+            return;
+        }
+
+        /* if an additional parameter was supplied the check that */
+        if (params[2] == "on") {
+            fota_sensors_verbose_enabled = true;
+            cmd.printf("verbose sensor printing enabled\n");
+        } else if (params[2] == "off") {
+            fota_sensors_verbose_enabled = false;
+            cmd.printf("verbose sensor printing disabled\n");
+        } else {
+            cmd.printf("ERROR: Invalid parameter supplied! %s\n", params[1].c_str());
+            return;
+        }
+    } else {
+        /* if we add more than just sensors we should use
+         * this as a catch all to enable or disable all
+         */
+        cmd.printf("ERROR: unsupported option %s!\n", params[1].c_str());
     }
 }
 
@@ -1260,6 +1420,34 @@ void init_commander(void)
             "Show runtime heap and stack statistics.",
             cmd_cb_mstat);
 #endif
+
+    cmd.add("verbose",
+            "Enables verbose printing of sensor values when set 'on'. Usage: verbose <type> [off|on], defeaults to off",
+            cmd_cb_verbose);
+
+    cmd.add("format",
+            "Format the internal file system. Usage: format <fs-type>",
+            cmd_cb_format);
+
+    cmd.add("ls",
+            "List directory entries. Usage: ls <path>",
+            cmd_cb_ls);
+
+    cmd.add("cat",
+            "Read the contents of a file. Usage: cat <path>",
+            cmd_cb_cat);
+
+    cmd.add("rm",
+            "Remove a file. Usage: rm <path>",
+            cmd_cb_rm);
+
+    cmd.add("mkdir",
+            "Make a directory. Usage: mkdir <path>",
+            cmd_cb_mkdir);
+
+    cmd.add("test",
+            "Run the keystore tests. Usage: test",
+            cmd_cb_test);
 
     //display the banner
     cmd.banner();
@@ -1415,7 +1603,7 @@ int main()
     int ret;
 
     /* stack size 2048 is too small for fcc_developer_flow() */
-    Thread thread(osPriorityNormal, 4096);
+    Thread thread(osPriorityNormal, 4224);
 
     /* the bootloader doesn't seem to print a final newline before passing
      * control to the app, which causes the version string to be mangled
@@ -1430,9 +1618,10 @@ int main()
     cmd.printf("init platform\n");
     ret = platform_init();
     if (0 != ret) {
-        return ret;
+        cmd.printf("init platform: FAIL\n");
+    } else {
+        cmd.printf("init platform: OK\n");
     }
-    cmd.printf("init platform: OK\n");
 
     /* set the refresh rate of the display. */
     display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);
