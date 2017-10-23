@@ -66,8 +66,6 @@
         "MBED_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
         "MBED_CLOUD_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
         "SA_PV_OS_MBEDOS",
-        "MBED_HEAP_STATS_ENABLED=1",
-        "MBED_STACK_STATS_ENABLED=1",
         "MBED_CONF_APP_MAIN_STACK_SIZE=4608"
     ],
     "target_overrides": {
