@@ -23,8 +23,12 @@
 #include <map>
 #include <stdio.h>
 
-#define M2MCLIENT_F_REGISTER_CALLED      1 << 0
-#define M2MCLIENT_F_REGISTERED           1 << 1
+#define M2MCLIENT_F_REGISTER_CALLED           1 << 0
+#define M2MCLIENT_F_REGISTERED                1 << 1
+#define M2MCLIENT_F_FOTA_DL_REQD              1 << 2
+#define M2MCLIENT_F_FOTA_DL_GRANTED           1 << 3
+#define M2MCLIENT_F_FOTA_INSTALL_REQD         1 << 4
+#define M2MCLIENT_F_FOTA_INSTALL_GRANTED      1 << 5
 
 class M2MClient : public MbedCloudClientCallback {
 
@@ -265,6 +269,16 @@ public:
 
     void update_authorize(int32_t request)
     {
+        switch (request) {
+            case MbedCloudClient::UpdateRequestDownload:
+                set_flag(M2MCLIENT_F_FOTA_DL_GRANTED);
+                break;
+            case MbedCloudClient::UpdateRequestInstall:
+                set_flag(M2MCLIENT_F_FOTA_INSTALL_GRANTED);
+                break;
+            default:
+                break;
+        }
         _cloud_client.update_authorize(request);
     }
 
@@ -282,6 +296,12 @@ public:
 
     void set_resource_value(enum M2MClientResource resource,
                             const std::string &val);
+
+    void set_fota_download_requested();
+    bool is_fota_download_requested();
+
+    void set_fota_install_requested();
+    bool is_fota_install_requested();
 
 private:
     struct resource_entry {
