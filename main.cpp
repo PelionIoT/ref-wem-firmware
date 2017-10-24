@@ -1139,8 +1139,8 @@ static void cmd_cb_kcmls(vector<string>& params)
             cmd.printf("%s: \n", x); \
             cmd.printf("sha="); \
             mbedtls_sha256(buf, std::min(real_size, buf_size), sha, 0); \
-            cmd.printf("\n"); \
             print_sha256(sha); \
+            cmd.printf("\n"); \
             print_hex(buf, std::min(real_size, buf_size)); \
             cmd.printf("\n"); \
         } else { \
