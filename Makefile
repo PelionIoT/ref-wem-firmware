@@ -12,6 +12,7 @@ DEFAULT_TARGET:=K64F
 DEFAULT_TOOLCHAIN:=GCC_ARM
 
 SRCDIR:=.
+CERTDIR:=${HOME}/.mbedcerts
 PATCHDIR:=patches
 SRCS:=$(wildcard $(SRCDIR)/*.cpp)
 HDRS:=$(wildcard $(SRCDIR)/*.h)
@@ -301,7 +302,14 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 
 update_default_resources.c: .deps
 	@which manifest-tool || (echo Error: manifest-tool not found.  Install it with \"pip install -r requirements.txt\"; exit 1)
-	manifest-tool init -d "arm.com" -m "fota-demo" -q
+	if [ -d ${CERTDIR}/${MBED_TARGET} ]; then \
+		cp -f ${CERTDIR}/${MBED_TARGET}/mbed_cloud_dev_credentials.c .; \
+		cp -rf ${CERTDIR}/${MBED_TARGET}/.update-certificates .; \
+		cp -f ${CERTDIR}/${MBED_TARGET}/update_default_resources.c .; \
+		cp -f ${CERTDIR}/${MBED_TARGET}/.manifest_tool.json .; \
+	else \
+		manifest-tool init -d "arm.com" -m "fota-demo" -q; \
+	fi;
 
 .mbed-cloud-key:
 	@echo "Error: You need to save an mbed cloud API key in .mbed-cloud-key"
@@ -320,6 +328,14 @@ MANIFEST_FILE=dev-manifest
 
 .firmware-url: .mbed-cloud-key ${COMBINED_BIN}
 	python mbed-cloud-update-cli/upload-firmware.py ${PROG_BIN} --key-file .mbed-cloud-key -o $@
+
+.PHONY: certsave
+certsave:
+	mkdir -p ${CERTDIR}/${MBED_TARGET}/
+	cp -f mbed_cloud_dev_credentials.c ${CERTDIR}/${MBED_TARGET}/
+	cp -rf .update-certificates ${CERTDIR}/${MBED_TARGET}/
+	cp -f update_default_resources.c ${CERTDIR}/${MBED_TARGET}/
+	cp -f .manifest_tool.json ${CERTDIR}/${MBED_TARGET}/
 
 .PHONY: certclean
 certclean:
