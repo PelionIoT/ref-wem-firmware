@@ -1,6 +1,6 @@
-From 0dc2adcc71a22fa3d025fecd2770c727c35cf7ae Mon Sep 17 00:00:00 2001
+From 8486df92171d1ed9dfd7df9d1c6196a3a45bb6e7 Mon Sep 17 00:00:00 2001
 From: Nic Costa <nic.costa@arm.com>
-Date: Tue, 24 Oct 2017 14:46:04 -0500
+Date: Wed, 27 Sep 2017 22:28:20 -0500
 Subject: [PATCH] Adding FOTA progress
 
 This patch adds support for re-using the display manager interface
@@ -29,13 +29,13 @@ Signed-off-by: Nic Costa <nic.costa@arm.com>
  create mode 100644 source/fota.h
 
 diff --git a/mbed_app.json b/mbed_app.json
-index 20f53d2..7d4fe93 100755
+index 2924f13..df35db3 100755
 --- a/mbed_app.json
 +++ b/mbed_app.json
-@@ -46,8 +46,8 @@
+@@ -45,8 +45,8 @@
+         },
          "UBLOX_EVK_ODIN_W2": {
              "target.extra_labels_add": ["STM32F4", "STM32F439", "STM32F439ZI","STM32F439xx", "STM32F439xI", "FLASH_CMSIS_ALGO"],
-             "target.device_has_remove": ["EMAC"],
 -            "firmware_metadata_header_address": "0x08020000",
 -            "update-client.application-details": "0x08020000",
 +            "firmware_metadata_header_address": "0x08040000",
@@ -44,10 +44,10 @@ index 20f53d2..7d4fe93 100755
          }
      }
 diff --git a/source/active_application.cpp b/source/active_application.cpp
-index 2f3be57..8b5c97f 100755
+index 8e46119..386ba74 100755
 --- a/source/active_application.cpp
 +++ b/source/active_application.cpp
-@@ -20,6 +20,7 @@
+@@ -16,6 +16,7 @@
  #define __STDC_FORMAT_MACROS
  #endif
  
@@ -55,7 +55,7 @@ index 2f3be57..8b5c97f 100755
  #include "active_application.h"
  #include "bootloader_common.h"
  
-@@ -79,6 +80,11 @@ bool readActiveFirmwareHeader(arm_uc_firmware_details_t* details)
+@@ -75,6 +76,11 @@ bool readActiveFirmwareHeader(arm_uc_firmware_details_t* details)
              if (event_callback == ARM_UC_PAAL_EVENT_GET_ACTIVE_FIRMWARE_DETAILS_DONE)
              {
                  result = true;
@@ -67,7 +67,7 @@ index 2f3be57..8b5c97f 100755
              }
          }
      }
-@@ -151,6 +157,9 @@ int checkActiveApplication(arm_uc_firmware_details_t* details)
+@@ -147,6 +153,9 @@ int checkActiveApplication(arm_uc_firmware_details_t* details)
  #if defined(SHOW_PROGRESS_BAR) && SHOW_PROGRESS_BAR == 1
                  printProgress(details->size - remaining,
                                details->size);
@@ -77,7 +77,7 @@ index 2f3be57..8b5c97f 100755
  #endif
              }
  
-@@ -189,6 +198,7 @@ bool eraseActiveFirmware(uint32_t firmwareSize)
+@@ -185,6 +194,7 @@ bool eraseActiveFirmware(uint32_t firmwareSize)
      tr_debug("eraseActiveFirmware");
  
      /* get sector size of where the new firmware would end */
@@ -85,7 +85,7 @@ index 2f3be57..8b5c97f 100755
      uint32_t lastSectorSize =
          flash.get_sector_size(MBED_CONF_APP_FIRMWARE_METADATA_HEADER_ADDRESS +
                                MBED_CONF_APP_FIRMWARE_METADATA_HEADER_SIZE +
-@@ -207,9 +217,12 @@ bool eraseActiveFirmware(uint32_t firmwareSize)
+@@ -203,9 +213,12 @@ bool eraseActiveFirmware(uint32_t firmwareSize)
               (uint32_t) MBED_CONF_APP_FIRMWARE_METADATA_HEADER_ADDRESS + sizeRoundedUp);
  
      /* erase flash to make place for new application */
@@ -98,7 +98,7 @@ index 2f3be57..8b5c97f 100755
      return (result == 0);
  }
  
-@@ -219,6 +232,7 @@ bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
+@@ -215,6 +228,7 @@ bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
  
      bool result = false;
  
@@ -106,7 +106,7 @@ index 2f3be57..8b5c97f 100755
      if (details)
      {
          /* round up program size to nearest page size */
-@@ -251,9 +265,11 @@ bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
+@@ -247,9 +261,11 @@ bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
              (output_buffer.size == ARM_UC_INTERNAL_HEADER_SIZE_V2))
          {
              /* write header using FlashIAP API */
@@ -118,7 +118,7 @@ index 2f3be57..8b5c97f 100755
  
              result = (ret == 0);
          }
-@@ -268,6 +284,7 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
+@@ -264,6 +280,7 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
  
      bool result = false;
  
@@ -126,7 +126,7 @@ index 2f3be57..8b5c97f 100755
      if (details)
      {
          const uint32_t pageSize = flash.get_page_size();
-@@ -338,6 +355,9 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
+@@ -334,6 +351,9 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
  
  #if defined(SHOW_PROGRESS_BAR) && SHOW_PROGRESS_BAR == 1
                      printProgress(offset + programOffset, details->size);
@@ -136,7 +136,7 @@ index 2f3be57..8b5c97f 100755
  #endif
                  }
  
-@@ -356,6 +376,8 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
+@@ -352,6 +372,8 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
              }
          }
  
@@ -145,7 +145,7 @@ index 2f3be57..8b5c97f 100755
          result = (retval == 0);
      }
  
-@@ -376,6 +398,7 @@ bool copyStoredApplication(uint32_t index,
+@@ -372,6 +394,7 @@ bool copyStoredApplication(uint32_t index,
      /* Step 1. Erase active application                                      */
      /*************************************************************************/
  
@@ -153,7 +153,7 @@ index 2f3be57..8b5c97f 100755
      result = eraseActiveFirmware(details->size);
  
      /*************************************************************************/
-@@ -384,6 +407,7 @@ bool copyStoredApplication(uint32_t index,
+@@ -380,6 +403,7 @@ bool copyStoredApplication(uint32_t index,
  
      if (result)
      {
@@ -161,7 +161,7 @@ index 2f3be57..8b5c97f 100755
          result = writeActiveFirmwareHeader(details);
      }
  
-@@ -393,6 +417,7 @@ bool copyStoredApplication(uint32_t index,
+@@ -389,6 +413,7 @@ bool copyStoredApplication(uint32_t index,
  
      if (result)
      {
@@ -169,7 +169,7 @@ index 2f3be57..8b5c97f 100755
          result = writeActiveFirmware(index, details);
      }
  
-@@ -404,10 +429,16 @@ bool copyStoredApplication(uint32_t index,
+@@ -400,10 +425,16 @@ bool copyStoredApplication(uint32_t index,
      {
          tr_info("Verify new active firmware:");
  
@@ -293,10 +293,10 @@ index 0000000..5ad60b3
 +
 +#endif
 diff --git a/source/upgrade.cpp b/source/upgrade.cpp
-index bef539a..abf742f 100755
+index e05e24b..57e852f 100755
 --- a/source/upgrade.cpp
 +++ b/source/upgrade.cpp
-@@ -20,6 +20,7 @@
+@@ -16,6 +16,7 @@
  #define __STDC_FORMAT_MACROS
  #endif
  
@@ -304,7 +304,7 @@ index bef539a..abf742f 100755
  #include "upgrade.h"
  
  #include "update-client-paal/arm_uc_paal_update.h"
-@@ -126,6 +127,7 @@ bool checkStoredApplication(uint32_t source,
+@@ -122,6 +123,7 @@ bool checkStoredApplication(uint32_t source,
  
  #if defined(SHOW_PROGRESS_BAR) && SHOW_PROGRESS_BAR == 1
              printProgress(offset, details->size);
@@ -312,7 +312,7 @@ index bef539a..abf742f 100755
  #endif
          }
  
-@@ -328,6 +330,7 @@ bool upgradeApplicationFromStorage(void)
+@@ -324,6 +326,7 @@ bool upgradeApplicationFromStorage(void)
                          index);
  
                  /* Validate candidate firmware body. */
