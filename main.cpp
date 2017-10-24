@@ -855,7 +855,7 @@ void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
     uint32_t percent = progress * 100 / total;
     static uint32_t last_percent = 0;
     const char dl_message[] = "Downloading...";
-    const char done_message[] = "Saving...";
+    const char done_message[] = "Saving (10s)...";
 
     display.set_progress(dl_message, progress, total);
 
