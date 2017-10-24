@@ -1200,6 +1200,7 @@ static void cmd_cb_kcmls(vector<string>& params)
     free(buf);
 }
 
+#if MBED_STACK_STATS_ENABLED == 1 || MBED_HEAP_STATS_ENABLED == 1
 static void cmd_cb_mstat(vector<string>& params)
 {
 #if MBED_HEAP_STATS_ENABLED == 1
@@ -1238,6 +1239,7 @@ static void cmd_cb_mstat(vector<string>& params)
     stats = NULL;
 #endif
 }
+#endif
 
 static void cmd_cb_del(vector<string>& params)
 {
