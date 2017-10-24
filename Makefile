@@ -268,8 +268,8 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 # If this fails, check that the board is mounted, and 'mbed detect' works.
 # If the mount point changes, run 'make distclean'
 .targetpath: .deps
-	@set -o pipefail; TARGETPATH=$$(mbed detect | grep "mounted" | awk '{ print $$NF }') && \
-		(echo $$TARGETPATH > .targetpath) || \
+	@TARGETPATH=$$(PYTHONPATH=./mbed-os python -c "from tools.test_api import get_autodetected_MUTS_list; print get_autodetected_MUTS_list()[1]['disk']"); \
+	[ -n "$$TARGETPATH" ] && (echo $$TARGETPATH > .targetpath) || \
 		(echo Error: could not detect mount path for the mbed board.  Verify that 'mbed detect' works.; exit 1)
 
 .patches: .deps
