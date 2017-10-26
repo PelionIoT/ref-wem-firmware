@@ -2,7 +2,7 @@
 
 ### Requirements
 
-To build the FOTA demonstration firmware, you need the following:
+To build the "firmware-over-the-air" (FOTA) example software, you need the following:
 
 1. A computer that you can use to host the GCC toolchain and environment necessary to build the firmware.
     * Operating System and architectures supported:
@@ -17,19 +17,20 @@ To build the FOTA demonstration firmware, you need the following:
     * Python 2 (NOTE: This demonstration does not support Python 3).
     * Make, or equivalent utility, to execute a Makefile to build the target.
     * Bash or another shell equivalent.
-    * cat.
+    * coreutils (cat, cp, echo, rm...).
     * awk.
     * grep.
     * sed.
     * git.
-    * ln.
-    * cp.
     * ctags.
-    * rm.
     * manifest tool.
-        * NOTE: You can install this with `pip install git+ssh://git@github.com/ARMmbed/manifest-tool-restricted.git@v1.2rc2`.
-    * echo.
-    * touch.
+
+Note: The above utilities can be installed with these commands:
+
+```
+sudo apt-get install coreutils python python-pip gawk git grep make sed
+pip install git+ssh://git@github.com/ARMmbed/manifest-tool-restricted.git@v1.2rc2
+```
 
 ### Setup
 
@@ -86,12 +87,12 @@ To build the FOTA demonstration firmware, you need the following:
 1. Follow the Mbed OS instructions for setting up the [PC Configuration](https://os.mbed.com/docs/v5.6/tutorials/windows-serial-driver.html).
 1. Next, follow the instructions for [flashing a project binary](https://developer.mbed.org/platforms/FRDM-K64F/#flash-a-project-binary).
     * NOTE: Make sure the binary you copy to the board is the ***combined.bin*** image created in the [instructions](#ins-fw-loc) to the mounted drive.
-1. Once you have copied the image, remove power from the device, and power it on again.
+1. Once you have copied the image, power-cycle the device.
 1. When the device is on, the power LED turns GREEN.
     1. When the device is connecting to the Wi-Fi station, it blinks YELLOW. Once it successfully connects, it turns solid BLUE. If it fails to connect, it turns solid RED.
     1. When the device is connecting to Mbed Cloud, the LED blinks YELLOW. Once it successfully connects to Mbed cloud, it turns solid BLUE. If it fails to connect, it turns solid RED.
     1. The top line of the LCD displays version information. The bottom line displays environmental data and network status.
-    1. The colored LEDs illuminate data being sent to the cloud. The solid BLUE LEDs change to CYAN briefly and back to solid BLUE every time environmental data is sent to Mbed Cloud.
+    1. The colored LEDs illuminate data being sent to the cloud by the device. The solid BLUE LEDs change to CYAN briefly and back to solid BLUE every time environmental data is sent to Mbed Cloud.
 
 #### Typical start up
 
