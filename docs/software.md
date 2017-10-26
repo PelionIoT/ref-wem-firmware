@@ -22,14 +22,11 @@ To build the "firmware-over-the-air" (FOTA) example software, you need the follo
     * grep.
     * sed.
     * git.
-    * ctags.
-    * manifest tool.
 
 Note: The above utilities can be installed with these commands:
 
 ```
 sudo apt-get install coreutils python python-pip gawk git grep make sed
-pip install git+ssh://git@github.com/ARMmbed/manifest-tool-restricted.git@v1.2rc2
 ```
 
 ### Setup
@@ -40,6 +37,12 @@ pip install git+ssh://git@github.com/ARMmbed/manifest-tool-restricted.git@v1.2rc
     * [Linux](https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/6-2017q2/gcc-arm-none-eabi-6-2017-q2-update-linux.tar.bz2).
     * [Mac OS X](https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/6-2017q2/gcc-arm-none-eabi-6-2017-q2-update-mac.tar.bz2).
 1. <a id="setup-mbed-cli"/>Set up and install Mbed CLI using the [Mbed CLI setup](https://os.mbed.com/docs/v5.6/tools/setup.html) instructions.
+1. Install required python libraries:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
 1. <a id="setup-cloud-key"/>Obtain your Mbed Cloud key.
     1. Log in to the [Mbed Cloud Portal](https://portal.us-east-1.mbedcloud.com/login) with your username and password.
     1. Click on 'Manage access' and then 'API keys', and then select 'Create new API key'.
