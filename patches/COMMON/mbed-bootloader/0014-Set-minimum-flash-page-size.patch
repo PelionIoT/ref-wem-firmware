@@ -1,0 +1,55 @@
+From a051031e4bae4069e6a520633e787c3b74f0aa84 Mon Sep 17 00:00:00 2001
+From: Kyle Stein <kyle.stein@arm.com>
+Date: Fri, 27 Oct 2017 10:17:49 -0500
+Subject: [PATCH] Set minimum flash page size
+
+Some versions of the flash driver return an erroneously small page
+size (1 byte or 8 bytes).  This patch considers any reported page
+size which is less than 1024 bytes to be incorrect and calculates
+with a minimum page size of 1024 bytes.
+
+Signed-off-by: Kyle Stein <kyle.stein@arm.com>
+---
+ source/active_application.cpp | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/source/active_application.cpp b/source/active_application.cpp
+index 19b4179..b15b165 100755
+--- a/source/active_application.cpp
++++ b/source/active_application.cpp
+@@ -239,6 +239,14 @@ bool eraseActiveFirmware(uint32_t firmwareSize)
+     return (result == 0);
+ }
+ 
++/* Some versions of the flash dirver return an erroneously small pagesize.  Assuming
++ * actual page size is >= 1024 bytes, 1024 will be used as the minimum page size.
++ */
++static uint32_t get_flash_page_size()
++{
++    return std::max(flash.get_page_size(), (uint32_t) 1024);
++}
++
+ bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
+ {
+     tr_debug("writeActiveFirmwareHeader");
+@@ -249,7 +257,7 @@ bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
+     if (details)
+     {
+         /* round up program size to nearest page size */
+-        const uint32_t pageSize = flash.get_page_size();
++        const uint32_t pageSize = get_flash_page_size();
+         const uint32_t programSize = (ARM_UC_INTERNAL_HEADER_SIZE_V2 + pageSize - 1)
+                                      / pageSize * pageSize;
+ 
+@@ -300,7 +308,7 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
+     fota::printProgress(0, 100, "Write FW");
+     if (details)
+     {
+-        const uint32_t pageSize = flash.get_page_size();
++        const uint32_t pageSize = get_flash_page_size();
+ 
+         /* we require app_start_addr fall on a page size boundary */
+         uint32_t app_start_addr = MBED_CONF_APP_FIRMWARE_METADATA_HEADER_ADDRESS
+-- 
+2.14.3
+
