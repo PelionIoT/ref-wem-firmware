@@ -1,6 +1,6 @@
 ## Hardware
 
-This device demonstrates features of Mbed Cloud, including firmware updates and sensor data uploads. It consists of about a dozen off-the-shelf parts and costs roughly $110 USD to make. You can 3D print the enclosure or manufacture it in other ways. If you 3D print the enclosure, you must sand and paint it to give it a nice finished look.
+This device demonstrates features of Mbed Cloud, including firmware updates and sensor data uploads. It consists of 13 off-the-shelf parts, a 3D printed enclosure, and costs roughly US $110 to make. You can 3D print the enclosure or manufacture it in other ways. If you 3D print the enclosure, you must sand and paint it to give it a nice finished look. The enclosure is a top and bottom part that lock together.
 
 ### Parts
 
@@ -32,6 +32,8 @@ Buy the following off-the-shelf items:
 - [Power charger (5V/1A LiPo USB)](https://www.adafruit.com/product/2465).
 - [Power switch (1P2T SPDT slide switch)](https://www.amazon.com/gp/product/B007QAJMHO).
 
+In this document, we describe how the above parts will be connected together to build the working device.
+
 ### Install DAPLink onto the main board
 
 If you are using a new K64 board, it likely does not have DAPLink on it. DAPLink makes flashing firmware onto it much easier.
@@ -50,10 +52,10 @@ You can find more details and instructions at https://blackstoneengineering.gith
 
 You must modify the wires on the LED to connect to the Base Shield. The LEDs have four wires:
 
-1. Ground (GND), blue, must connect to pin `GND` on the base shield.
-1. Clock (CO), green, must connect to pin `D3` on the base shield.
-1. Data (DO), white, must connect to pin `D2` on the base shield.
-1. Power (+5V), red, must connect to pin `VCC` on the base shield.
+- Ground (GND), blue, must connect to pin `GND` on the base shield.
+- Clock (CO), green, must connect to pin `D3` on the base shield.
+- Data (DO), white, must connect to pin `D2` on the base shield.
+- Power (+5V), red, must connect to pin `VCC` on the base shield.
 
 On the base shield, the slot "D2" has those four pins: `GND`, `VCC`, `D3` and `D2`.
 
@@ -71,7 +73,7 @@ On the base shield, the slot "D2" has those four pins: `GND`, `VCC`, `D3` and `D
 1. Plug the SD card into the main board.
 1. Connect the base shield to the top of the main board.
 1. Plug the light sensor into port `A0` on the base shield.
-1. Plug the temperature/humidity sensor into `D4` on the base shield.
+1. Plug the temperature and humidity sensor into `D4` on the base shield.
 1. Plug the Wi-Fi into `UART` on the base shield.
 1. Plug the LCD into `I2C` on the base shield.
 1. Plug the LED lights into `D2` on the base shield.
@@ -147,7 +149,7 @@ The bottom holds the battery, power switch and USB charger.
 1. Connect the USB cable from the case bottom to the main board.
 1. Connect the LED and LCD cables from the case top to the main board.
 1. While keeping all cables inside the case, screw the bottom and the top onto the middle part of the case.
-1. Power it on (by turning power switch to us battery), and the device boots:
+1. Power it on (by turning power switch to use battery), and the device boots:
 
 ![](photo.png)
 
@@ -161,4 +163,4 @@ The bottom holds the battery, power switch and USB charger.
 1. The board then connects to Mbed Cloud, and the cloud LED flashes YELLOW.
 1. The LCD dispalys reasonable sensor data, such as temperature, humidity and light.
 1. The cloud LED turns solid BLUE when the board connects and registers to Mbed Cloud.
-1. As sensor data is uploaded, the LEDs for the sensors and cloud flash GREEN.
+1. As sensor data is uploaded by the device, the LEDs for the sensors and cloud flash GREEN.
