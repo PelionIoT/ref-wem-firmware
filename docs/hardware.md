@@ -32,7 +32,7 @@ Buy the following off-the-shelf items:
 - [Power charger (5V/1A LiPo USB)](https://www.adafruit.com/product/2465).
 - [Power switch (1P2T SPDT slide switch)](https://www.amazon.com/gp/product/B007QAJMHO).
 
-In this document, we describe how the above parts will be connected together to build the working device.
+This document describes how the above parts connect to build the working device.
 
 ### Install DAPLink onto the main board
 
@@ -163,4 +163,4 @@ The bottom holds the battery, power switch and USB charger.
 1. The board then connects to Mbed Cloud, and the cloud LED flashes YELLOW.
 1. The LCD dispalys reasonable sensor data, such as temperature, humidity and light.
 1. The cloud LED turns solid BLUE when the board connects and registers to Mbed Cloud.
-1. As sensor data is uploaded by the device, the LEDs for the sensors and cloud flash GREEN.
+1. As the device uploads sensor data, the LEDs for the sensors and cloud flash GREEN.
