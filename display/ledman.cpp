@@ -10,6 +10,7 @@
 
 #include "PCA9956A.h"
 #include "PinNames.h"
+#include <vector>
 #include <ws2801.h>
 
 /* Supported boards for different LEDControllers
@@ -259,42 +260,43 @@ protected:
     ws2801 led_strip;
 };
 
+/** Struct definition for the PWM LEDs */
+class RGBLED {
+public:
+    RGBLED(LedPwmOutCC r, LedPwmOutCC g, LedPwmOutCC b)
+        : red(r), green(g), blue(b)
+    {
+    }
+    LedPwmOutCC red;
+    LedPwmOutCC green;
+    LedPwmOutCC blue;
+};
+
 template <>
 class LEDController<TARGET_BOARD_ODIN_DEMO> : public BaseController {
 public:
-    LEDController()
-        : led_ctrl(I2C_SDA, I2C_SCL, 0x02), /* SDA, SCL, Slave address */
-          led_strip({
-              {// POWER
-               .red = LedPwmOutCC(led_ctrl, L0),
-               .green = LedPwmOutCC(led_ctrl, L1),
-               .blue = LedPwmOutCC(led_ctrl, L2)},
-              {// WIFI
-               .red = LedPwmOutCC(led_ctrl, L3),
-               .green = LedPwmOutCC(led_ctrl, L4),
-               .blue = LedPwmOutCC(led_ctrl, L5)},
-              {// CLOUD
-               .red = LedPwmOutCC(led_ctrl, L6),
-               .green = LedPwmOutCC(led_ctrl, L7),
-               .blue = LedPwmOutCC(led_ctrl, L8)},
-              {// FWUP
-               .red = LedPwmOutCC(led_ctrl, L9),
-               .green = LedPwmOutCC(led_ctrl, L10),
-               .blue = LedPwmOutCC(led_ctrl, L11)},
-              {// LIGHT
-               .red = LedPwmOutCC(led_ctrl, L12),
-               .green = LedPwmOutCC(led_ctrl, L13),
-               .blue = LedPwmOutCC(led_ctrl, L14)},
-              {// TEMP / HUMIDITY
-               .red = LedPwmOutCC(led_ctrl, L15),
-               .green = LedPwmOutCC(led_ctrl, L16),
-               .blue = LedPwmOutCC(led_ctrl, L17)},
-              {// SOUND
-               .red = LedPwmOutCC(led_ctrl, L18),
-               .green = LedPwmOutCC(led_ctrl, L19),
-               .blue = LedPwmOutCC(led_ctrl, L20)},
-          })
+    LEDController() : led_ctrl(I2C_SDA, I2C_SCL, 0x02)
     {
+        LedPinName pins[] = {
+            L0,  L1,  L2,  // power
+            L3,  L4,  L5,  // wifi
+            L6,  L7,  L8,  // cloud
+            L9,  L10, L11, // firmware upload
+            L12, L13, L14, // light
+            L15, L16, L17, // temperature and humidity
+            L18, L19, L20  // sound
+        };
+        unsigned i;
+
+        led_strip.reserve(IND_NO_TYPES);
+
+        for (i = 0; i + 2 < sizeof(pins) / sizeof(pins[0]); i += 3) {
+            LedPwmOutCC r(led_ctrl, pins[i]);
+            LedPwmOutCC g(led_ctrl, pins[i + 1]);
+            LedPwmOutCC b(led_ctrl, pins[i + 2]);
+            RGBLED rgbled(r, g, b);
+            led_strip.push_back(rgbled);
+        }
     }
 
     ~LEDController()
@@ -327,16 +329,8 @@ private:
         }
     }
 
-    /** Struct definition for the PWM LEDs
-     */
-    struct RGBLED {
-        LedPwmOutCC red;
-        LedPwmOutCC green;
-        LedPwmOutCC blue;
-    };
-    PCA9956A led_ctrl; /* physical PWM LED controller */
-    struct RGBLED
-        led_strip[IND_NO_TYPES]; /* set of RGB LEDs attached to controller */
+    PCA9956A led_ctrl;             /* physical PWM LED controller */
+    std::vector<RGBLED> led_strip; /* set of RGB LEDs attached to controller */
 
     /* simple helper functions for converting 24-bit color to 8-bit, then floats
      */
