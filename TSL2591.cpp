@@ -51,7 +51,7 @@ void TSL2591::setGain(tsl2591Gain_t gain)
 {
     enable();
     _gain = gain;
-    char write[] = {(TSL2591_CMD_BIT|TSL2591_REG_CONTROL), (_integ|_gain)};
+    char write[] = {(TSL2591_CMD_BIT|TSL2591_REG_CONTROL), (char)(_integ|_gain)};
     _i2c.write(_addr, write, 2, 0);
     disable();
 }
@@ -63,7 +63,7 @@ void TSL2591::setTime(tsl2591IntegrationTime_t integ)
 {
     enable();
     _integ = integ;
-    char write[] = {(TSL2591_CMD_BIT|TSL2591_REG_CONTROL), (_integ|_gain)};
+    char write[] = {(TSL2591_CMD_BIT|TSL2591_REG_CONTROL), (char)(_integ|_gain)};
     _i2c.write(_addr, write, 2, 0);
     disable();
 }

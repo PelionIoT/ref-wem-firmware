@@ -12,6 +12,7 @@ DEFAULT_TARGET:=K64F
 DEFAULT_TOOLCHAIN:=GCC_ARM
 
 SRCDIR:=.
+CERTDIR:=${HOME}/.mbedcerts
 PATCHDIR:=patches
 SRCS:=$(wildcard $(SRCDIR)/*.cpp)
 HDRS:=$(wildcard $(SRCDIR)/*.h)
@@ -89,14 +90,13 @@ MBED_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}
 #
 
 ifeq (${MBED_TARGET},K64F)
-  BOOTLOADER_SIZE=0x20000
-  APP_HEADER_OFFSET:=${BOOTLOADER_SIZE}
-  APP_OFFSET:=0x20400
+  BOOTLOADER_SIZE:=0x24000
 else ifeq (${MBED_TARGET},UBLOX_EVK_ODIN_W2)
-  BOOTLOADER_SIZE=0x40000
-  APP_HEADER_OFFSET:=0x40000
-  APP_OFFSET:=0x40400
+  BOOTLOADER_SIZE:=0x40000
 endif
+APP_HEADER_OFFSET:=${BOOTLOADER_SIZE}
+APP_HEADER_SIZE:=0x400
+APP_OFFSET:=$(shell printf 0x%x $$((${BOOTLOADER_SIZE} + ${APP_HEADER_SIZE})))
 
 # Builds the command to call 'mbed compile'.
 # $1: add extra options to the final command line
@@ -267,8 +267,8 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 # If this fails, check that the board is mounted, and 'mbed detect' works.
 # If the mount point changes, run 'make distclean'
 .targetpath: .deps
-	@set -o pipefail; TARGETPATH=$$(mbed detect | grep "mounted" | awk '{ print $$NF }') && \
-		(echo $$TARGETPATH > .targetpath) || \
+	@TARGETPATH=$$(PYTHONPATH=./mbed-os python -c "from tools.test_api import get_autodetected_MUTS_list; print get_autodetected_MUTS_list()[1]['disk']"); \
+	[ -n "$$TARGETPATH" ] && (echo $$TARGETPATH > .targetpath) || \
 		(echo Error: could not detect mount path for the mbed board.  Verify that 'mbed detect' works.; exit 1)
 
 .patches: .deps
@@ -301,7 +301,14 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 
 update_default_resources.c: .deps
 	@which manifest-tool || (echo Error: manifest-tool not found.  Install it with \"pip install -r requirements.txt\"; exit 1)
-	manifest-tool init -d "arm.com" -m "fota-demo" -q
+	if [ -d ${CERTDIR}/${MBED_TARGET} ]; then \
+		cp -f ${CERTDIR}/${MBED_TARGET}/mbed_cloud_dev_credentials.c .; \
+		cp -rf ${CERTDIR}/${MBED_TARGET}/.update-certificates .; \
+		cp -f ${CERTDIR}/${MBED_TARGET}/update_default_resources.c .; \
+		cp -f ${CERTDIR}/${MBED_TARGET}/.manifest_tool.json .; \
+	else \
+		manifest-tool init -d "arm.com" -m "fota-demo" -q; \
+	fi;
 
 .mbed-cloud-key:
 	@echo "Error: You need to save an mbed cloud API key in .mbed-cloud-key"
@@ -320,6 +327,14 @@ MANIFEST_FILE=dev-manifest
 
 .firmware-url: .mbed-cloud-key ${COMBINED_BIN}
 	python mbed-cloud-update-cli/upload-firmware.py ${PROG_BIN} --key-file .mbed-cloud-key -o $@
+
+.PHONY: certsave
+certsave:
+	mkdir -p ${CERTDIR}/${MBED_TARGET}/
+	cp -f mbed_cloud_dev_credentials.c ${CERTDIR}/${MBED_TARGET}/
+	cp -rf .update-certificates ${CERTDIR}/${MBED_TARGET}/
+	cp -f update_default_resources.c ${CERTDIR}/${MBED_TARGET}/
+	cp -f .manifest_tool.json ${CERTDIR}/${MBED_TARGET}/
 
 .PHONY: certclean
 certclean:

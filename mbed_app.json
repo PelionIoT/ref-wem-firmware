@@ -66,8 +66,6 @@
         "MBED_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
         "MBED_CLOUD_CLIENT_USER_CONFIG_FILE=\"mbed_cloud_client_user_config.h\"",
         "SA_PV_OS_MBEDOS",
-        "MBED_HEAP_STATS_ENABLED=1",
-        "MBED_STACK_STATS_ENABLED=1",
         "MBED_CONF_APP_MAIN_STACK_SIZE=4608"
     ],
     "target_overrides": {
@@ -83,7 +81,7 @@
         },
         "K64F": {
             "app.use-spi-flash": false,
-            "target.mbed_app_start": "0x20400"
+            "target.mbed_app_start": "0x24400"
         },
         "UBLOX_EVK_ODIN_W2": {
             "target.mbed_app_start": "0x08040400"

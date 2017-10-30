@@ -22,9 +22,12 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 
+#include <algorithm> /* std::min */
 #include <errno.h>
 #include <factory_configurator_client.h>
+#include <fcc_defs.h>
 #include <mbed_stats.h>
+#include <mbedtls/sha256.h>
 #include <mbed-trace-helper.h>
 #include <mbed-trace/mbed_trace.h>
 
@@ -146,8 +149,6 @@ static I2C i2c(I2C_SDA, I2C_SCL);
 static TSL2591 tsl2591(i2c, TSL2591_ADDR);
 static Sht31 sht31(I2C_SDA, I2C_SCL);
 #endif
-
-
 
 // ****************************************************************************
 // Generic Helpers
@@ -795,14 +796,14 @@ void fota_auth_install(M2MClient *mbed_client)
     cmd.printf("Firmware install requested\n");
 
     display.set_installing();
+
     /* firmware download is complete, restart the auto display updates */
-    display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);
+    display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS,
+                                    display_refresh,
+                                    &display);
 
-    cmd.printf("Disconnecting network...\n");
-    network_disconnect(net);
-
-    mbed_client->update_authorize(MbedCloudClient::UpdateRequestInstall);
-    cmd.printf("Authorization granted\n");
+    mbed_client->set_fota_install_requested();
+    mbed_client->close();
 }
 
 /**
@@ -821,6 +822,7 @@ void mbed_client_on_update_authorize(int32_t request)
          * This doesn't affect the performance of the Cloud Client.
          * */
         case MbedCloudClient::UpdateRequestDownload:
+            m2mclient->set_fota_download_requested();
             evq.call(fota_auth_download, m2mclient);
             break;
 
@@ -833,6 +835,7 @@ void mbed_client_on_update_authorize(int32_t request)
          * This doesn't affect the performance of the Cloud Client.
          * */
         case MbedCloudClient::UpdateRequestInstall:
+            m2mclient->set_fota_install_requested();
             evq.call(fota_auth_install, m2mclient);
             break;
 
@@ -852,7 +855,7 @@ void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
     uint32_t percent = progress * 100 / total;
     static uint32_t last_percent = 0;
     const char dl_message[] = "Downloading...";
-    const char done_message[] = "Saving...";
+    const char done_message[] = "Saving (10s)...";
 
     display.set_progress(dl_message, progress, total);
 
@@ -878,6 +881,18 @@ static void mbed_client_on_registered(void *context)
 
 static void mbed_client_on_unregistered(void *context)
 {
+    M2MClient *m2m;
+
+    m2m = (M2MClient *)context;
+
+    if (m2m->is_fota_install_requested()) {
+        cmd.printf("Disconnecting network...\n");
+        network_disconnect(net);
+
+        m2m->update_authorize(MbedCloudClient::UpdateRequestInstall);
+        cmd.printf("Authorization granted\n");
+    }
+
     cmd.printf("mbed client unregistered\n");
     display.set_cloud_unregistered();
 }
@@ -885,11 +900,19 @@ static void mbed_client_on_unregistered(void *context)
 static void mbed_client_on_error(void *context, int err_code,
                                  const char *err_name, const char *err_desc)
 {
+    M2MClient *m2m;
+
+    m2m = (M2MClient *)context;
+
     cmd.printf("ERROR: mbed client (%d) %s\n", err_code, err_name);
     cmd.printf("    Error details : %s\n", err_desc);
     display.set_cloud_error();
     if ((err_code == MbedCloudClient::ConnectNetworkError) ||
         (err_code == MbedCloudClient::ConnectDnsResolvingFailed)) {
+        if (m2m->is_fota_install_requested()) {
+            cmd.printf("Ignoring network error due to fota install\n");
+            return;
+        }
         network_disconnect(net);
         display.set_network_fail();
         display.set_cloud_unregistered();
@@ -955,7 +978,7 @@ mbed_client_on_resource_updated(void *context,
 static int register_mbed_client(NetworkInterface *iface, M2MClient *mbed_client)
 {
     mbed_client->on_registered(NULL, mbed_client_on_registered);
-    mbed_client->on_unregistered(NULL, mbed_client_on_unregistered);
+    mbed_client->on_unregistered(mbed_client, mbed_client_on_unregistered);
     mbed_client->on_error(mbed_client, mbed_client_on_error);
     mbed_client->on_update_authorize(mbed_client_on_update_authorize);
     mbed_client->on_update_progress(mbed_client_on_update_progress);
@@ -1052,6 +1075,132 @@ static void platform_shutdown()
 // ****************************************************************************
 // call back handlers for commandline interface
 // ****************************************************************************
+static void print_sha256(uint8_t *sha)
+{
+    for (size_t i = 0; i < 32; ++i) {
+        cmd.printf("%02x", sha[i]);
+    }
+}
+
+static void print_hex(uint8_t *buf, size_t len)
+{
+    for (size_t i = 0; i < len;) {
+        cmd.printf("%02x ", buf[i]);
+        if (++i % 16 == 0) cmd.printf("\n");
+    }
+}
+
+static void cmd_cb_kcmls(vector<string>& params)
+{
+    uint8_t *buf;
+    size_t real_size = 0;
+    const size_t buf_size = 2048;
+    uint8_t sha[32]; /* SHA256 outputs 32 bytes */
+
+    buf = (uint8_t *)malloc(buf_size);
+    if (buf == NULL) {
+        cmd.printf("ERROR: failed to allocate tmp buffer\n");
+        return;
+    }
+
+#define PRINT_CONFIG_ITEM(x) \
+    do { \
+        memset(buf, 0, buf_size); \
+        int pcpret = get_config_parameter(x, buf, buf_size, &real_size); \
+        if (pcpret == CCS_STATUS_SUCCESS) { \
+            cmd.printf("%s: %s\n", x, buf); \
+        } else { \
+            cmd.printf("%s: FAIL (%d)\n", x, pcpret); \
+        } \
+    } while (false);
+
+#define PRINT_CONFIG_CERT(x) \
+    do { \
+        memset(buf, 0, buf_size); \
+        int pccret = get_config_certificate(x, buf, buf_size, &real_size); \
+        if (pccret == CCS_STATUS_SUCCESS) { \
+            cmd.printf("%s: \n", x); \
+            cmd.printf("sha="); \
+            mbedtls_sha256(buf, std::min(real_size, buf_size), sha, 0); \
+            print_sha256(sha); \
+            cmd.printf("\n"); \
+            print_hex(buf, std::min(real_size, buf_size)); \
+            cmd.printf("\n"); \
+        } else { \
+            cmd.printf("%s: FAIL (%d)\n", x, pccret); \
+        } \
+    } while (false)
+
+#define PRINT_CONFIG_KEY(x) \
+    do { \
+        memset(buf, 0, buf_size); \
+        int pccret = get_config_private_key(x, buf, buf_size, &real_size); \
+        if (pccret == CCS_STATUS_SUCCESS) { \
+            cmd.printf("%s: \n", x); \
+            cmd.printf("sha="); \
+            mbedtls_sha256(buf, std::min(real_size, buf_size), sha, 0); \
+            print_sha256(sha); \
+            cmd.printf("\n"); \
+            print_hex(buf, std::min(real_size, buf_size)); \
+            cmd.printf("\n"); \
+        } else { \
+            cmd.printf("%s: FAIL (%d)\n", x, pccret); \
+        } \
+    } while (false)
+
+    /**
+    * Device general info
+    */
+    PRINT_CONFIG_ITEM(g_fcc_use_bootstrap_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_endpoint_parameter_name);
+    PRINT_CONFIG_ITEM(KEY_INTERNAL_ENDPOINT); /*"mbed.InternalEndpoint"*/
+    PRINT_CONFIG_ITEM(KEY_ACCOUNT_ID); /* "mbed.AccountID" */
+
+    /**
+    * Device meta data
+    */
+    PRINT_CONFIG_ITEM(g_fcc_manufacturer_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_model_number_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_device_type_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_hardware_version_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_memory_size_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_device_serial_number_parameter_name);
+    PRINT_CONFIG_ITEM(KEY_DEVICE_SOFTWAREVERSION);/* "mbed.SoftwareVersion" */
+
+    /**
+    * Time Synchronization
+    */
+    PRINT_CONFIG_ITEM(g_fcc_current_time_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_device_time_zone_parameter_name);
+    PRINT_CONFIG_ITEM(g_fcc_offset_from_utc_parameter_name);
+
+    /**
+    * Bootstrap configuration
+    */
+    PRINT_CONFIG_CERT(g_fcc_bootstrap_server_ca_certificate_name);
+    PRINT_CONFIG_ITEM(g_fcc_bootstrap_server_crl_name);
+    PRINT_CONFIG_ITEM(g_fcc_bootstrap_server_uri_name);
+    PRINT_CONFIG_CERT(g_fcc_bootstrap_device_certificate_name);
+    PRINT_CONFIG_CERT(g_fcc_bootstrap_device_private_key_name);
+
+    /**
+    * LWm2m configuration
+    */
+    PRINT_CONFIG_CERT(g_fcc_lwm2m_server_ca_certificate_name);
+    PRINT_CONFIG_ITEM(g_fcc_lwm2m_server_crl_name);
+    PRINT_CONFIG_ITEM(g_fcc_lwm2m_server_uri_name);
+    PRINT_CONFIG_CERT(g_fcc_lwm2m_device_certificate_name);
+    PRINT_CONFIG_KEY(g_fcc_lwm2m_device_private_key_name);
+
+    /**
+    * Firmware update
+    */
+    PRINT_CONFIG_CERT(g_fcc_update_authentication_certificate_name);
+
+    free(buf);
+}
+
+#if MBED_STACK_STATS_ENABLED == 1 || MBED_HEAP_STATS_ENABLED == 1
 static void cmd_cb_mstat(vector<string>& params)
 {
 #if MBED_HEAP_STATS_ENABLED == 1
@@ -1090,6 +1239,7 @@ static void cmd_cb_mstat(vector<string>& params)
     stats = NULL;
 #endif
 }
+#endif
 
 static void cmd_cb_del(vector<string>& params)
 {
@@ -1448,6 +1598,10 @@ void init_commander(void)
     cmd.add("test",
             "Run the keystore tests. Usage: test",
             cmd_cb_test);
+
+    cmd.add("kcmls",
+            "Show KCM config parameters",
+            cmd_cb_kcmls);
 
     //display the banner
     cmd.banner();

@@ -155,7 +155,7 @@ M2MClient::get_resource_entry(const char *uri_path)
 
     it = _res_map.find(uri_path);
     if (it == _res_map.end()) {
-        return NULL; 
+        return NULL;
     }
 
     return &it->second;
@@ -293,7 +293,7 @@ void M2MClient::value_updated(M2MBase *base, M2MBase::BaseType type)
         printf("WARN: PUT called on unknown uri_path=%s\n", base->uri_path());
         return;
     }
-    
+
     _on_resource_updated_cb(_on_resource_updated_context, entry->type);
 }
 
@@ -416,4 +416,24 @@ int M2MClient::add_app_resources()
     res = NULL;
 
     return 0;
+}
+
+void M2MClient::set_fota_download_requested()
+{
+    set_flag(M2MCLIENT_F_FOTA_DL_REQD);
+}
+
+bool M2MClient::is_fota_download_requested()
+{
+    return test_flag(M2MCLIENT_F_FOTA_DL_REQD);
+}
+
+void M2MClient::set_fota_install_requested()
+{
+    set_flag(M2MCLIENT_F_FOTA_INSTALL_REQD);
+}
+
+bool M2MClient::is_fota_install_requested()
+{
+    return test_flag(M2MCLIENT_F_FOTA_INSTALL_REQD);
 }

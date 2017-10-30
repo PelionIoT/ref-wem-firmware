@@ -23,6 +23,13 @@
 #include <map>
 #include <stdio.h>
 
+#define M2MCLIENT_F_REGISTER_CALLED           1 << 0
+#define M2MCLIENT_F_REGISTERED                1 << 1
+#define M2MCLIENT_F_FOTA_DL_REQD              1 << 2
+#define M2MCLIENT_F_FOTA_DL_GRANTED           1 << 3
+#define M2MCLIENT_F_FOTA_INSTALL_REQD         1 << 4
+#define M2MCLIENT_F_FOTA_INSTALL_GRANTED      1 << 5
+
 class M2MClient : public MbedCloudClientCallback {
 
 public:
@@ -59,7 +66,7 @@ public:
         M2MClientResourceCount
     };
 
-    M2MClient() : _registered(false), _register_called(false) {
+    M2MClient() : _flags(0) {
     }
 
     int init();
@@ -81,7 +88,7 @@ public:
         _cloud_client.on_registered(this, &M2MClient::client_registered);
         _cloud_client.on_unregistered(this, &M2MClient::client_unregistered);
         _cloud_client.on_error(this, &M2MClient::error);
-        _register_called = true;
+        set_flag(M2MCLIENT_F_REGISTER_CALLED);
         if (!setup) {
             printf("ERROR: m2m client setup failed\n");
             return false;
@@ -103,7 +110,7 @@ public:
 
     void client_registered()
     {
-        _registered = true;
+        set_flag(M2MCLIENT_F_REGISTERED);
         printf("Client registered\n");
         static const ConnectorClientEndpointInfo *endpoint = NULL;
         if (endpoint == NULL) {
@@ -126,8 +133,8 @@ public:
 
     void client_unregistered()
     {
-        _registered = false;
-        _register_called = false;
+        clear_flag(M2MCLIENT_F_REGISTERED);
+        clear_flag(M2MCLIENT_F_REGISTER_CALLED);
         printf("\nClient unregistered\n\n");
         _on_unregistered_cb(_on_unregistered_context);
     }
@@ -215,9 +222,9 @@ public:
                      _cloud_client.error_description());
     }
 
-    bool is_client_registered() { return _registered; }
+    bool is_client_registered() { return test_flag(M2MCLIENT_F_REGISTERED); }
 
-    bool is_register_called() { return _register_called; }
+    bool is_register_called() { return test_flag(M2MCLIENT_F_REGISTER_CALLED); }
 
     MbedCloudClient &get_cloud_client() { return _cloud_client; }
 
@@ -262,6 +269,16 @@ public:
 
     void update_authorize(int32_t request)
     {
+        switch (request) {
+            case MbedCloudClient::UpdateRequestDownload:
+                set_flag(M2MCLIENT_F_FOTA_DL_GRANTED);
+                break;
+            case MbedCloudClient::UpdateRequestInstall:
+                set_flag(M2MCLIENT_F_FOTA_INSTALL_GRANTED);
+                break;
+            default:
+                break;
+        }
         _cloud_client.update_authorize(request);
     }
 
@@ -280,6 +297,12 @@ public:
     void set_resource_value(enum M2MClientResource resource,
                             const std::string &val);
 
+    void set_fota_download_requested();
+    bool is_fota_download_requested();
+
+    void set_fota_install_requested();
+    bool is_fota_install_requested();
+
 private:
     struct resource_entry {
         M2MResource *res;
@@ -291,8 +314,22 @@ private:
 
     MbedCloudClient _cloud_client;
 
-    bool _registered;
-    bool _register_called;
+    int _flags;
+
+    void set_flag(int flag)
+    {
+        _flags |= flag;
+    }
+
+    void clear_flag(int flag)
+    {
+        _flags &= ~flag;
+    }
+
+    int test_flag(int flag)
+    {
+        return ((_flags & flag) == flag);
+    }
 
     void (*_on_registered_cb)(void *context);
     void *_on_registered_context;
