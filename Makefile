@@ -317,16 +317,16 @@ update_default_resources.c: .deps
 
 .PHONY: campaign
 campaign: .deps .mbed-cloud-key .manifest-id
-	python mbed-cloud-update-cli/create-campaign.py $$(cat .manifest-id) --key-file .mbed-cloud-key
+	create-campaign.py $$(cat .manifest-id) --key-file .mbed-cloud-key
 
 MANIFEST_FILE=dev-manifest
 .manifest-id: .firmware-url .mbed-cloud-key ${COMBINED_BIN}
 	@which manifest-tool || (echo Error: manifest-tool not found.  Install it with \"pip install -r requirements.txt\"; exit 1)
 	manifest-tool create -u $$(cat .firmware-url) -p ${PROG_BIN} -o ${MANIFEST_FILE}
-	python mbed-cloud-update-cli/upload-manifest.py ${MANIFEST_FILE} --key-file .mbed-cloud-key -o $@
+	upload-manifest.py ${MANIFEST_FILE} --key-file .mbed-cloud-key -o $@
 
 .firmware-url: .mbed-cloud-key ${COMBINED_BIN}
-	python mbed-cloud-update-cli/upload-firmware.py ${PROG_BIN} --key-file .mbed-cloud-key -o $@
+	upload-firmware.py ${PROG_BIN} --key-file .mbed-cloud-key -o $@
 
 .PHONY: certsave
 certsave:
