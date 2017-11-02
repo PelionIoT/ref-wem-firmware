@@ -1,4 +1,4 @@
-From f282dfdb1bf7ba389267ccefbdafb2788a48a1e1 Mon Sep 17 00:00:00 2001
+From a0cf4ad60e180163431f9b852ed6d9712484ce42 Mon Sep 17 00:00:00 2001
 From: Kyle Stein <Kyle.Stein@arm.com>
 Date: Thu, 19 Oct 2017 11:04:48 -0500
 Subject: [PATCH] Increase granularity on erase process progress
@@ -13,11 +13,11 @@ updated accordingly.
 Signed-off-by: Kyle Stein <Kyle.Stein@arm.com>
 Signed-off-by: Nic Costa <nic.costa@arm.com>
 ---
- source/active_application.cpp | 45 ++++++++++++++++++++++++++++++++-----------
- 1 file changed, 34 insertions(+), 11 deletions(-)
+ source/active_application.cpp | 49 +++++++++++++++++++++++++++++++++----------
+ 1 file changed, 38 insertions(+), 11 deletions(-)
 
 diff --git a/source/active_application.cpp b/source/active_application.cpp
-index 8b5c97f..3583e9e 100755
+index 8b5c97f..63d00a2 100755
 --- a/source/active_application.cpp
 +++ b/source/active_application.cpp
 @@ -121,12 +121,12 @@ int checkActiveApplication(arm_uc_firmware_details_t* details)
@@ -98,6 +98,38 @@ index 8b5c97f..3583e9e 100755
  
      return (result == 0);
  }
+@@ -233,6 +256,7 @@ bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
+     bool result = false;
+ 
+     fota::printProgress(0, 100, "Write HDR");
++    tr_info("start flash HDR write");
+     if (details)
+     {
+         /* round up program size to nearest page size */
+@@ -275,6 +299,7 @@ bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
+         }
+     }
+ 
++    tr_info("end flash HDR write");
+     return result;
+ }
+ 
+@@ -285,6 +310,7 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
+     bool result = false;
+ 
+     fota::printProgress(0, 100, "Write FW");
++    tr_info("start flash write");
+     if (details)
+     {
+         const uint32_t pageSize = flash.get_page_size();
+@@ -381,6 +407,7 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
+         result = (retval == 0);
+     }
+ 
++    tr_info("end flash write");
+     return result;
+ }
+ 
 -- 
 2.14.2
 
