@@ -864,7 +864,7 @@ void mbed_client_on_update_progress(uint32_t progress, uint32_t total)
     }
 
     if (progress == total) {
-        cmd.printf("\nDownload completed\n");
+        cmd.printf("%s\n", done_message);
         display.set_progress(done_message, 0, 100);
         display.set_download_complete();
     }

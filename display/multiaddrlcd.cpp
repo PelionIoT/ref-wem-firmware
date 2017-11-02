@@ -19,7 +19,7 @@ int MultiAddrLCD::printf(const char *format, ...)
     char buf[33];
     va_list args;
     va_start(args, format);
-    vsnprintf(buf, 33, format, args);
+    vsnprintf(buf, sizeof(buf), format, args);
     va_end(args);
     rc = _lcd1.printf(buf);
 #if !TARGET_UBLOX_EVK_ODIN_W2
@@ -36,13 +36,13 @@ int MultiAddrLCD::printline(int line, const char *msg)
 {
     int rc;
     char buf[17];
-    snprintf(buf, 17, "%s", msg);
+    snprintf(buf, sizeof(buf), "%s", msg);
 #if !TARGET_UBLOX_EVK_ODIN_W2
     _lcd2.locate(0, line);
-    _lcd2.printf("%16s", buf);
+    _lcd2.printf("%-16s", buf);
 #endif
     _lcd1.locate(0, line);
-    rc = _lcd1.printf("%16s", buf);
+    rc = _lcd1.printf("%-16s", buf);
 
     return rc;
 }
@@ -53,14 +53,14 @@ int MultiAddrLCD::printlinef(int line, const char *format, ...)
     char buf[17];
     va_list args;
     va_start(args, format);
-    vsnprintf(buf, 17, format, args);
+    vsnprintf(buf, sizeof(buf), format, args);
     va_end(args);
 #if !TARGET_UBLOX_EVK_ODIN_W2
     _lcd2.locate(0, line);
-    _lcd2.printf("%16s", buf);
+    _lcd2.printf("%-16s", buf);
 #endif
     _lcd1.locate(0, line);
-    rc = _lcd1.printf("%16s", buf);
+    rc = _lcd1.printf("%-16s", buf);
 
     return rc;
 }
