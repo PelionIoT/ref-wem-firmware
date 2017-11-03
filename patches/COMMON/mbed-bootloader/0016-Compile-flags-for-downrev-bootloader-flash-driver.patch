@@ -1,0 +1,30 @@
+From 3e98863a35dc0991383a98636fea33404fe7ea78 Mon Sep 17 00:00:00 2001
+From: Kyle Stein <kyle.stein@arm.com>
+Date: Fri, 3 Nov 2017 09:36:12 -0500
+Subject: [PATCH] Compile flags for downrev bootloader flash driver
+
+Current flash driver results in incorrect programming of
+internal flash by the bootloader.  This patch, along with a patch
+to mbed-os, downrevs the flash driver to a version which does not
+show the issue.
+
+Signed-off-by: Kyle Stein <kyle.stein@arm.com>
+---
+ mbed_app.json | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mbed_app.json b/mbed_app.json
+index c1cddab..782c841 100755
+--- a/mbed_app.json
++++ b/mbed_app.json
+@@ -45,6 +45,7 @@
+         },
+         "UBLOX_EVK_ODIN_W2": {
+             "target.device_has_remove": ["EMAC"],
++            "target.extra_labels_add": ["STM32F4", "STM32F439", "STM32F439ZI","STM32F439xx", "STM32F439xI", "FLASH_CMSIS_ALGO"],
+             "firmware_metadata_header_address": "0x08040000",
+             "update-client.application-details": "0x08040000",
+             "firmware_metadata_header_size": "0x400"
+-- 
+2.14.3
+
