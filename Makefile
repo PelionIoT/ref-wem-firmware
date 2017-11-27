@@ -204,7 +204,7 @@ clean:
 patchclean:
 	@for target in ${PATCHDIR}/{${MBED_TARGET},COMMON}; do \
 		for patchdir in $$(find $${target} -type d -print | sort -r); do \
-			for patch in $$(find ${CURDIR}/$${patchdir} -type f -depth 1 -print | sort -r); do \
+			for patch in $$(find ${CURDIR}/$${patchdir} -maxdepth 1 -type f -print | sort -r); do \
 				pushd $${patchdir##*/} && { \
 					echo "reversing $${patch}"; \
 					git apply -R $${patch} && { \
