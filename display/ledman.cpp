@@ -8,9 +8,10 @@
 #include "ledman.h"
 #include "../compat.h"
 
-#include <ws2801.h>
 #include "PCA9956A.h"
 #include "PinNames.h"
+#include <vector>
+#include <ws2801.h>
 
 /* Supported boards for different LEDControllers
  */
@@ -23,18 +24,22 @@ enum TARGET_BOARDS {
 
 /* LEDController template logic.
  */
-class BaseController
-{
+class BaseController {
 public:
-    BaseController() { }
-    ~BaseController() { }
+    BaseController()
+    {
+    }
+    ~BaseController()
+    {
+    }
 
     /* Set flag for particular LED.
      *
      * @param led_name Which LED to set the flag on.
      * @param flags The flag to set.
      */
-    void flags_set(int led_name, int flags) {
+    void flags_set(int led_name, int flags)
+    {
         LED_COLOR[led_name] &= 0x00FFFFFF;
         LED_COLOR[led_name] |= flags << 24;
         LED_COLOR_TEMP[led_name] &= 0x00FFFFFF;
@@ -46,7 +51,8 @@ public:
      * @param led_name Which LED to return flags from.
      * @return Returns the flags currently set on led_name.
      */
-    int flags_get(int led_name) {
+    int flags_get(int led_name)
+    {
         return LED_COLOR[led_name] >> 24;
     }
 
@@ -56,7 +62,8 @@ public:
      * @param flag The particular flag to check for.
      * @return Returns true if the flag is set, false otherwise.
      */
-    bool flag_is_set(int led_name, int flag) {
+    bool flag_is_set(int led_name, int flag)
+    {
         return flags_get(led_name) & flag;
     }
 
@@ -65,7 +72,8 @@ public:
      * @param led_name Which LED to clear the flag on.
      * @param flag The flag to clear.
      */
-    void clear_flag(int led_name, int flag) {
+    void clear_flag(int led_name, int flag)
+    {
         LED_COLOR[led_name] &= ~(flag << 24);
         LED_COLOR_TEMP[led_name] &= ~(flag << 24);
     }
@@ -76,7 +84,8 @@ public:
      * @param led_color The color of the LED.
      * @param flags The flags to set on the LED.
      */
-    void set_color(enum INDICATOR_TYPES led_name, int led_color, int flags) {
+    void set_color(enum INDICATOR_TYPES led_name, int led_color, int flags)
+    {
         /* colors are only 24-bits */
         int color = led_color & 0x00FFFFFF;
 
@@ -92,12 +101,14 @@ public:
         flags_set(led_name, flags);
     }
 
-    void led_post(void) {
+    void led_post(void)
+    {
         int idx;
 
         for (idx = 0; idx < IND_NO_TYPES; ++idx) {
             int color = LED_COLOR[idx];
-            if (flag_is_set(idx, IND_FLAG_BLINK) && LED_HARDWARE[idx] != IND_COLOR_OFF) {
+            if (flag_is_set(idx, IND_FLAG_BLINK) &&
+                LED_HARDWARE[idx] != IND_COLOR_OFF) {
                 color = IND_COLOR_OFF;
             }
             if (flag_is_set(idx, IND_FLAG_LATER)) {
@@ -114,7 +125,8 @@ public:
         led_update();
     }
 
-    void led_setup(void) {
+    void led_setup(void)
+    {
         for (int i = 0; i < IND_NO_TYPES; i++) {
             LED_HARDWARE[i] = IND_COLOR_OFF;
             LED_COLOR[i] = 0x0;
@@ -124,9 +136,11 @@ public:
     }
 
 protected:
-    /* Virtual function for updating LEDs which derived classes should define. */
+    /* Virtual function for updating LEDs which derived classes should define.
+     */
     virtual void led_update(void) = 0;
-    /* Virtual function for setting up LEDs which derviced classes should define. */
+    /* Virtual function for setting up LEDs which derviced classes should
+     * define. */
     virtual void led_init(void) = 0;
 
     int LED_HARDWARE[IND_NO_TYPES]; /* color currently being displayed */
@@ -140,30 +154,32 @@ protected:
 
 /** Template class for creating new LEDControllers
  */
-template<enum TARGET_BOARDS>
-class LEDController
-{
+template <enum TARGET_BOARDS> class LEDController {
 };
 
 /* K64F specific LED Controller.
  */
-template<>
-class LEDController<TARGET_BOARD_K64F> : public BaseController
-{
+template <> class LEDController<TARGET_BOARD_K64F> : public BaseController {
 public:
-    LEDController() : led_strip(D3, D2, IND_NO_TYPES) { }
-    ~LEDController() { }
+    LEDController() : led_strip(D3, D2, IND_NO_TYPES)
+    {
+    }
+    ~LEDController()
+    {
+    }
 
 protected:
     /** Updates the hardware LEDs based on the internal colors and flags set.
      */
-    void led_update(void) {
+    void led_update(void)
+    {
         led_strip.post(LED_HARDWARE);
     }
 
     /** Setup the internal state of the LED colors and flags.
      */
-    void led_init(void) {
+    void led_init(void)
+    {
         led_strip.clear();
         led_strip.level(100);
     }
@@ -173,52 +189,56 @@ protected:
 
 /* UBLOX_EVK_ODIN_W2 specific LED Controller
  */
-template<>
-class LEDController<TARGET_BOARD_UBLOX_EVK> : public BaseController
-{
+template <>
+class LEDController<TARGET_BOARD_UBLOX_EVK> : public BaseController {
 public:
-    LEDController() : led_strip(D7, D6, IND_NO_TYPES * 2) { }
-    ~LEDController() { }
+    LEDController() : led_strip(D7, D6, IND_NO_TYPES * 2)
+    {
+    }
+    ~LEDController()
+    {
+    }
 
 protected:
     /** Updates the hardware LEDs based on the internal colors and flags set.
      */
-    void led_update(void) {
+    void led_update(void)
+    {
         int idx;
 
         for (idx = 0; idx < IND_NO_TYPES; ++idx) {
             switch (LED_HARDWARE[idx]) {
-            case COMMI_RED:
-                LED_HARDWARE_ODIN[2 * idx] = COMMI_RED_HI;
-                LED_HARDWARE_ODIN[2 * idx + 1] = COMMI_RED_LO;
-                break;
-            case CANADIAN_BLUE:
-                LED_HARDWARE_ODIN[2 * idx] = CANADIAN_BLUE_HI;
-                LED_HARDWARE_ODIN[2 * idx + 1] = CANADIAN_BLUE_LO;
-                break;
-            case SLIMER_GREEN:
-                LED_HARDWARE_ODIN[2 * idx] = SLIMER_GREEN_HI;
-                LED_HARDWARE_ODIN[2 * idx + 1] = SLIMER_GREEN_LO;
-                break;
-            case SNOW_YELLOW:
-                LED_HARDWARE_ODIN[2 * idx] = SNOW_YELLOW_HI;
-                LED_HARDWARE_ODIN[2 * idx + 1] = SNOW_YELLOW_LO;
-                break;
-            case MIDNIGHT_GREEN:
-                LED_HARDWARE_ODIN[2 * idx] = MIDNIGHT_GREEN_HI;
-                LED_HARDWARE_ODIN[2 * idx + 1] = MIDNIGHT_GREEN_LO;
-                break;
-            case MIDNIGHT_BLUE:
-                LED_HARDWARE_ODIN[2 * idx] = MIDNIGHT_BLUE_HI;
-                LED_HARDWARE_ODIN[2 * idx + 1] = MIDNIGHT_BLUE_LO;
-                break;
-            case SUMMER_BLUE:
-                LED_HARDWARE_ODIN[2 * idx] = SUMMER_BLUE_HI;
-                LED_HARDWARE_ODIN[2 * idx + 1] = SUMMER_BLUE_LO;
-                break;
-            default:
-                LED_HARDWARE_ODIN[2 * idx] = 0;
-                LED_HARDWARE_ODIN[2 * idx + 1] = 0;
+                case COMMI_RED:
+                    LED_HARDWARE_ODIN[2 * idx] = COMMI_RED_HI;
+                    LED_HARDWARE_ODIN[2 * idx + 1] = COMMI_RED_LO;
+                    break;
+                case CANADIAN_BLUE:
+                    LED_HARDWARE_ODIN[2 * idx] = CANADIAN_BLUE_HI;
+                    LED_HARDWARE_ODIN[2 * idx + 1] = CANADIAN_BLUE_LO;
+                    break;
+                case SLIMER_GREEN:
+                    LED_HARDWARE_ODIN[2 * idx] = SLIMER_GREEN_HI;
+                    LED_HARDWARE_ODIN[2 * idx + 1] = SLIMER_GREEN_LO;
+                    break;
+                case SNOW_YELLOW:
+                    LED_HARDWARE_ODIN[2 * idx] = SNOW_YELLOW_HI;
+                    LED_HARDWARE_ODIN[2 * idx + 1] = SNOW_YELLOW_LO;
+                    break;
+                case MIDNIGHT_GREEN:
+                    LED_HARDWARE_ODIN[2 * idx] = MIDNIGHT_GREEN_HI;
+                    LED_HARDWARE_ODIN[2 * idx + 1] = MIDNIGHT_GREEN_LO;
+                    break;
+                case MIDNIGHT_BLUE:
+                    LED_HARDWARE_ODIN[2 * idx] = MIDNIGHT_BLUE_HI;
+                    LED_HARDWARE_ODIN[2 * idx + 1] = MIDNIGHT_BLUE_LO;
+                    break;
+                case SUMMER_BLUE:
+                    LED_HARDWARE_ODIN[2 * idx] = SUMMER_BLUE_HI;
+                    LED_HARDWARE_ODIN[2 * idx + 1] = SUMMER_BLUE_LO;
+                    break;
+                default:
+                    LED_HARDWARE_ODIN[2 * idx] = 0;
+                    LED_HARDWARE_ODIN[2 * idx + 1] = 0;
             }
         }
         led_strip.post(LED_HARDWARE_ODIN);
@@ -226,7 +246,8 @@ protected:
 
     /** Setup the internal state of the LED colors and flags.
      */
-    void led_init(void) {
+    void led_init(void)
+    {
         led_strip.clear();
         led_strip.level(100);
     }
@@ -234,61 +255,59 @@ protected:
     /* ODIN is slightly different in the way it needs to set the LED colors.
      * We need a separate array to transmit colors to the hardware.
      */
-    int LED_HARDWARE_ODIN[IND_NO_TYPES * 2]; /* color currently being displayed */
+    int LED_HARDWARE_ODIN[IND_NO_TYPES *
+                          2]; /* color currently being displayed */
     ws2801 led_strip;
 };
 
-template<>
-class LEDController<TARGET_BOARD_ODIN_DEMO> : public BaseController
-{
+/** Struct definition for the PWM LEDs */
+class RGBLED {
 public:
-    LEDController() : led_ctrl(I2C_SDA, I2C_SCL, 0x02), /* SDA, SCL, Slave address */
-        led_strip({
-                { // POWER
-                    .red = LedPwmOutCC(led_ctrl, L0),
-                    .green = LedPwmOutCC(led_ctrl, L1),
-                    .blue = LedPwmOutCC(led_ctrl, L2)
-                },
-                { // WIFI
-                    .red = LedPwmOutCC(led_ctrl, L3),
-                    .green = LedPwmOutCC(led_ctrl, L4),
-                    .blue = LedPwmOutCC(led_ctrl, L5)
-                },
-                { // CLOUD
-                    .red = LedPwmOutCC(led_ctrl, L6),
-                    .green = LedPwmOutCC(led_ctrl, L7),
-                    .blue = LedPwmOutCC(led_ctrl, L8)
-                },
-                { // FWUP
-                    .red = LedPwmOutCC(led_ctrl, L9),
-                    .green = LedPwmOutCC(led_ctrl, L10),
-                    .blue = LedPwmOutCC(led_ctrl, L11)
-                },
-                { // LIGHT
-                    .red = LedPwmOutCC(led_ctrl, L12),
-                    .green = LedPwmOutCC(led_ctrl, L13),
-                    .blue = LedPwmOutCC(led_ctrl, L14)
-                },
-                { // TEMP / HUMIDITY
-                    .red = LedPwmOutCC(led_ctrl, L15),
-                    .green = LedPwmOutCC(led_ctrl, L16),
-                    .blue = LedPwmOutCC(led_ctrl, L17)
-                },
-                { // SOUND
-                    .red = LedPwmOutCC(led_ctrl, L18),
-                    .green = LedPwmOutCC(led_ctrl, L19),
-                    .blue = LedPwmOutCC(led_ctrl, L20)
-                },
-        })
+    RGBLED(LedPwmOutCC r, LedPwmOutCC g, LedPwmOutCC b)
+        : red(r), green(g), blue(b)
     {
     }
+    LedPwmOutCC red;
+    LedPwmOutCC green;
+    LedPwmOutCC blue;
+};
 
-    ~LEDController() { }
+template <>
+class LEDController<TARGET_BOARD_ODIN_DEMO> : public BaseController {
+public:
+    LEDController() : led_ctrl(I2C_SDA, I2C_SCL, 0x02)
+    {
+        LedPinName pins[] = {
+            L0,  L1,  L2,  // power
+            L3,  L4,  L5,  // wifi
+            L6,  L7,  L8,  // cloud
+            L9,  L10, L11, // firmware upload
+            L12, L13, L14, // light
+            L15, L16, L17, // temperature and humidity
+            L18, L19, L20  // sound
+        };
+        unsigned i;
+
+        led_strip.reserve(IND_NO_TYPES);
+
+        for (i = 0; i + 2 < sizeof(pins) / sizeof(pins[0]); i += 3) {
+            LedPwmOutCC r(led_ctrl, pins[i]);
+            LedPwmOutCC g(led_ctrl, pins[i + 1]);
+            LedPwmOutCC b(led_ctrl, pins[i + 2]);
+            RGBLED rgbled(r, g, b);
+            led_strip.push_back(rgbled);
+        }
+    }
+
+    ~LEDController()
+    {
+    }
 
 private:
     /** Updates the hardware LEDs based on the internal colors and flags set.
      */
-    void led_update(void) {
+    void led_update(void)
+    {
         int idx;
 
         for (idx = 0; idx < IND_NO_TYPES; ++idx) {
@@ -301,7 +320,8 @@ private:
 
     /** Setup the internal state of the LED colors and flags.
      */
-    void led_init(void) {
+    void led_init(void)
+    {
         for (int i = 0; i < IND_NO_TYPES; i++) {
             led_strip[i].red.current(1.0f);
             led_strip[i].green.current(1.0f);
@@ -309,24 +329,21 @@ private:
         }
     }
 
-    /** Struct definition for the PWM LEDs
-     */
-    struct RGBLED {
-        LedPwmOutCC red;
-        LedPwmOutCC green;
-        LedPwmOutCC blue;
-    };
-    PCA9956A led_ctrl; /* physical PWM LED controller */
-    struct RGBLED led_strip[IND_NO_TYPES]; /* set of RGB LEDs attached to controller */
+    PCA9956A led_ctrl;             /* physical PWM LED controller */
+    std::vector<RGBLED> led_strip; /* set of RGB LEDs attached to controller */
 
-    /* simple helper functions for converting 24-bit color to 8-bit, then floats */
-    float getRed(int led_name) {
+    /* simple helper functions for converting 24-bit color to 8-bit, then floats
+     */
+    float getRed(int led_name)
+    {
         return (float)(LED_HARDWARE[led_name] & 0x000000FF) / 256.0f;
     }
-    float getGreen(int led_name) {
+    float getGreen(int led_name)
+    {
         return (float)((LED_HARDWARE[led_name] & 0x0000FF00) >> 8) / 256.0f;
     }
-    float getBlue(int led_name) {
+    float getBlue(int led_name)
+    {
         return (float)((LED_HARDWARE[led_name] & 0x00FF0000) >> 16) / 256.0f;
     }
 };
@@ -340,30 +357,37 @@ LEDController<TARGET_BOARD_K64F> ledctrl;
 // ****************************************************************************
 // Functions
 // ****************************************************************************
-void led_flags_set(int led_name, int flags) {
+void led_flags_set(int led_name, int flags)
+{
     ledctrl.flags_set(led_name, flags);
 }
 
-int led_flags_get(int led_name) {
+int led_flags_get(int led_name)
+{
     return ledctrl.flags_get(led_name);
 }
 
-bool led_flag_is_set(int led_name, int flag) {
+bool led_flag_is_set(int led_name, int flag)
+{
     return ledctrl.flag_is_set(led_name, flag);
 }
 
-void led_clear_flag(int led_name, int flag) {
+void led_clear_flag(int led_name, int flag)
+{
     ledctrl.clear_flag(led_name, flag);
 }
 
-void led_set_color(enum INDICATOR_TYPES led_name, int led_color, int flags) {
+void led_set_color(enum INDICATOR_TYPES led_name, int led_color, int flags)
+{
     ledctrl.set_color(led_name, led_color, flags);
 }
 
-void led_post(void) {
+void led_post(void)
+{
     ledctrl.led_post();
 }
 
-void led_setup(void) {
+void led_setup(void)
+{
     ledctrl.led_setup();
 }

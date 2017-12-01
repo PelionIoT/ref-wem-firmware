@@ -16,9 +16,9 @@ enum INDICATOR_TYPES {
     IND_CLOUD,
     IND_FWUP,
     IND_LIGHT,
+    IND_SOUND,
     IND_TEMP,
     IND_HUMIDITY = IND_TEMP,
-    IND_SOUND,
     IND_NO_TYPES
 };
 
