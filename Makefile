@@ -275,7 +275,7 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 	@if [ ! -f .patches ]; then \
 		for target in ${PATCHDIR}/{COMMON,${MBED_TARGET}}; do \
 			for patchdir in $$(find $${target} -type d -print | sort); do \
-				for patch in $$(find ${CURDIR}/$${patchdir} -type f -depth 1 -print | sort); do \
+				for patch in $$(find ${CURDIR}/$${patchdir} -maxdepth 1 -type f -print | sort); do \
 					pushd .$${patchdir#$${target}} && { \
 						echo "applying $${patch}"; \
 						git am $${patch} || { \
