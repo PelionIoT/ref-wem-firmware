@@ -240,7 +240,8 @@ static void light_read(struct light_sensor *s)
 #if TARGET_UBLOX_EVK_ODIN_W2
     s->sensor->getALS();
     s->sensor->calcLux();
-    lux = s->sensor->lux;
+    //light sensor uses a multiplier to adjust for the lightpipe
+    lux = s->sensor->lux*3.7;
     FOTA_VERBOSE_PRINTF(sensors, "light: %u\n", lux);
     size = snprintf(res_buffer, sizeof(res_buffer), "%u lux", lux);
 #else
@@ -303,8 +304,9 @@ static void dht_read(struct dht_sensor *dht)
 
     if (readError == ERROR_NONE) {
 #if TARGET_UBLOX_EVK_ODIN_W2
-        temperature = dht->sensor->readTemperature();
-        humidity = dht->sensor->readHumidity();
+        //temp and humidity have multiplier to adjust for the case
+        temperature = dht->sensor->readTemperature() * .68;
+        humidity = dht->sensor->readHumidity() * 1.9;
 #else
         temperature = dht->dev->ReadTemperature(CELCIUS);
         humidity = dht->dev->ReadHumidity();
