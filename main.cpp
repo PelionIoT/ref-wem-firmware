@@ -150,6 +150,9 @@ static TSL2591 tsl2591(i2c, TSL2591_ADDR);
 static Sht31 sht31(I2C_SDA, I2C_SCL);
 #endif
 
+//our serial interface cli class
+Commander cmd;
+
 // ****************************************************************************
 // Generic Helpers
 // ****************************************************************************
@@ -1687,7 +1690,6 @@ static void init_app(EventQueue *queue)
 
     init_app_label(m2mclient);
     init_geo(m2mclient);
-    init_commander();
 
     /* workaround: go ahead and connect the network.  it doesn't like being
      * polled for status before a connect() is attempted.
@@ -1760,6 +1762,9 @@ int main()
 
     /* stack size 2048 is too small for fcc_developer_flow() */
     Thread thread(osPriorityNormal, 4224);
+
+    /* init the console manager so we can printf */
+    init_commander();
 
     /* the bootloader doesn't seem to print a final newline before passing
      * control to the app, which causes the version string to be mangled

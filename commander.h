@@ -18,13 +18,13 @@ using namespace std;
 /*
     callback type for the command
 */
-typedef void(*pFuncCB)(vector<string>&);
+typedef Callback<void(std::vector<std::string>&)> pFuncCB;
 
 
 /*
     callback type for command ready
 */
-typedef void(*pFuncReady)();
+typedef Callback<void()> pFuncReady;
 
 /*
     class: cmd
@@ -160,7 +160,7 @@ public:
         returns:
         nothing
     */
-    void help();
+    void help(std::vector<std::string>&);
 
     /*
         Function: banner
@@ -187,7 +187,7 @@ public:
         returns:
         nothing.
     */
-    static void input_handler();
+    void input_handler();
 
     /*
         function: on_ready

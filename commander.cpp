@@ -11,14 +11,6 @@
 #define MBED_CONF_APP_COMMANDER_ISR_BUFFER_LENGTH 16
 #endif
 
-//our serial interface cli class
-Commander cmd;
-
-static void commander_cb_help(vector<string>& params)
-{
-    cmd.help();
-}
-
 Commander::Commander(PinName tx,
                      PinName rx,
                      int baud) : _serial(tx,rx)
@@ -45,7 +37,7 @@ Commander::Commander(PinName tx,
     //hook up our help
     add("help",
         "Get help about the available commands.",
-        commander_cb_help);
+        callback(this, &Commander::help));
 }
 
 Commander::~Commander()
@@ -53,7 +45,7 @@ Commander::~Commander()
 
 }
 
-void Commander::help()
+void Commander::help(vector<string>& params)
 {
     map<string, Command>::const_iterator it;
 
@@ -93,13 +85,13 @@ void Commander::input_handler()
     //push our input into the buffer.
     //avoid increasing the size of the vector since this
     //function runs in interrupt context.
-    if (cmd._buffer.size() < cmd._buffer.capacity()) {
-        cmd._buffer.push_back(cmd._serial.getc());
+    if (_buffer.size() < _buffer.capacity()) {
+        _buffer.push_back(_serial.getc());
     }
 
     //walk the callbacks and call them one at a time
-    for (size_t n = 0; n < cmd._vready.size(); n++) {
-        cmd._vready[n]();
+    for (size_t n = 0; n < _vready.size(); n++) {
+        _vready[n]();
     }
 }
 
@@ -127,7 +119,7 @@ void Commander::init()
     _buffer.reserve(MBED_CONF_APP_COMMANDER_ISR_BUFFER_LENGTH);
 
     //hook up our serial input handler to the serial interrupt
-    _serial.attach(&input_handler);
+    _serial.attach(callback(this, &Commander::input_handler));
 
     //print the prompt!
     printf(_prompt.c_str());
