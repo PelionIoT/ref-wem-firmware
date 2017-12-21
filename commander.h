@@ -11,7 +11,6 @@
 #include <map>
 #include <vector>
 #include "mbed.h"
-#include "BufferedSerial.h"
 
 
 using namespace std;
@@ -140,14 +139,14 @@ public:
 
         see printf/wprintf for specifics
     */
-    inline int printf(const char *format, ...)
+    inline void printf(const char *format, ...)
     {
+        char buffer[256];
         va_list args;
-        int ret = 0;
-        va_start (args, format);
-        ret = _serial.vprintf(format, args);
+        va_start(args, format);
+        vsnprintf(buffer, sizeof(buffer), format, args);
+        _serial.puts(buffer);
         va_end (args);
-        return ret;
     }
 
     /*
@@ -223,7 +222,7 @@ protected:
     std::map<std::string, Command> _cmds;
 
     //our instance of the serial class
-    Serial _serial;
+    RawSerial _serial;
 
     //our default strings
     std::string _prompt;

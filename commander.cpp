@@ -7,6 +7,10 @@
 #include "commander.h"
 #include <algorithm>
 
+#ifndef MBED_CONF_APP_COMMANDER_ISR_BUFFER_LENGTH
+#define MBED_CONF_APP_COMMANDER_ISR_BUFFER_LENGTH 16
+#endif
+
 //our serial interface cli class
 Commander cmd;
 
@@ -86,11 +90,12 @@ void Commander::banner()
 
 void Commander::input_handler()
 {
-    //the next serial read
-    int nkey = cmd._serial.getc();
-
-    //push our input into the buffer
-    cmd._buffer.push_back(nkey);
+    //push our input into the buffer.
+    //avoid increasing the size of the vector since this
+    //function runs in interrupt context.
+    if (cmd._buffer.size() < cmd._buffer.capacity()) {
+        cmd._buffer.push_back(cmd._serial.getc());
+    }
 
     //walk the callbacks and call them one at a time
     for (size_t n = 0; n < cmd._vready.size(); n++) {
@@ -117,6 +122,10 @@ void Commander::del_ready(pFuncReady cb)
 
 void Commander::init()
 {
+    //reserve space for characters read from the serial interrupt routine
+    //so that it doesn't need to allocate memory.
+    _buffer.reserve(MBED_CONF_APP_COMMANDER_ISR_BUFFER_LENGTH);
+
     //hook up our serial input handler to the serial interrupt
     _serial.attach(&input_handler);
 
