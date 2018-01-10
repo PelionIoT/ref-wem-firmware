@@ -8,7 +8,7 @@ SHELL=/bin/bash
 
 # Specify the default target and toolchain to build.  The defaults are used
 # if 'mbed target' and 'mbed toolchain' are not set.
-DEFAULT_TARGET:=K64F
+DEFAULT_TARGET:=UBLOX_EVK_ODIN_W2
 DEFAULT_TOOLCHAIN:=GCC_ARM
 
 SRCDIR:=.

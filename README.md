@@ -73,15 +73,39 @@ If downloading an existing certificate, click the name of the appropriate certif
 
 ## Compiling
 
-The fota-demo project uses a Makefile to compile the source code.  The Makefile attempts to detect the toolchain and target and calls the mbed compiler with appropriate options.
+The fota-demo project uses a Makefile to compile the source code.  The Makefile attempts to detect the toolchain and target and calls the mbed compiler with appropriate options.  To build for the current fota-demo hardware, you may need to set your mbed target to UBLOX_EVK_ODIN_W2.
+
+**NOTE:** Previous versions of the fota-demo project were based on the K64F platform.  If you have hardware based on the K64F, then replace `UBLOX_EVK_ODIN_W2` with `K64F`.  If you do not know your platform, run the following commands in your build environment to give an indication:
+```
+$ mbedls
+$ mbed detect
+```
+If the platform_name shown is `unknown`, use `UBLOX_EV_ODIN_W2` target.
 
 **NOTE:** Versions prior to v1.7.0 no longer build due to outdated SHA references for the ws2801 and DHT libraries.
 As a workaround, please update the corresponding .lib files with the following refs:
 * ws2801 9706013b3a6aea3397320ba2383b9e2c924b64b8
 * DHT f6cd0c6d7abdf3b570687f89839e0ca5e24c6b3f
 
+Assuming you are compiling with GCC, your .mbed file should look like the following:
+
 ```
-make
+$ cat .mbed
+ROOT=.
+TARGET=UBLOX_EVK_ODIN_W2
+TOOLCHAIN=GCC_ARM
+```
+
+If the file does not exist, you can either allow the Makefile to create it with default settings, or create it yourself with the following commands.
+```
+$ mbed config ROOT .
+$ mbed target UBLOX_EVK_ODIN_W2
+$ mbed toolchain GCC_ARM
+```
+
+Typing `make` builds the bootloader and app and combines them into a single image.  The final images are copied into the `bin/` folder.
+```
+$ make
 ```
 
 ### Compilation Errors
@@ -121,9 +145,16 @@ Make distclean will remove all dependency files and generated files.
 
 ## Flashing your board
 
+The following command will copy `bin/combined.bin` to a USB-attached device.
 ```
 make install
 ```
+
+If this command fails or you have more than one device attached to your build system, you can manually copy the image to the device.  For example:
+```
+$ cp bin/combined.bin /Volumes/DAPLINK/
+```
+Make sure to substitute for the correct mount point of your device.
 
 ## Update over the air
 
