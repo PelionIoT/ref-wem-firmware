@@ -11,7 +11,6 @@
 #include <map>
 #include <vector>
 #include "mbed.h"
-#include "BufferedSerial.h"
 
 
 using namespace std;
@@ -19,13 +18,13 @@ using namespace std;
 /*
     callback type for the command
 */
-typedef void(*pFuncCB)(vector<string>&);
+typedef Callback<void(std::vector<std::string>&)> pFuncCB;
 
 
 /*
     callback type for command ready
 */
-typedef void(*pFuncReady)();
+typedef Callback<void()> pFuncReady;
 
 /*
     class: cmd
@@ -140,14 +139,14 @@ public:
 
         see printf/wprintf for specifics
     */
-    inline int printf(const char *format, ...)
+    inline void printf(const char *format, ...)
     {
+        char buffer[256];
         va_list args;
-        int ret = 0;
-        va_start (args, format);
-        ret = _serial.vprintf(format, args);
+        va_start(args, format);
+        vsnprintf(buffer, sizeof(buffer), format, args);
+        _serial.puts(buffer);
         va_end (args);
-        return ret;
     }
 
     /*
@@ -161,7 +160,7 @@ public:
         returns:
         nothing
     */
-    void help();
+    void help(std::vector<std::string>&);
 
     /*
         Function: banner
@@ -188,7 +187,7 @@ public:
         returns:
         nothing.
     */
-    static void input_handler();
+    void input_handler();
 
     /*
         function: on_ready
@@ -223,7 +222,7 @@ protected:
     std::map<std::string, Command> _cmds;
 
     //our instance of the serial class
-    Serial _serial;
+    RawSerial _serial;
 
     //our default strings
     std::string _prompt;

@@ -150,6 +150,9 @@ static TSL2591 tsl2591(i2c, TSL2591_ADDR);
 static Sht31 sht31(I2C_SDA, I2C_SCL);
 #endif
 
+//our serial interface cli class
+Commander cmd;
+
 // ****************************************************************************
 // Generic Helpers
 // ****************************************************************************
@@ -240,7 +243,8 @@ static void light_read(struct light_sensor *s)
 #if TARGET_UBLOX_EVK_ODIN_W2
     s->sensor->getALS();
     s->sensor->calcLux();
-    lux = s->sensor->lux;
+    //light sensor uses a multiplier to adjust for the lightpipe
+    lux = s->sensor->lux*3.7;
     FOTA_VERBOSE_PRINTF(sensors, "light: %u\n", lux);
     size = snprintf(res_buffer, sizeof(res_buffer), "%u lux", lux);
 #else
@@ -303,8 +307,9 @@ static void dht_read(struct dht_sensor *dht)
 
     if (readError == ERROR_NONE) {
 #if TARGET_UBLOX_EVK_ODIN_W2
-        temperature = dht->sensor->readTemperature();
-        humidity = dht->sensor->readHumidity();
+        //temp and humidity have multiplier to adjust for the case
+        temperature = dht->sensor->readTemperature() * .68;
+        humidity = dht->sensor->readHumidity() * 1.9;
 #else
         temperature = dht->dev->ReadTemperature(CELCIUS);
         humidity = dht->dev->ReadHumidity();
@@ -1685,7 +1690,6 @@ static void init_app(EventQueue *queue)
 
     init_app_label(m2mclient);
     init_geo(m2mclient);
-    init_commander();
 
     /* workaround: go ahead and connect the network.  it doesn't like being
      * polled for status before a connect() is attempted.
@@ -1758,6 +1762,9 @@ int main()
 
     /* stack size 2048 is too small for fcc_developer_flow() */
     Thread thread(osPriorityNormal, 4224);
+
+    /* init the console manager so we can printf */
+    init_commander();
 
     /* the bootloader doesn't seem to print a final newline before passing
      * control to the app, which causes the version string to be mangled

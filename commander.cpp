@@ -7,13 +7,9 @@
 #include "commander.h"
 #include <algorithm>
 
-//our serial interface cli class
-Commander cmd;
-
-static void commander_cb_help(vector<string>& params)
-{
-    cmd.help();
-}
+#ifndef MBED_CONF_APP_COMMANDER_ISR_BUFFER_LENGTH
+#define MBED_CONF_APP_COMMANDER_ISR_BUFFER_LENGTH 16
+#endif
 
 Commander::Commander(PinName tx,
                      PinName rx,
@@ -41,7 +37,7 @@ Commander::Commander(PinName tx,
     //hook up our help
     add("help",
         "Get help about the available commands.",
-        commander_cb_help);
+        callback(this, &Commander::help));
 }
 
 Commander::~Commander()
@@ -49,7 +45,7 @@ Commander::~Commander()
 
 }
 
-void Commander::help()
+void Commander::help(vector<string>& params)
 {
     map<string, Command>::const_iterator it;
 
@@ -86,15 +82,16 @@ void Commander::banner()
 
 void Commander::input_handler()
 {
-    //the next serial read
-    int nkey = cmd._serial.getc();
-
-    //push our input into the buffer
-    cmd._buffer.push_back(nkey);
+    //push our input into the buffer.
+    //avoid increasing the size of the vector since this
+    //function runs in interrupt context.
+    if (_buffer.size() < _buffer.capacity()) {
+        _buffer.push_back(_serial.getc());
+    }
 
     //walk the callbacks and call them one at a time
-    for (size_t n = 0; n < cmd._vready.size(); n++) {
-        cmd._vready[n]();
+    for (size_t n = 0; n < _vready.size(); n++) {
+        _vready[n]();
     }
 }
 
@@ -117,8 +114,12 @@ void Commander::del_ready(pFuncReady cb)
 
 void Commander::init()
 {
+    //reserve space for characters read from the serial interrupt routine
+    //so that it doesn't need to allocate memory.
+    _buffer.reserve(MBED_CONF_APP_COMMANDER_ISR_BUFFER_LENGTH);
+
     //hook up our serial input handler to the serial interrupt
-    _serial.attach(&input_handler);
+    _serial.attach(callback(this, &Commander::input_handler));
 
     //print the prompt!
     printf(_prompt.c_str());
