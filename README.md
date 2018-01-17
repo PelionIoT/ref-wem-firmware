@@ -158,9 +158,33 @@ Make sure to substitute for the correct mount point of your device.
 
 ## Update over the air
 
+Before starting the FOTA campaign we must increment the version of our application because we can't update to the same revision of the firmware.
+
+Open the file 'mbed_app.json' in the editor of your choice and increment the version number.
+
+change from...
+```
+"version": {
+    "help": "Display this version string on the device",
+    "value": "\"1.0\""
+},
+```
+
+to...
+```
+"version": {
+    "help": "Display this version string on the device",
+    "value": "\"1.1\""
+},
+```
+
+Next open your shell to your project folder. 
+
 ```
 make campaign
 ```
+
+This will launch the FOTA campaign and begin updating your devices shortly.
 
 ## Serial Command Help
 
