@@ -5,39 +5,40 @@
 To build the "firmware-over-the-air" (FOTA) example software, you need the following:
 
 1. A computer that you can use to host the GCC toolchain and environment necessary to build the firmware.
-    * Operating System and architectures supported:
-      * Windows 7 or 10 (x86 or x86-64).
-      * Linux (x86-64).
-      * Mac OS X (x86-64).
-    * A USB port and a type B micro USB cable to flash the K64F.
+    - Operating systems and architectures supported:
+      - Windows 7 or 10 (x86 or x86-64).
+      - Linux (x86-64).
+      - Mac OS X (x86-64).
+    - A USB port and a type B micro-USB cable to flash the K64F.
 1. An internet connection to download the necessary software to build the firmware.
-1. An Mbed Cloud 1.2 Account (does not work with previous versions of Mbed Cloud).
+1. An Arm Mbed Cloud 1.2 Account (does not work with previous versions of Mbed Cloud).
 1. Basic knowledge of executing commands from a shell or command prompt.
-1. The following utilties:
-    * Python 2 (NOTE: This demonstration does not support Python 3).
-    * Make, or equivalent utility, to execute a Makefile to build the target.
-    * Bash or another shell equivalent.
-    * coreutils (cat, cp, echo, rm...).
-    * awk.
-    * grep.
-    * sed.
-    * git.
+1. The following utilities:
+    - Python 2 (NOTE: This demonstration does not support Python 3).
+    - Make, or equivalent utility, to execute a Makefile to build the target.
+    - Bash or another shell equivalent.
+    - coreutils (cat, cp, echo, rm and so on).
+    - AWK.
+    - grep.
+    - sed.
+    - Git.
 
-Note: The above utilities can be installed with these commands:
+<span class="notes">**Note:** You can install the above utilities with these commands:
 
 ```
 sudo apt-get install coreutils python python-pip gawk git grep make sed
 ```
+</span>
 
 ### Setup
 
 1. <a id="setup-workspace"/>Create a workspace directory to host the toolchain environment and build the firmware.
 1. <a id="setup-toolchain"/>Download the appropriate toolchain here:
-    * [Windows](https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/6-2017q2/gcc-am-none-eabi-6-2017-q2-update-win32-sha2.exe).
-    * [Linux](https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/6-2017q2/gcc-arm-none-eabi-6-2017-q2-update-linux.tar.bz2).
-    * [Mac OS X](https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/6-2017q2/gcc-arm-none-eabi-6-2017-q2-update-mac.tar.bz2).
-1. <a id="setup-mbed-cli"/>Set up and install Mbed CLI using the [Mbed CLI setup](https://os.mbed.com/docs/v5.6/tools/setup.html) instructions.
-1. Install required python libraries:
+    - [Windows](https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/6-2017q2/gcc-am-none-eabi-6-2017-q2-update-win32-sha2.exe).
+    - [Linux](https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/6-2017q2/gcc-arm-none-eabi-6-2017-q2-update-linux.tar.bz2).
+    - [Mac OS X](https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/6-2017q2/gcc-arm-none-eabi-6-2017-q2-update-mac.tar.bz2).
+1. <a id="setup-mbed-cli"/>Set up and install Arm Mbed CLI using the [Mbed CLI setup](https://os.mbed.com/docs/v5.6/tools/setup.html) instructions.
+1. Install required Python libraries:
 
    ```bash
    pip install -r requirements.txt
@@ -45,14 +46,17 @@ sudo apt-get install coreutils python python-pip gawk git grep make sed
 
 1. <a id="setup-cloud-key"/>Obtain your Mbed Cloud key.
     1. Log in to the [Mbed Cloud Portal](https://portal.us-east-1.mbedcloud.com/login) with your username and password.
-    1. Click on 'Manage access' and then 'API keys', and then select 'Create new API key'.
-    1. Give a name to your API key and from the Group drop down box select 'Developers' and then hit create.
+    1. Click on `Manage access` and then `API keys`, and then select `Create new API key`.
+    1. Give a name to your API key.
+    1. From the Group drop down box, select `Developers`, and click `Create`.
     1. On the next screen, you see the name you gave your key and the API key itself. Save the key to a file named ***mbed-cloud-key.txt***. You will use this later in the [instructions](#ins-cloud-key).
 1. <a id="setup-cloud-cert"/>Obtain your Mbed Cloud certificate.
     1. Log in to the [Mbed Cloud Portal](https://portal.us-east-1.mbedcloud.com/login) with your username and password.
-    1. Click on 'Device Identity' and then 'Certificates'; from the Actions drop down menu, select 'Create developer certificate'.
-    1. Give your certificate a name and description (optional), and then click 'Create certificate'.
-    1. If you successfully created the certificate, you are redirected to the 'Certificates' page. If you click on the name of the certificate in the window, a popup appears that has a button to download the certificate as a source file; click 'Download Developer C file'. You will use this later in the [instructions](#ins-cloud-cert).
+    1. Click on `Device Identity` and then `Certificates`.
+    1. From the Actions drop down menu, select `Create developer certificate`.
+    1. Give your certificate a name and description (optional), and then click `Create certificate`.
+    1. When you successfully create the certificate, you are redirected to the `Certificates` page.
+    1. If you click on the name of the certificate in the window, a popup appears that has a button to download the certificate as a source file. Click 'Download Developer C file'. You will use this later in the [instructions](#ins-cloud-cert).
 
 ### Instructions
 
@@ -64,7 +68,7 @@ sudo apt-get install coreutils python python-pip gawk git grep make sed
     ```
     
 1. <a id="ins-cloud-key"/>Change directories to the `fota-demo` directory, and copy the `mbed-cloud-key.txt` file created in [setup](#setup-cloud-key) to ***.mbed-cloud-key***.
-    * NOTE: There is a dot in front of the name and no extension on the filename.
+    - NOTE: There is a dot in front of the name and no extension on the filename.
 1. <a id="ins-cloud-cert"/>Now, copy the ***mbed_cloud_dev_credentials.c*** source file that you downloaded in the [setup](#setup-cloud-cert) steps to `fota-demo` directory.
 1. Next, set up the Mbed environment to find your toolchain by issuing the following command:
 
@@ -72,10 +76,10 @@ sudo apt-get install coreutils python python-pip gawk git grep make sed
    mbed config -G GCC_ARM_PATH <workspace>/<gcc-toolchain-dir>/bin
    ```
    
-    * NOTE: The path points to the `bin` directory where you extracted the GCC toolchain.
+    - NOTE: The path points to the `bin` directory where you extracted the GCC toolchain.
 1. Using a text editor, open the ***mbed_app.json*** file, and change the `Wi-Fi SSID`, `Security Type` and `Password` fields to connect to a nearby AP with an internet connection.
-    * NOTE: Ensure that the `value` field under the `wifi` key is set to true to enable Wi-Fi.
-    * NOTE: If connecting to an OPEN network with no security, you do not need to set the password.
+    - NOTE: Ensure that the `value` field under the `wifi` key is set to true to enable Wi-Fi.
+    - NOTE: If connecting to an OPEN network with no security, you do not need to set the password.
 1. Once set up, you can issue the make command to build the firmware.
 
    ```bash
@@ -83,25 +87,25 @@ sudo apt-get install coreutils python python-pip gawk git grep make sed
    ```
 
 1. <a id="ins-fw-loc"/>The resulting firmware image is in `BUILD/K64F/GCC_ARM/combined.bin`.
-    * NOTE: The build directory may vary if building for a different target. The syntax for output directory is `BUILD/\<target>/\<toolchain>`.
+    - NOTE: The build directory may vary if building for a different target. The syntax for output directory is `BUILD/\<target>/\<toolchain>`.
 
 ### Testing
 
-1. Follow the Mbed OS instructions for setting up the [PC Configuration](https://os.mbed.com/docs/v5.6/tutorials/windows-serial-driver.html).
-1. Next, follow the instructions for [flashing a project binary](https://developer.mbed.org/platforms/FRDM-K64F/#flash-a-project-binary).
-    * NOTE: Make sure the binary you copy to the board is the ***combined.bin*** image created in the [instructions](#ins-fw-loc) to the mounted drive.
+1. Follow the Arm Mbed OS instructions for setting up the [PC Configuration](https://os.mbed.com/docs/v5.6/tutorials/windows-serial-driver.html).
+1. Next, follow the instructions for [flashing a project binary](https://os.mbed.com/platforms/FRDM-K64F/#flash-a-project-binary).
+    - NOTE: Make sure the binary you copy to the board is the ***combined.bin*** image created in the [instructions](#ins-fw-loc) to the mounted drive.
 1. Once you have copied the image, power-cycle the device.
 1. When the device is on, the power LED turns GREEN.
     1. When the device is connecting to the Wi-Fi station, it blinks YELLOW. Once it successfully connects, it turns solid BLUE. If it fails to connect, it turns solid RED.
-    1. When the device is connecting to Mbed Cloud, the LED blinks YELLOW. Once it successfully connects to Mbed cloud, it turns solid BLUE. If it fails to connect, it turns solid RED.
+    1. When the device is connecting to Mbed Cloud, the LED blinks YELLOW. Once it successfully connects to Mbed Cloud, it turns solid BLUE. If it fails to connect, it turns solid RED.
     1. The top line of the LCD displays version information. The bottom line displays environmental data and network status.
-    1. The colored LEDs illuminate data being sent to the cloud by the device. The solid BLUE LEDs change to CYAN briefly and back to solid BLUE every time environmental data is sent to Mbed Cloud.
+    1. The colored LEDs illuminate data the device is sending to the cloud. The solid BLUE LEDs change to CYAN briefly and back to solid BLUE every time the device sends environmental data to Mbed Cloud.
 
 #### Typical start up
 
 Using a serial console program, you can see the messages the device displays.
 
-First, you see boot messages that start with "[BOOT]":
+First, you see boot messages that start with `[BOOT]`:
 
 ```
 [BOOT] Active firmware integrity check:
@@ -136,18 +140,20 @@ mbed client registered
 
 ### Example (FOTA)
 
-1. Make sure your device is powered on and connected to mBed Cloud.
-1. <a id="example-edit-version"/>In your workspace directory where the `fota-demo` directory was [checked out](#ins-import-fota) open up the ***mbed_app.json*** file and find the "version" key in the json file.
-1. Change the "value" key underneath the version to a new number or string.
-1. Open a shell and change directories to the `fota-demo` directory and execute the following command
+1. Make sure your device is powered on and connected to Mbed Cloud.
+1. <a id="example-edit-version"/>In your workspace directory where the `fota-demo` directory was [checked out](#ins-import-fota), open the ***mbed_app.json*** file and find the "version" key in the `.json` file.
+1. Change the `value` key under the version to a new number or string.
+1. Open a shell, and change directories to the `fota-demo` directory, and execute the following command:
+
     ```bash
     make && make campaign
     ```
-    This command will rebuild your application. On a successful build it will upload the new image, then create a new manifest and campaign that will be sent to the cloud using the credentials stored in ***.mbed-cloud-key*** created in the [instructions](#setup-cloud-key)
-1. Once the manifest and campaign have been uploaded you should see the LCD on the device display "Downloading..." and the firmware indicator should be blinking YELLOW.
-    * Once the download has been completed the LCD should display "Saving..." then "Installing..." before rebooting.
-1. On reboot the device will go through several stages of verification while upgrading the image downloaded from mBed Cloud. The firmware indicator should be blinking YELLOW during this process.
-1. Upon a successful upgrade you should see the new version label you edited in the [previous step](#example-edit-version) on the LCD display next to "Version:" on the top line.
+    
+    This command rebuilds your application. On a successful build, it uploads the new image, then create a new manifest and campaign that will be sent to the cloud using the credentials stored in ***.mbed-cloud-key*** created in the [instructions](#setup-cloud-key).
+1. Once you have uploaded the manifest and campaign, the LCD on the device displays `Downloading...`, and the firmware indicator blinks YELLOW.
+    - Once the download has been completed the LCD should display "Saving..." then "Installing..." before rebooting.
+1. On reboot, the device goes through several stages of verification while upgrading the image downloaded from Mbed Cloud. The firmware indicator blinks YELLOW during this process.
+1. Upon a successful upgrade, you see the new version label you edited in the [previous step](#example-edit-version) on the LCD display next to `Version:` on the top line.
 
 ### Device states and indicators
 
