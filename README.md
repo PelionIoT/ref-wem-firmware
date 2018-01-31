@@ -6,6 +6,28 @@ This is an Arm Mbed application for a sales tool that demonstrates firmware upda
 
 <span class="images">![](https://s3-us-west-2.amazonaws.com/mbed-os-docs-images/photo.png)<span>Photo</span></span>
 
+### Prerequisites
+
+To build this project, you need to install the following:
+
+1. arm-none-eabi-gcc version 6.3.1.20170215 or greater
+
+    Here is an example showing how to install on a Mac:
+
+    ```
+    brew tap ARMmbed/homebrew-formulae
+    brew install arm-none-eabi-gcc
+    ```
+
+2. Python virtualenv
+
+    It is *strongly* recommended to use a Python virtualenv to isolate your build environment from the underlying system.  If you do this step before you clone the fota-demo repo, then the venv folder will be placed outside of the fota-demo folder which is recommended.  If instead you place venv in the root of the fota-demo project, you will need to add venv to .mbedignore to prevent mbed-cli from attempting to build the files inside it.
+
+    ```
+    virtualenv --no-site-packages --python=$(which python) venv
+    source venv/bin/activate
+    ```
+
 ### Importing `fota-demo`
 
 Arm Mbed CLI can import the project, along with the Arm Mbed OS codebase and all dependent device drivers.
@@ -25,24 +47,11 @@ To import the project from the command-line:
 
     `fota-demo` is now under `~/workspace/fota-demo`. You can look at `main.cpp` to familiarize yourself with the code.
 
-### Prerequisites
+3. Install the Python dependencies:
 
-To build this project, you need to install the following:
-
-1. arm-none-eabi-gcc version 6.3.1.20170215 or greater
-
-Here is an example showing how to install on a Mac:
-
-```
-brew tap ARMmbed/homebrew-formulae
-brew install arm-none-eabi-gcc
-```
-
-2. Python dependencies
-
-```
+	```
 	pip install -r requirements.txt
-```
+	```
 
 ### Specifying a network configuration
 
@@ -175,7 +184,9 @@ Be sure to substitute for the correct mount point of your device.
 
 ### Update over the air
 
-Before starting the FOTA campaign, you must increment the version of your application because you can't update to the same revision of the firmware.
+NOTE: If you are updating a device that was previously provisioned to a different Mbed cloud account, you must `reset certs` on the local device before initiating a campaign, otherwise the FOTA operation will encounter authorization failures.  See the section "Serial command help" for details on how to run commands on the device.
+
+Before starting the FOTA campaign, you should increment the version of your application.
 
 Open the file `mbed_app.json` in the editor of your choice, and increment the version number.
 
