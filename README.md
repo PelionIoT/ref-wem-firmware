@@ -28,6 +28,10 @@ To build this project, you need to install the following:
     source venv/bin/activate
     ```
 
+3. Copy your SSH public key to github
+
+    The build preparation step involves cloning libraries from github using ssh so you need to add an ssh key from your development system to your github account.
+
 ### Importing `fota-demo`
 
 Arm Mbed CLI can import the project, along with the Arm Mbed OS codebase and all dependent device drivers.
