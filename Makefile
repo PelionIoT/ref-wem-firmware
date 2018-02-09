@@ -189,7 +189,7 @@ install flash: .targetpath ${COMBINED_BIN}
 	$${cmd}
 
 tags: Makefile $(SRCS) $(HDRS)
-	ctags -R
+	ctags -R --c++-kinds=+p --fields=+iaS --extra=+q --exclude=BUILD .
 
 hooks:
 	cp tools/pre-commit.sh .git/hooks/pre-commit

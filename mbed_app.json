@@ -4,10 +4,6 @@
             "help": "Sets a device friendly name displayed on the LCD",
             "value": "\"dragonfly\""
         },
-        "fcc-wipe": {
-            "help": "Wipe the FCC credentials stored on the device",
-            "value": "false"
-        },
         "geo-accuracy": {
             "help": "Sets the accuracy of geo-lat and geo-lon, in meters",
             "value": null
