@@ -1005,11 +1005,6 @@ static int init_fcc(void)
 {
     fcc_status_e ret;
 
-    ret = fcc_storage_delete();
-    if (ret != FCC_STATUS_SUCCESS) {
-        cmd.printf("ERROR: fcc delete failed: %d\n", ret);
-    }
-
     ret = fcc_init();
     if (ret != FCC_STATUS_SUCCESS) {
         cmd.printf("ERROR: fcc init failed: %d\n", ret);
