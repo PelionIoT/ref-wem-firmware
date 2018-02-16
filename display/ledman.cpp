@@ -13,15 +13,6 @@
 #include <vector>
 #include <ws2801.h>
 
-/* Supported boards for different LEDControllers
- */
-enum TARGET_BOARDS {
-    TARGET_BOARD_K64F,
-    TARGET_BOARD_UBLOX_EVK,
-    TARGET_BOARD_ODIN_DEMO,
-    TARGET_BOARD_COUNT
-};
-
 /* LEDController template logic.
  */
 class BaseController {
@@ -152,113 +143,6 @@ protected:
     int LED_COLOR_TEMP[IND_NO_TYPES]; /* tempoary colors */
 };
 
-/** Template class for creating new LEDControllers
- */
-template <enum TARGET_BOARDS> class LEDController {
-};
-
-/* K64F specific LED Controller.
- */
-template <> class LEDController<TARGET_BOARD_K64F> : public BaseController {
-public:
-    LEDController() : led_strip(D3, D2, IND_NO_TYPES)
-    {
-    }
-    ~LEDController()
-    {
-    }
-
-protected:
-    /** Updates the hardware LEDs based on the internal colors and flags set.
-     */
-    void led_update(void)
-    {
-        led_strip.post(LED_HARDWARE);
-    }
-
-    /** Setup the internal state of the LED colors and flags.
-     */
-    void led_init(void)
-    {
-        led_strip.clear();
-        led_strip.level(100);
-    }
-
-    ws2801 led_strip;
-};
-
-/* UBLOX_EVK_ODIN_W2 specific LED Controller
- */
-template <>
-class LEDController<TARGET_BOARD_UBLOX_EVK> : public BaseController {
-public:
-    LEDController() : led_strip(D7, D6, IND_NO_TYPES * 2)
-    {
-    }
-    ~LEDController()
-    {
-    }
-
-protected:
-    /** Updates the hardware LEDs based on the internal colors and flags set.
-     */
-    void led_update(void)
-    {
-        int idx;
-
-        for (idx = 0; idx < IND_NO_TYPES; ++idx) {
-            switch (LED_HARDWARE[idx]) {
-                case COMMI_RED:
-                    LED_HARDWARE_ODIN[2 * idx] = COMMI_RED_HI;
-                    LED_HARDWARE_ODIN[2 * idx + 1] = COMMI_RED_LO;
-                    break;
-                case CANADIAN_BLUE:
-                    LED_HARDWARE_ODIN[2 * idx] = CANADIAN_BLUE_HI;
-                    LED_HARDWARE_ODIN[2 * idx + 1] = CANADIAN_BLUE_LO;
-                    break;
-                case SLIMER_GREEN:
-                    LED_HARDWARE_ODIN[2 * idx] = SLIMER_GREEN_HI;
-                    LED_HARDWARE_ODIN[2 * idx + 1] = SLIMER_GREEN_LO;
-                    break;
-                case SNOW_YELLOW:
-                    LED_HARDWARE_ODIN[2 * idx] = SNOW_YELLOW_HI;
-                    LED_HARDWARE_ODIN[2 * idx + 1] = SNOW_YELLOW_LO;
-                    break;
-                case MIDNIGHT_GREEN:
-                    LED_HARDWARE_ODIN[2 * idx] = MIDNIGHT_GREEN_HI;
-                    LED_HARDWARE_ODIN[2 * idx + 1] = MIDNIGHT_GREEN_LO;
-                    break;
-                case MIDNIGHT_BLUE:
-                    LED_HARDWARE_ODIN[2 * idx] = MIDNIGHT_BLUE_HI;
-                    LED_HARDWARE_ODIN[2 * idx + 1] = MIDNIGHT_BLUE_LO;
-                    break;
-                case SUMMER_BLUE:
-                    LED_HARDWARE_ODIN[2 * idx] = SUMMER_BLUE_HI;
-                    LED_HARDWARE_ODIN[2 * idx + 1] = SUMMER_BLUE_LO;
-                    break;
-                default:
-                    LED_HARDWARE_ODIN[2 * idx] = 0;
-                    LED_HARDWARE_ODIN[2 * idx + 1] = 0;
-            }
-        }
-        led_strip.post(LED_HARDWARE_ODIN);
-    }
-
-    /** Setup the internal state of the LED colors and flags.
-     */
-    void led_init(void)
-    {
-        led_strip.clear();
-        led_strip.level(100);
-    }
-
-    /* ODIN is slightly different in the way it needs to set the LED colors.
-     * We need a separate array to transmit colors to the hardware.
-     */
-    int LED_HARDWARE_ODIN[IND_NO_TYPES *
-                          2]; /* color currently being displayed */
-    ws2801 led_strip;
-};
 
 /** Struct definition for the PWM LEDs */
 class RGBLED {
@@ -272,8 +156,7 @@ public:
     LedPwmOutCC blue;
 };
 
-template <>
-class LEDController<TARGET_BOARD_ODIN_DEMO> : public BaseController {
+class LEDController : public BaseController {
 public:
     LEDController() : led_ctrl(I2C_SDA, I2C_SCL, 0x02)
     {
@@ -348,7 +231,7 @@ private:
     }
 };
 
-LEDController<TARGET_BOARD_ODIN_DEMO> ledctrl;
+LEDController ledctrl;
 
 // ****************************************************************************
 // Functions

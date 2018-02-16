@@ -9,7 +9,6 @@
 #include "compat.h"
 
 #include "commander.h"
-#include "DHT.h"
 #include "displayman.h"
 #include "fs.h"
 #include "GL5528.h"
