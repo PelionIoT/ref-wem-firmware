@@ -141,27 +141,34 @@ public:
     int process(std::string& strcommand);
 
     /*
-        Function: printf
+        function: printf
 
-        char/wchar_t unicode asccii neutral printf function.
-        uses same format and escapse as printf
+        prints formatted data to the attached serial
 
-        Parameters:
-        Args&&... args - variable arguments and format of print string
+        Params:
 
-        Returns:
-        positive int = success
-        negative int = failure
-
-        see printf/wprintf for specifics
+        returns:
+        void
     */
     inline void printf(const char *format, ...)
     {
         char buffer[256];
         va_list args;
         va_start(args, format);
-        vsnprintf(buffer, sizeof(buffer), format, args);
-        _serial.puts(buffer);
+        int length = vsnprintf(buffer, sizeof(buffer), format, args);
+        if (length > 0 && (size_t)length < sizeof(buffer)) {
+#if MBED_CONF_PLATFORM_STDIO_CONVERT_NEWLINES
+            for (int i = 0; i < length; i++) {
+                if (buffer[i] == '\n' && _out_prev != '\r') {
+                     _serial.putc('\r');
+                }
+                _serial.putc(buffer[i]);
+                _out_prev = buffer[i];
+            }
+#else
+            _serial.puts(buffer);
+#endif
+        }
         va_end (args);
     }
 
@@ -252,6 +259,11 @@ protected:
 
     //callbacks interested it async cmd processing
     std::vector<pFuncReady> _vready;
+
+private:
+#if MBED_CONF_PLATFORM_STDIO_CONVERT_NEWLINES
+    char _out_prev;
+#endif
 };
 
 //our serial interface cli class
