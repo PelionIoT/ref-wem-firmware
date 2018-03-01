@@ -92,22 +92,6 @@ If downloading an existing certificate, choose the name of the appropriate certi
 
 The project uses a Makefile to compile the source code. The Makefile detects the toolchain and target and calls the Mbed compiler with appropriate options. To build for the current hardware, you may need to set your Mbed target to UBLOX_EVK_ODIN_W2.
 
-<span class="notes">**Note:** Previous versions of the project were based on the K64F platform. If you have hardware based on the K64F, then replace `UBLOX_EVK_ODIN_W2` with `K64F`. If you do not know your platform, run the following commands in your build environment to give an indication:
-
-```
-$ mbedls
-$ mbed detect
-```
-</span>
-
-If the `platform_name shown` is `unknown`, use `UBLOX_EV_ODIN_W2` target.
-
-<span class="notes">**Note:** Versions prior to v1.7.0 no longer build due to outdated SHA references for the ws2801 and DHT libraries.
-As a workaround, please update the corresponding .lib files with the following refs:
-
-- ws2801 9706013b3a6aea3397320ba2383b9e2c924b64b8
-- DHT f6cd0c6d7abdf3b570687f89839e0ca5e24c6b3f</span>
-
 Assuming you are compiling with GCC, your `.mbed` file should look like the following:
 
 ```
@@ -138,23 +122,12 @@ The project fails to compile if a developer certificate is not present in the lo
 A missing certificate results in compilation errors similar to the following:
 
 ```
-./BUILD/K64F/GCC_ARM/mbed-cloud-client-restricted/factory_client/factory_configurator_client/source/fcc_dev_flow.o: In function `fcc_developer_flow':
+./BUILD/UBLOX_EVK_ODIN_W2/GCC_ARM/mbed-cloud-client-restricted/factory_client/factory_configurator_client/source/fcc_dev_flow.o: In function `fcc_developer_flow':
 fcc_dev_flow.c:(.text.fcc_developer_flow+0x130): undefined reference to `MBED_CLOUD_DEV_BOOTSTRAP_ENDPOINT_NAME'
 fcc_dev_flow.c:(.text.fcc_developer_flow+0x138): undefined reference to `MBED_CLOUD_DEV_BOOTSTRAP_SERVER_ROOT_CA_CERTIFICATE'
 fcc_dev_flow.c:(.text.fcc_developer_flow+0x13c): undefined reference to `MBED_CLOUD_DEV_BOOTSTRAP_SERVER_ROOT_CA_CERTIFICATE_SIZE'
 ...
 ```
-
-#### Patching errors
-
-If the list of dependent libraries changes, assume that Mbed OS updated as well, and try to patch the linker scripts again. This produces the following error:
-
-```
-error: patch failed: targets/TARGET_Freescale/TARGET_MCUXpresso_MCUS/TARGET_MCU_K64F/device/TOOLCHAIN_GCC_ARM/MK64FN1M0xxx12.ld:64
-error: targets/TARGET_Freescale/TARGET_MCUXpresso_MCUS/TARGET_MCU_K64F/device/TOOLCHAIN_GCC_ARM/MK64FN1M0xxx12.ld: patch does not apply
-```
-
-If this happens, run `make distclean`, then `make`.
 
 #### Cleaning the build
 
