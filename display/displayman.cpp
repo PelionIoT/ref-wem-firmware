@@ -3,12 +3,7 @@
 #include "../compat.h"
 
 DisplayMan::DisplayMan() :
-#if TARGET_UBLOX_EVK_ODIN_W2
     _lcd(D3, D4, D5, D6, D7, D9),
-#else
-    _i2c(I2C_SDA, I2C_SCL),
-    _lcd(&_i2c),
-#endif
     _lcd_prog(_lcd)
 {
     _cycle_count = 0;

@@ -15,11 +15,7 @@
 class MultiAddrLCD {
 public:
 
-#if TARGET_UBLOX_EVK_ODIN_W2
     MultiAddrLCD(PinName rs, PinName r, PinName d4, PinName d5, PinName d6, PinName d7);
-#else
-    MultiAddrLCD(I2C *i2c);
-#endif
 
 
     /*Only supporting 16x2 LCDs, so string will be truncated at 32
@@ -36,12 +32,7 @@ public:
     void putc(int c);
 
 private:
-#if TARGET_UBLOX_EVK_ODIN_W2
     TextLCD _lcd1;
-#else
-    TextLCD_I2C _lcd1;
-    TextLCD_I2C _lcd2;
-#endif
 };
 
 #endif

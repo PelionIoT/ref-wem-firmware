@@ -348,11 +348,7 @@ private:
     }
 };
 
-#if TARGET_UBLOX_EVK_ODIN_W2
 LEDController<TARGET_BOARD_ODIN_DEMO> ledctrl;
-#else
-LEDController<TARGET_BOARD_K64F> ledctrl;
-#endif
 
 // ****************************************************************************
 // Functions
