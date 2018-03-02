@@ -20,17 +20,9 @@
             "help": "Run a self-test upon boot",
             "value": "false"
         },
-        "use-spi-flash": {
-            "help": "Set to true to use SPI Flash or false to use SD card.",
-            "value": "true"
-        },
         "version": {
             "help": "Display this version string on the device",
             "value": "\"1.0\""
-        },
-        "wifi": {
-            "help": "Use the ESP8266 WiFi interface",
-            "value": "true"
         },
         "wifi-debug": {
             "help": "Enable debug output for WiFi drivers",

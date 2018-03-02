@@ -9,7 +9,7 @@ To build the Workplace Environmental Monitor software, you need the following:
       - Windows 7 or 10 (x86 or x86-64).
       - Linux (x86-64).
       - Mac OS X (x86-64).
-    - A USB port and a type B micro-USB cable to flash the binary onto th board.
+    - A USB port and a type B micro-USB cable to flash the binary onto the board.
 1. An internet connection to download the necessary software to build the firmware.
 1. An Arm Mbed Cloud 1.2 Account (does not work with previous versions of Mbed Cloud).
 1. Basic knowledge of executing commands from a shell or command prompt.

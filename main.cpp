@@ -30,14 +30,7 @@
 #include <mbed-trace-helper.h>
 #include <mbed-trace/mbed_trace.h>
 
-#if MBED_CONF_APP_WIFI
 #include <OdinWiFiInterface.h>
-#else
-#if DEVICE_EMAC
-#error "to use Ethernet on ODIN, remove target.device_has EMAC in mbed_app.json"
-#endif
-#include <EthernetInterface.h>
-#endif
 
 #include "TSL2591.h"
 #include "Sht31/Sht31.h"
@@ -326,7 +319,6 @@ static char *network_get_macaddr(NetworkInterface *net, char *macstr)
     return macstr;
 }
 
-#if MBED_CONF_APP_WIFI
 static nsapi_security_t wifi_security_str2sec(const char *security)
 {
     if (0 == strcmp("WPA/WPA2", security)) {
@@ -538,55 +530,6 @@ static int network_connect(NetworkInterface *net)
 
     return 0;
 }
-#else
-/**
- * brings up Ethernet
- * */
-static EthInterface *network_create(void)
-{
-    display.init_network("Eth");
-    return new EthernetInterface();
-}
-
-/** Scans the current network for other devices.
- *
- * @note This is not implemented for Ethernet based devices.
- * @param net The network interface to scan on.
- * @param mbed_client The mBed Client cloud interface for uploading data.
- * @return Returns -1 for failure or no devices found.
- */
-static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
-{
-    (void) net;
-    (void) mbed_client;
-
-    return -1;
-}
-
-static int network_connect(NetworkInterface *net)
-{
-    int ret;
-    char macaddr[MACADDR_STRLEN];
-
-    /* note: Ethernet MAC isn't available until *after* a call to
-     * EthernetInterface::connect(), so the first time we attempt to
-     * connect this will print a NULL mac, but will work after a retry */
-    display.set_network_status("connecting");
-    cmd.printf("[ETH] obtaining IP address: mac=%s\n",
-               network_get_macaddr(net, macaddr));
-    ret = net->connect();
-    if (0 != ret) {
-        cmd.printf("ERROR: [ETH] Failed to connect! %d\n", ret);
-        return ret;
-    }
-    display.set_network_status("connected");
-    cmd.printf("[ETH] connected: mac%s, ip=%s, netmask=%s, gateway=%s\n",
-               network_get_macaddr(net, macaddr), net->get_ip_address(),
-               net->get_netmask(), net->get_gateway());
-
-    return ret;
-}
-#endif
 
 /**
  * Continually attempt network connection until successful

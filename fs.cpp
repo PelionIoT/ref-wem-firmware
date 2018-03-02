@@ -1,26 +1,15 @@
 #include "fs.h"
 #include "compat.h"
 
-#if MBED_CONF_APP_USE_SPI_FLASH
 #include <SPIFBlockDevice.h>
-#else
-#include <SDBlockDevice.h>
-#endif
 
 #include <errno.h>
 #include <stdio.h>
 
-#if MBED_CONF_APP_USE_SPI_FLASH
 SPIFBlockDevice bd(MBED_CONF_SD_SPI_MOSI,
                    MBED_CONF_SD_SPI_MISO,
                    MBED_CONF_SD_SPI_CLK,
                    SPIF_SPI_CS);
-#else
-SDBlockDevice bd(MBED_CONF_SD_SPI_MOSI,
-                 MBED_CONF_SD_SPI_MISO,
-                 MBED_CONF_SD_SPI_CLK,
-                 MBED_CONF_SD_SPI_CS);
-#endif
 FATFileSystem fs(FS_NAME);
 
 int fs_init()
