@@ -64,7 +64,7 @@ ifeq (${MBED_TARGET},)
 endif
 
 # Make sure the board type is supported
-ifneq (${MBED_TARGET},$(filter ${MBED_TARGET},K64F UBLOX_EVK_ODIN_W2))
+ifneq (${MBED_TARGET},$(filter ${MBED_TARGET}, UBLOX_EVK_ODIN_W2))
   $(error Unsupported board type: ${MBED_TARGET})
 endif
 
@@ -89,11 +89,7 @@ MBED_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}
 # Determine the correct patches to use
 #
 
-ifeq (${MBED_TARGET},K64F)
-  BOOTLOADER_SIZE:=0x24000
-else ifeq (${MBED_TARGET},UBLOX_EVK_ODIN_W2)
-  BOOTLOADER_SIZE:=0x40000
-endif
+BOOTLOADER_SIZE:=0x40000
 APP_HEADER_OFFSET:=${BOOTLOADER_SIZE}
 APP_HEADER_SIZE:=0x400
 APP_OFFSET:=$(shell printf 0x%x $$((${BOOTLOADER_SIZE} + ${APP_HEADER_SIZE})))

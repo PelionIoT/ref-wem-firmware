@@ -9,7 +9,7 @@ To build the Workplace Environmental Monitor software, you need the following:
       - Windows 7 or 10 (x86 or x86-64).
       - Linux (x86-64).
       - Mac OS X (x86-64).
-    - A USB port and a type B micro-USB cable to flash the K64F.
+    - A USB port and a type B micro-USB cable to flash the binary onto the board.
 1. An internet connection to download the necessary software to build the firmware.
 1. An Arm Mbed Cloud 1.2 Account (does not work with previous versions of Mbed Cloud).
 1. Basic knowledge of executing commands from a shell or command prompt.
@@ -86,13 +86,13 @@ sudo apt-get install coreutils python python-pip gawk git grep make sed
    make
    ```
 
-1. <a id="ins-fw-loc"/>The resulting firmware image is in `BUILD/K64F/GCC_ARM/combined.bin`.
+1. <a id="ins-fw-loc"/>The resulting firmware image is in `BUILD/UBLOX_EVK_ODIN_W2/GCC_ARM/combined.bin`.
     - NOTE: The build directory may vary if building for a different target. The syntax for output directory is `BUILD/\<target>/\<toolchain>`.
 
 ### Testing
 
 1. Follow the Arm Mbed OS instructions for setting up the [PC Configuration](https://os.mbed.com/docs/v5.6/tutorials/windows-serial-driver.html).
-1. Next, follow the instructions for [flashing a project binary](https://os.mbed.com/platforms/FRDM-K64F/#flash-a-project-binary).
+1. Next, flash the binary image by simply copying it to the mounted USB drive,
     - NOTE: Make sure the binary you copy to the board is the ***combined.bin*** image created in the [instructions](#ins-fw-loc) to the mounted drive.
 1. Once you have copied the image, power-cycle the device.
 1. When the device is on, the power LED turns GREEN.

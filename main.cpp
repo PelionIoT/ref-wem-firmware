@@ -9,7 +9,6 @@
 #include "compat.h"
 
 #include "commander.h"
-#include "DHT.h"
 #include "displayman.h"
 #include "fs.h"
 #include "GL5528.h"
@@ -31,21 +30,10 @@
 #include <mbed-trace-helper.h>
 #include <mbed-trace/mbed_trace.h>
 
-#if MBED_CONF_APP_WIFI && TARGET_UBLOX_EVK_ODIN_W2
 #include <OdinWiFiInterface.h>
-#elif MBED_CONF_APP_WIFI
-#include <ESP8266Interface.h>
-#else
-#if TARGET_UBLOX_EVK_ODIN_W2 && DEVICE_EMAC
-#error "to use Ethernet on ODIN, remove target.device_has EMAC in mbed_app.json"
-#endif
-#include <EthernetInterface.h>
-#endif
 
-#if TARGET_UBLOX_EVK_ODIN_W2
 #include "TSL2591.h"
 #include "Sht31/Sht31.h"
-#endif
 
 #define TRACE_GROUP "main"
 
@@ -103,12 +91,7 @@ enum WEM_THREADS {
 struct dht_sensor {
     uint8_t h_id;
     uint8_t t_id;
-
-#if TARGET_UBLOX_EVK_ODIN_W2
     Sht31 *sensor;
-#else
-    DHT *dev;
-#endif
 
     M2MResource *h_res;
     M2MResource *t_res;
@@ -116,13 +99,7 @@ struct dht_sensor {
 
 struct light_sensor {
     uint8_t id;
-
-#if TARGET_UBLOX_EVK_ODIN_W2
     TSL2591 *sensor;
-#else
-    AnalogIn *dev;
-#endif
-
     M2MResource *res;
 };
 
@@ -144,11 +121,9 @@ static struct sensors sensors;
 static int display_evq_id;
 static bool wem_sensors_verbose_enabled = false;
 
-#if TARGET_UBLOX_EVK_ODIN_W2
 static I2C i2c(I2C_SDA, I2C_SCL);
 static TSL2591 tsl2591(i2c, TSL2591_ADDR);
 static Sht31 sht31(I2C_SDA, I2C_SCL);
-#endif
 
 //our serial interface cli class
 Commander cmd;
@@ -185,13 +160,9 @@ static void light_init(struct light_sensor *s, M2MClient *mbed_client)
     s->id = display.register_sensor("Light", IND_LIGHT);
 
     /* init the driver */
-#if TARGET_UBLOX_EVK_ODIN_W2
     s->sensor = &tsl2591;
     s->sensor->init();
     s->sensor->enable();
-#else
-    s->dev = new AnalogIn(A0);
-#endif
 
     s->res = m2mclient->get_resource(M2MClient::M2MClientResourceLightValue);
     m2mclient->set_resource_value(s->res, "0", 1);
@@ -240,23 +211,12 @@ static void light_read(struct light_sensor *s)
     char res_buffer[33] = {0};
     unsigned int lux;
 
-#if TARGET_UBLOX_EVK_ODIN_W2
     s->sensor->getALS();
     s->sensor->calcLux();
     //light sensor uses a multiplier to adjust for the lightpipe
     lux = s->sensor->lux*3.7;
     WEM_VERBOSE_PRINTF(sensors, "light: %u\n", lux);
     size = snprintf(res_buffer, sizeof(res_buffer), "%u lux", lux);
-#else
-    float reading = s->dev->read();
-    lux = light_sensor_to_lux(reading);
-    tr_debug("light: %5.4f --> %u\n",  reading, lux);
-
-    WEM_VERBOSE_PRINTF(sensors, "light: %5.4f --> %u\n",  reading, lux);
-
-    size = snprintf(res_buffer, sizeof(res_buffer), "%s%u lux",
-                    ((reading >= 1.0)?">":""), lux);
-#endif
 
     display.set_sensor_status(s->id, res_buffer);
     m2mclient->set_resource_value(s->res, res_buffer, size);
@@ -272,11 +232,7 @@ static void dht_init(struct dht_sensor *s, M2MClient *mbed_client)
     s->h_id = display.register_sensor("Humidity", IND_HUMIDITY);
 
     /* init the driver */
-#if TARGET_UBLOX_EVK_ODIN_W2
     s->sensor = &sht31;
-#else
-    s->dev = new DHT(D4, AM2302);
-#endif
 
     s->t_res = mbed_client->get_resource(
                     M2MClient::M2MClientResourceTempValue);
@@ -297,39 +253,24 @@ static void dht_init(struct dht_sensor *s, M2MClient *mbed_client)
 static void dht_read(struct dht_sensor *dht)
 {
     int size = 0;
-    eError readError = ERROR_NONE;
     float temperature, humidity;
     char res_buffer[33] = {0};
 
-#if !TARGET_UBLOX_EVK_ODIN_W2
-    readError = dht->dev->readData();
-#endif
+    //temp and humidity have multiplier to adjust for the case
+    temperature = dht->sensor->readTemperature() * .68;
+    humidity = dht->sensor->readHumidity() * 1.9;
+    tr_debug("DHT: temp = %fC, humi = %f%%\n", temperature, humidity);
 
-    if (readError == ERROR_NONE) {
-#if TARGET_UBLOX_EVK_ODIN_W2
-        //temp and humidity have multiplier to adjust for the case
-        temperature = dht->sensor->readTemperature() * .68;
-        humidity = dht->sensor->readHumidity() * 1.9;
-#else
-        temperature = dht->dev->ReadTemperature(CELCIUS);
-        humidity = dht->dev->ReadHumidity();
-#endif
-        tr_debug("DHT: temp = %fC, humi = %f%%\n", temperature, humidity);
+    /* verbose printing to screen of sensor values */
+    WEM_VERBOSE_PRINTF(sensors, "DHT: temp = %.2fC, humidity = %.2f%%\n", temperature, humidity);
 
-        /* verbose printing to screen of sensor values */
-        WEM_VERBOSE_PRINTF(sensors, "DHT: temp = %.2fC, humidity = %.2f%%\n", temperature, humidity);
+    size = snprintf(res_buffer, sizeof(res_buffer), "%.1f C", temperature);
+    m2mclient->set_resource_value(dht->t_res, res_buffer, size);
+    display.set_sensor_status(dht->t_id, (char *)res_buffer);
 
-        size = snprintf(res_buffer, sizeof(res_buffer), "%.1f C", temperature);
-        m2mclient->set_resource_value(dht->t_res, res_buffer, size);
-        display.set_sensor_status(dht->t_id, (char *)res_buffer);
-
-        size = snprintf(res_buffer, sizeof(res_buffer), "%.0f%%", humidity);
-        m2mclient->set_resource_value(dht->h_res, res_buffer, size);
-        display.set_sensor_status(dht->h_id, (char *)res_buffer);
-    } else {
-        tr_error("DHT: readData() failed with %d\n", readError);
-        WEM_VERBOSE_PRINTF(sensors, "DHT: readData() failed with %d\n", readError);
-    }
+    size = snprintf(res_buffer, sizeof(res_buffer), "%.0f%%", humidity);
+    m2mclient->set_resource_value(dht->h_res, res_buffer, size);
+    display.set_sensor_status(dht->h_id, (char *)res_buffer);
 }
 
 /**
@@ -378,7 +319,6 @@ static char *network_get_macaddr(NetworkInterface *net, char *macstr)
     return macstr;
 }
 
-#if MBED_CONF_APP_WIFI
 static nsapi_security_t wifi_security_str2sec(const char *security)
 {
     if (0 == strcmp("WPA/WPA2", security)) {
@@ -408,19 +348,10 @@ static nsapi_security_t wifi_security_str2sec(const char *security)
 /**
  * brings up wifi
  * */
-#if TARGET_UBLOX_EVK_ODIN_W2
 static WiFiInterface *new_wifi_interface()
 {
     return new OdinWiFiInterface();
 }
-#else
-static WiFiInterface *new_wifi_interface()
-{
-    return new ESP8266Interface(MBED_CONF_APP_WIFI_TX,
-                                MBED_CONF_APP_WIFI_RX,
-                                MBED_CONF_APP_WIFI_DEBUG);
-}
-#endif
 
 static WiFiInterface *network_create(void)
 {
@@ -599,55 +530,6 @@ static int network_connect(NetworkInterface *net)
 
     return 0;
 }
-#else
-/**
- * brings up Ethernet
- * */
-static EthInterface *network_create(void)
-{
-    display.init_network("Eth");
-    return new EthernetInterface();
-}
-
-/** Scans the current network for other devices.
- *
- * @note This is not implemented for Ethernet based devices.
- * @param net The network interface to scan on.
- * @param mbed_client The mBed Client cloud interface for uploading data.
- * @return Returns -1 for failure or no devices found.
- */
-static int network_scan(NetworkInterface *net, M2MClient *mbed_client)
-{
-    (void) net;
-    (void) mbed_client;
-
-    return -1;
-}
-
-static int network_connect(NetworkInterface *net)
-{
-    int ret;
-    char macaddr[MACADDR_STRLEN];
-
-    /* note: Ethernet MAC isn't available until *after* a call to
-     * EthernetInterface::connect(), so the first time we attempt to
-     * connect this will print a NULL mac, but will work after a retry */
-    display.set_network_status("connecting");
-    cmd.printf("[ETH] obtaining IP address: mac=%s\n",
-               network_get_macaddr(net, macaddr));
-    ret = net->connect();
-    if (0 != ret) {
-        cmd.printf("ERROR: [ETH] Failed to connect! %d\n", ret);
-        return ret;
-    }
-    display.set_network_status("connected");
-    cmd.printf("[ETH] connected: mac%s, ip=%s, netmask=%s, gateway=%s\n",
-               network_get_macaddr(net, macaddr), net->get_ip_address(),
-               net->get_netmask(), net->get_gateway());
-
-    return ret;
-}
-#endif
 
 /**
  * Continually attempt network connection until successful
