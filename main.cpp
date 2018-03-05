@@ -11,7 +11,6 @@
 #include "commander.h"
 #include "displayman.h"
 #include "fs.h"
-#include "GL5528.h"
 #include "keystore.h"
 #include "lcdprogress.h"
 #include "m2mclient.h"
