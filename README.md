@@ -161,6 +161,8 @@ Be sure to substitute for the correct mount point of your device.
 
 ### Update over the air
 
+First, you must login to the mbed cloud web portal with your account. There you will find a link to download your developer credentials file called `mbed_cloud_dev_credentials.c`. Follow the instructions under the section [Generate a developer device certificate](https://cloud.mbed.com/docs/v1.2/quick-start/connecting-your-device-to-mbed-cloud.html#generate-a-developer-device-certificate).
+
 NOTE: If you are updating a device that was previously provisioned to a different Mbed cloud account, you must `reset certs` on the local device before initiating a campaign, otherwise the FOTA operation will encounter authorization failures.  See the section "Serial command help" for details on how to run commands on the device.
 
 Before starting the FOTA campaign, you should increment the version of your application.
