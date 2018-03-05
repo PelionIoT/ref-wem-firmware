@@ -26,7 +26,7 @@
         },
         "spi-cs": {
             "help": "CS pin for spi interface",
-            "value": "D9"
+            "value": "D10"
         },
         "spi-miso": {
             "help": "MISO pin for spi interface",
