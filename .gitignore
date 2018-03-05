@@ -3,15 +3,11 @@
 *.swp
 
 # dependencies
-esp8266-driver/
-ws2801/
-sd-driver/
 TextLCD/
 manifest-tool-restricted/
 mbed-cloud-client-restricted/
 mbed-cloud-update-cli/
 mbed-os/
-DHT/
 
 # generated files
 .targetpath
