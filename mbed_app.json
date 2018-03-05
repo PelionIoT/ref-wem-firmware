@@ -20,6 +20,22 @@
             "help": "Run a self-test upon boot",
             "value": "false"
         },
+        "spi-clk": {
+            "help": "CLK pin for spi interface",
+            "value": "D13"
+        },
+        "spi-cs": {
+            "help": "CS pin for spi interface",
+            "value": "D9"
+        },
+        "spi-miso": {
+            "help": "MISO pin for spi interface",
+            "value": "D12"
+        },
+        "spi-mosi": {
+            "help": "MOSI pin for spi interface",
+            "value": "D11"
+        },
         "version": {
             "help": "Display this version string on the device",
             "value": "\"1.0\""
