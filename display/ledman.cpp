@@ -11,7 +11,6 @@
 #include "PCA9956A.h"
 #include "PinNames.h"
 #include <vector>
-#include <ws2801.h>
 
 /* LEDController template logic.
  */

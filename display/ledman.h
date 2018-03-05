@@ -5,7 +5,6 @@
 //
 //  By the ARM Reference Design Team
 // ****************************************************************************
-#include "HTML_color.h"
 
 // ****************************************************************************
 // DEFINEs and type definitions
@@ -23,9 +22,10 @@ enum INDICATOR_TYPES {
 };
 
 // LEDs are BGR instead of RGB
+#define BLACK 0x000000
 #define COMMI_RED 0x0000FF
 #define CANADIAN_BLUE 0xFF0000
-#define SLIMER_GREEN DARKGREEN
+#define SLIMER_GREEN 0x006400
 #define SNOW_YELLOW 0x00FFFF
 #define MIDNIGHT_GREEN 0x003200
 #define MIDNIGHT_BLUE 0x0F0000
