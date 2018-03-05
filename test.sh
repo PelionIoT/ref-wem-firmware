@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TARGET="K64F"
+TARGET="UBLOX_EVK_ODIN_W2"
 BAUD_RATE="115200"
 OUTPUT_LOG="my_boot.log"
 STANDARD_LOG="standard_boot.log"
