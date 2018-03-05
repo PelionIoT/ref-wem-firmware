@@ -308,7 +308,7 @@ update_default_resources.c: .deps
 
 .mbed-cloud-key:
 	@echo "Error: You need to save an mbed cloud API key in .mbed-cloud-key"
-	@echo "Please go to https://cloud.mbed.com/docs/v1.2/mbed-cloud-web-apps/access-mbed-cloud-with-api-keys.html"
+	@echo "Please go to https://cloud.mbed.com/docs/v1.2/connecting/api-keys.html"
 	@exit 1
 
 .PHONY: campaign
