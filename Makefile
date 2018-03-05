@@ -141,7 +141,6 @@ define Build/Bootloader/Compile
 	opts="$${opts} -DDEVTAG=$${BOOTLDR_DEVTAG}"; \
 	ln -fs ../display ; \
 	ln -fs ../TextLCD ; \
-	ln -fs ../ws2801  ; \
 	ln -fs ../.mbed ; \
 	cmd="mbed compile $${opts}"; \
 	echo "$${cmd}"; \
