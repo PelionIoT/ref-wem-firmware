@@ -30,7 +30,7 @@ To build this project, you need to install the following:
 
 3. Copy your SSH public key to github
 
-    The build preparation step involves cloning libraries from github using ssh so you need to add an ssh key from your development system to your github account.
+    The build preparation step involves cloning libraries from github using ssh, so you need to add an ssh key from your development system to your github account. Please see instructions [here](https://help.github.com/articles/connecting-to-github-with-ssh/).
 
 ### Importing `ref-wem-firmware`
 
