@@ -19,7 +19,7 @@ To build this project, you need to install the following:
     brew install arm-none-eabi-gcc
     ```
 
-2. Python virtualenv
+2. [Python virtualenv](https://virtualenv.pypa.io/en/stable/userguide/)
 
     It is *strongly* recommended to use a Python virtualenv to isolate your build environment from the underlying system.  If you do this step before you clone the ref-wem-firmware repo, then the venv folder will be placed outside of the ref-wem-firmware folder which is recommended.  If instead you place venv in the root of the ref-wem-firmware project, you will need to add venv to .mbedignore to prevent mbed-cli from attempting to build the files inside it.
 
