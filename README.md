@@ -10,7 +10,7 @@ This is an Arm Mbed reference deployment application of a workplace environmenta
 
 To build this project, you need to install the following:
 
-1. arm-none-eabi-gcc version 6.3.1.20170215 or greater
+1. [GNU Arm Compiler](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads) version 6.3.1.20170215 or greater
 
     Here is an example showing how to install on a Mac:
 
