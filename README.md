@@ -163,7 +163,7 @@ Be sure to substitute for the correct mount point of your device.
 
 Login to the mbed cloud portal and copy your mbed cloud API key, which is a one-line string, into a new file called `.mbed-cloud-key`. Store this file in the root directory of this project. For more information, see [Access Mbed Cloud with API Keys](https://cloud.mbed.com/docs/v1.2/connecting/api-keys.html).
 
-NOTE: If you are updating a device that was previously provisioned to a different Mbed cloud account, you must `reset certs` on the local device before initiating a campaign, otherwise the FOTA operation will encounter authorization failures.  See the section "Serial command help" for details on how to run commands on the device.
+NOTE: If you are updating a device that was previously provisioned to a different Mbed cloud account, you must `reset certs` on the local device before initiating a campaign, otherwise the FOTA operation will encounter authorization failures.  See the section ["Serial command help"](#serial-command-help) for details on how to run commands on the device.
 
 Before starting the FOTA campaign, you should increment the version of your application.
 
