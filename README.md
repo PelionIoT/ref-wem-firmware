@@ -78,7 +78,7 @@ The project configuration file `mbed_app.json` specifies the network configurati
     ...
 ```
 
-You can also change the configuration at runtime by using a serial console. See the section on serial commands for help with connecting to and using the console. See the section on Wi-Fi commissioning for the relevant keystore options.
+You can also change the configuration at runtime by using a serial console. See the section ["Serial command help"](#serial-command-help)  for help with connecting to and using the console. See the section on ["Wi-Fi commissioning"](#wi-fi-commissioning) for the relevant keystore options.
 
 ### <a name="GetDevCert"></a>Downloading a developer certificate
 
