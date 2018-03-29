@@ -193,7 +193,8 @@ Next, open your shell to your project folder.
 make campaign
 ```
 
-This launches the FOTA campaign and begins updating your devices.
+This launches the FOTA campaign and begins updating all the devices in your
+account.
 
 ### Serial command help
 
