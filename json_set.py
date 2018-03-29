@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 mbed tools
 Copyright (c) 2018 ARM Limited
@@ -12,8 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
-#!/usr/bin/env python
 #
 # You can use command-line tools like 'jq' but they may not
 # be common or available for your system. Python is common
@@ -57,7 +56,7 @@ if __name__ == '__main__':
 
     with open(args.filename, 'r') as f:
         data = json.load(f)
-    
+
     # Set the value
     result = set(data, args.key, args.value)
 

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 mbed tools
 Copyright (c) 2018 ARM Limited
@@ -11,10 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-
-#!/usr/bin/env python
-
 from os import path
 import hashlib, zlib, struct
 import time
