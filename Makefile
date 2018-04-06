@@ -198,8 +198,8 @@ clean:
 .PHONY: patchclean
 patchclean:
 	@for target in ${PATCHDIR}/{${MBED_TARGET},COMMON}; do \
-		for patchdir in $$(find $${target} -type d -print | sort -r); do \
-			for patch in $$(find ${CURDIR}/$${patchdir} -maxdepth 1 -type f -print | sort -r); do \
+		for patchdir in $$(find $${target} -type d -print 2>/dev/null | sort -r); do \
+			for patch in $$(find ${CURDIR}/$${patchdir} -maxdepth 1 -type f -print 2>/dev/null | sort -r); do \
 				pushd $${patchdir##*/} && { \
 					echo "reversing $${patch}"; \
 					git apply -R $${patch} && { \
@@ -269,8 +269,8 @@ prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 .patches: .deps
 	@if [ ! -f .patches ]; then \
 		for target in ${PATCHDIR}/{COMMON,${MBED_TARGET}}; do \
-			for patchdir in $$(find $${target} -type d -print | sort); do \
-				for patch in $$(find ${CURDIR}/$${patchdir} -maxdepth 1 -type f -print | sort); do \
+			for patchdir in $$(find $${target} -type d -print 2>/dev/null | sort); do \
+				for patch in $$(find ${CURDIR}/$${patchdir} -maxdepth 1 -type f -print 2>/dev/null | sort); do \
 					pushd .$${patchdir#$${target}} && { \
 						echo "applying $${patch}"; \
 						git am $${patch} || { \
