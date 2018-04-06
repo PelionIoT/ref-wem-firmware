@@ -28,12 +28,13 @@ PROG_BIN:=${BINDIR}/${PROG}.bin
 # This file is the combination of the bootloader and the app.
 # Flash this file via the USB interface, then perform FOTA with
 # the app (PROG) binary.
-COMBINED_BIN:=${BINDIR}/combined.bin
+COMBINED_BIN:=${BINDIR}/combined.hex
 
 # Specify the path to the build profile.  If empty, the --profile option will
 # not be provided to 'mbed compile' which causes it to use the builtin default.
 ifeq (${DEBUG}, )
 	BUILD_PROFILE:=mbed-os/tools/profiles/release.json
+	BOOTLOADER_BUILD_PROFILE:=tiny.json
 else
 	BUILD_PROFILE:=mbed-os/tools/profiles/debug.json
 endif
@@ -85,14 +86,10 @@ endif
 # Specifies the path to the directory containing build output files
 MBED_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}
 
-#
-# Determine the correct patches to use
-#
-
-BOOTLOADER_SIZE:=0x40000
-APP_HEADER_OFFSET:=${BOOTLOADER_SIZE}
-APP_HEADER_SIZE:=0x400
-APP_OFFSET:=$(shell printf 0x%x $$((${BOOTLOADER_SIZE} + ${APP_HEADER_SIZE})))
+# Maximum size for the bootloader.  Any larger than this and it will
+# overflow into the next partition and potentially overwrite other
+# components like the SOTP section.
+BOOTLOADER_SIZE:=0x10000
 
 # Builds the command to call 'mbed compile'.
 # $1: add extra options to the final command line
@@ -124,8 +121,8 @@ define Build/Bootloader/Compile
 	force_opts=${2}; \
 	opts="$${opts} -t ${MBED_TOOLCHAIN}"; \
 	opts="$${opts} -m ${MBED_TARGET}"; \
-	[ -n "${BUILD_PROFILE}" ] && { \
-		opts="$${opts} --profile ${BUILD_PROFILE}"; \
+	[ -n "${BOOTLOADER_BUILD_PROFILE}" ] && { \
+		opts="$${opts} --profile ${BOOTLOADER_BUILD_PROFILE}"; \
 	}; \
 	[ -n "$${extra_opts}" ] && { \
 		opts="$${opts} $${extra_opts}"; \
@@ -161,7 +158,7 @@ all: ${COMBINED_BIN}
 
 ${COMBINED_BIN}: ${BOOTLDR_BIN} ${PROG_BIN}
 	$(call Build/Bootloader/CheckSize,${BOOTLOADER_SIZE})
-	tools/combine_bootloader_with_app.py -b ${BOOTLDR_BIN} -a ${PROG_BIN} --app-offset ${APP_OFFSET} --header-offset ${APP_HEADER_OFFSET} -o ${COMBINED_BIN}
+	tools/combine_bootloader_with_app.py -b ${BOOTLDR_BIN} -a ${PROG_BIN} -m ${MBED_TARGET} -o ${COMBINED_BIN}
 
 ${PROG_BIN}: prepare ${SRCS} ${HDRS}
 	@$(call Build/Compile,"-DDEVTAG=${DEVTAG}")

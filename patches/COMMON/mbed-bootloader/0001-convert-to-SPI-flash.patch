@@ -1,0 +1,79 @@
+From 4664a461be5217421a3b9f740e9cb24bb4d24173 Mon Sep 17 00:00:00 2001
+From: Nic Costa <nic.costa@arm.com>
+Date: Fri, 6 Apr 2018 09:47:31 -0500
+Subject: [PATCH 1/4] convert to SPI flash
+
+remove SD Card driver and replace with SPI Flash
+
+Signed-off-by: Nic Costa <nic.costa@arm.com>
+---
+ mbed_app.json   |  6 +++++-
+ sd-driver.lib   |  1 -
+ source/main.cpp | 16 ++++++----------
+ spif-driver.lib |  1 +
+ 4 files changed, 12 insertions(+), 12 deletions(-)
+ delete mode 100644 sd-driver.lib
+ create mode 100644 spif-driver.lib
+
+diff --git a/mbed_app.json b/mbed_app.json
+index 455bf6c..b9d4153 100755
+--- a/mbed_app.json
++++ b/mbed_app.json
+@@ -50,7 +50,11 @@
+         "flash-size": {
+             "help": "Total size of internal flash. Only used in this config to help the definition of other macros.",
+             "value": null
+-        }
++        },
++        "spi-cs": "D10",
++        "spi-mosi": "D11",
++        "spi-miso": "D12",
++        "spi-clk": "D13"
+     },
+     "target_overrides": {
+         "*": {
+diff --git a/sd-driver.lib b/sd-driver.lib
+deleted file mode 100644
+index 702879f..0000000
+--- a/sd-driver.lib
++++ /dev/null
+@@ -1 +0,0 @@
+-https://github.com/ARMmbed/sd-driver/#51dc1d2b2c073deee6146c83de42bb904c738d8d
+diff --git a/source/main.cpp b/source/main.cpp
+index 336273e..27cfdf9 100755
+--- a/source/main.cpp
++++ b/source/main.cpp
+@@ -56,17 +56,13 @@ extern ARM_UC_PAAL_UPDATE MBED_CLOUD_CLIENT_UPDATE_STORAGE;
+ #endif
+ 
+ #if MBED_CLOUD_CLIENT_UPDATE_STORAGE == ARM_UCP_FLASHIAP_BLOCKDEVICE
+-#include "SDBlockDevice.h"
++#include <SPIFBlockDevice.h>
+ 
+-/* initialise sd card blockdevice */
+-#if defined(MBED_CONF_APP_SPI_MOSI) && defined(MBED_CONF_APP_SPI_MISO) && \
+-    defined(MBED_CONF_APP_SPI_CLK)  && defined(MBED_CONF_APP_SPI_CS)
+-SDBlockDevice sd(MBED_CONF_APP_SPI_MOSI, MBED_CONF_APP_SPI_MISO,
+-                 MBED_CONF_APP_SPI_CLK,  MBED_CONF_APP_SPI_CS);
+-#else
+-SDBlockDevice sd(MBED_CONF_SD_SPI_MOSI, MBED_CONF_SD_SPI_MISO,
+-                 MBED_CONF_SD_SPI_CLK,  MBED_CONF_SD_SPI_CS);
+-#endif
++/* initialise blockdevice */
++SPIFBlockDevice sd(MBED_CONF_APP_SPI_MOSI,
++                   MBED_CONF_APP_SPI_MISO,
++                   MBED_CONF_APP_SPI_CLK,
++                   MBED_CONF_APP_SPI_CS);
+ 
+ BlockDevice* arm_uc_blockdevice = &sd;
+ #endif
+diff --git a/spif-driver.lib b/spif-driver.lib
+new file mode 100644
+index 0000000..e0507cc
+--- /dev/null
++++ b/spif-driver.lib
+@@ -0,0 +1 @@
++https://github.com/ARMmbed/spif-driver/#e5e6616914a23fb11a5ae8b5c9cbfb8a600c64b2
+-- 
+2.16.1
+

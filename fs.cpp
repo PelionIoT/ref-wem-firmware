@@ -26,6 +26,7 @@ SPIFBlockDevice bd(MBED_CONF_APP_SPI_MOSI,
                    MBED_CONF_APP_SPI_MISO,
                    MBED_CONF_APP_SPI_CLK,
                    MBED_CONF_APP_SPI_CS);
+BlockDevice *arm_uc_blockdevice = &bd;
 FATFileSystem fs(FS_NAME);
 
 int fs_init()
