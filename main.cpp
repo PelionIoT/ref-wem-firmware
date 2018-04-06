@@ -1387,9 +1387,12 @@ static void cmd_cb_reset(vector<string>& params)
     //delete fcc certifications?
     if (bcerts) {
         int ret = fcc_storage_delete();
-
         if (ret != FCC_STATUS_SUCCESS) {
-            cmd.printf("ERROR: fcc delete failed: %d\n", ret);
+            if (ret == FCC_STATUS_NOT_INITIALIZED) {
+                cmd.printf("ERROR: fcc delete failed: FCC not yet initialized\n");
+            } else {
+                cmd.printf("ERROR: fcc delete failed: %d\n", ret);
+            }
         }
     }
 

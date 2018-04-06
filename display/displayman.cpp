@@ -252,6 +252,7 @@ void DisplayMan::refresh()
     _cycle_count++;
 }
 
+#if MBED_CONF_APP_SELF_TEST
 void DisplayMan::self_test()
 {
     uint32_t i;
@@ -268,3 +269,4 @@ void DisplayMan::self_test()
         Thread::wait(10);
     }
 }
+#endif
