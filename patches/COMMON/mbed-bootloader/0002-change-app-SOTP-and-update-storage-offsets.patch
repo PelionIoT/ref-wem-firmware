@@ -1,0 +1,48 @@
+From 333f37546d4fd1b3eb50f26eb725c16f4384da34 Mon Sep 17 00:00:00 2001
+From: Nic Costa <nic.costa@arm.com>
+Date: Wed, 11 Apr 2018 11:38:41 -0500
+Subject: [PATCH 2/4] change app, SOTP, and update storage offsets
+
+modified offsets as appropriate to suit our custom bootloader
+modifications and flash layout.
+
+Signed-off-by: Nic Costa <nic.costa@arm.com>
+---
+ mbed_app.json | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/mbed_app.json b/mbed_app.json
+index b9d4153..9066691 100755
+--- a/mbed_app.json
++++ b/mbed_app.json
+@@ -62,7 +62,7 @@
+             "target.features_add"   : ["COMMON_PAL"],
+             "platform.stdio-baud-rate"    : 115200,
+             "platform.stdio-flush-at-exit": false,
+-            "update-client.storage-address"  : "(1024*1024*64)",
++            "update-client.storage-address"  : "(1024*1024*2)",
+             "update-client.storage-size"     : "(1024*1024*2)",
+             "update-client.storage-locations": 1,
+             "update-client.firmware-header-version": "2"
+@@ -137,12 +137,12 @@
+             "target.device_has_remove": ["EMAC"],
+             "flash-start-address"              : "0x08000000",
+             "flash-size"                       : "(2048*1024)",
+-            "sotp-section-1-address"           : "(MBED_CONF_APP_FLASH_START_ADDRESS+32*1024)",
+-            "sotp-section-1-size"              : "(16*1024)",
+-            "sotp-section-2-address"           : "(MBED_CONF_APP_FLASH_START_ADDRESS+48*1024)",
+-            "sotp-section-2-size"              : "(16*1024)",
+-            "update-client.application-details": "(MBED_CONF_APP_FLASH_START_ADDRESS+64*1024)",
+-            "application-start-address"        : "(MBED_CONF_APP_FLASH_START_ADDRESS+65*1024)",
++            "sotp-section-1-address"           : "(MBED_CONF_APP_FLASH_START_ADDRESS+64*1024)",
++            "sotp-section-1-size"              : "(64*1024)",
++            "sotp-section-2-address"           : "(MBED_CONF_APP_FLASH_START_ADDRESS+128*1024)",
++            "sotp-section-2-size"              : "(128*1024)",
++            "update-client.application-details": "(MBED_CONF_APP_FLASH_START_ADDRESS+256*1024)",
++            "application-start-address"        : "(MBED_CONF_APP_FLASH_START_ADDRESS+257*1024)",
+             "max-application-size"             : "DEFAULT_MAX_APPLICATION_SIZE"
+         },
+         "UBLOX_C030_U201": {
+-- 
+2.16.1
+

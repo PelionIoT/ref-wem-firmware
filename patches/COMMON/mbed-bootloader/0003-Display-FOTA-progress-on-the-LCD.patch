@@ -1,17 +1,15 @@
-From 55c1cdc490dd2fbc6d664deb2a9b27f0e7af3ec4 Mon Sep 17 00:00:00 2001
+From 00bd118534b0d66775c1a166e1d3c1971cf2aea7 Mon Sep 17 00:00:00 2001
 From: Nic Costa <nic.costa@arm.com>
-Date: Tue, 24 Oct 2017 14:46:04 -0500
-Subject: [PATCH 1/3] Adding FOTA progress
+Date: Fri, 6 Apr 2018 10:07:51 -0500
+Subject: [PATCH 3/4] Display FOTA progress on the LCD
 
-This patch adds support for re-using the display manager interface
-with the workplace environmental monitor. This allows us to see
-progress for checking the installation of the new firmware when
-upgrading during boot.
+Show progress of the firmware update process on the LCD during boot.
 
 This patch adds support for including the number of steps in the
 printProgress message. The printProgress will prefix the message
 with '[x/y] ', where 'x' is the current step number and 'y' is the
 total number of steps.
+
 The setStep function takes two arguments; the first is the current
 step number and the second is the total number of steps.
 If the total number of steps is 0 or the current step number is
@@ -19,16 +17,16 @@ greater than the total the prefixed message will not be printed.
 
 Signed-off-by: Nic Costa <nic.costa@arm.com>
 ---
- source/active_application.cpp | 31 ++++++++++++++++++++++
+ source/active_application.cpp | 58 +++++++++++++++++++++++++++++++++++------
  source/fota.cpp               | 60 +++++++++++++++++++++++++++++++++++++++++++
  source/fota.h                 | 34 ++++++++++++++++++++++++
  source/upgrade.cpp            |  3 +++
- 4 files changed, 128 insertions(+)
+ 4 files changed, 147 insertions(+), 8 deletions(-)
  create mode 100644 source/fota.cpp
  create mode 100644 source/fota.h
 
 diff --git a/source/active_application.cpp b/source/active_application.cpp
-index 2f3be57..8b5c97f 100755
+index 53bd9c0..d7de3ea 100755
 --- a/source/active_application.cpp
 +++ b/source/active_application.cpp
 @@ -20,6 +20,7 @@
@@ -39,7 +37,7 @@ index 2f3be57..8b5c97f 100755
  #include "active_application.h"
  #include "bootloader_common.h"
  
-@@ -79,6 +80,11 @@ bool readActiveFirmwareHeader(arm_uc_firmware_details_t* details)
+@@ -80,6 +81,11 @@ bool readActiveFirmwareHeader(arm_uc_firmware_details_t* details)
              if (event_callback == ARM_UC_PAAL_EVENT_GET_ACTIVE_FIRMWARE_DETAILS_DONE)
              {
                  result = true;
@@ -51,7 +49,35 @@ index 2f3be57..8b5c97f 100755
              }
          }
      }
-@@ -151,6 +157,9 @@ int checkActiveApplication(arm_uc_firmware_details_t* details)
+@@ -115,10 +121,12 @@ int checkActiveApplication(arm_uc_firmware_details_t* details)
+         {
+             uint32_t appStart = MBED_CONF_APP_APPLICATION_START_ADDRESS;
+ 
+-            tr_debug("header start: 0x%08" PRIX32,
+-                     (uint32_t) FIRMWARE_METADATA_HEADER_ADDRESS);
+-            tr_debug("app start: 0x%08" PRIX32, appStart);
+-            tr_debug("app size: %" PRIu64, details->size);
++            tr_info("header start: 0x%08" PRIX32,
++                    (uint32_t) FIRMWARE_METADATA_HEADER_ADDRESS);
++            tr_info("header size: %" PRIu32,
++                      (uint32_t) FIRMWARE_METADATA_HEADER_SIZE);
++            tr_info("app start: 0x%08" PRIX32, appStart);
++            tr_info("app size: %" PRIu64, details->size);
+ 
+             /* initialize hashing facility */
+             mbedtls_sha256_context mbedtls_ctx;
+@@ -140,6 +148,10 @@ int checkActiveApplication(arm_uc_firmware_details_t* details)
+                 status = flash.read(buffer_array,
+                                     appStart + (details->size - remaining),
+                                     readSize);
++                if (0 != status) {
++                    tr_error("failed to read %u bytes from offset 0x%08" PRIX32,
++                             readSize, appStart + (details->size - remaining));
++                }
+ 
+                 /* update hash */
+                 mbedtls_sha256_update(&mbedtls_ctx, buffer_array, readSize);
+@@ -150,6 +162,9 @@ int checkActiveApplication(arm_uc_firmware_details_t* details)
  #if defined(SHOW_PROGRESS_BAR) && SHOW_PROGRESS_BAR == 1
                  printProgress(details->size - remaining,
                                details->size);
@@ -61,56 +87,77 @@ index 2f3be57..8b5c97f 100755
  #endif
              }
  
-@@ -189,6 +198,7 @@ bool eraseActiveFirmware(uint32_t firmwareSize)
-     tr_debug("eraseActiveFirmware");
+@@ -201,9 +216,10 @@ bool eraseActiveFirmware(uint32_t firmwareSize)
+     if (erase_address < (MBED_CONF_APP_MAX_APPLICATION_SIZE + \
+                          MBED_CONF_APP_APPLICATION_START_ADDRESS))
+     {
+-        tr_debug("Erasing from 0x%08" PRIX32 " to 0x%08" PRIX32,
+-                 (uint32_t) FIRMWARE_METADATA_HEADER_ADDRESS,
+-                 (uint32_t) erase_address);
++        tr_info("start flash erase");
++        tr_info("Erasing from 0x%08" PRIX32 " to 0x%08" PRIX32,
++                (uint32_t) FIRMWARE_METADATA_HEADER_ADDRESS,
++                (uint32_t) erase_address);
  
-     /* get sector size of where the new firmware would end */
-+    fota::printProgress(0, 100, "Erasing");
-     uint32_t lastSectorSize =
-         flash.get_sector_size(MBED_CONF_APP_FIRMWARE_METADATA_HEADER_ADDRESS +
-                               MBED_CONF_APP_FIRMWARE_METADATA_HEADER_SIZE +
-@@ -207,9 +217,12 @@ bool eraseActiveFirmware(uint32_t firmwareSize)
-              (uint32_t) MBED_CONF_APP_FIRMWARE_METADATA_HEADER_ADDRESS + sizeRoundedUp);
- 
-     /* erase flash to make place for new application */
-+    fota::printProgress(33, 100, "Erasing");
-     int result = flash.erase(MBED_CONF_APP_FIRMWARE_METADATA_HEADER_ADDRESS,
-                              sizeRoundedUp);
- 
-+    fota::printProgress(100, 100, "Erasing");
-+
-     return (result == 0);
- }
- 
-@@ -219,6 +232,7 @@ bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
+         /* Erase flash to make place for new application. Erasing sector by sector as some
+            platforms have varible sector sizes and mbed-os cannot deal with erasing multiple
+@@ -216,7 +232,7 @@ bool eraseActiveFirmware(uint32_t firmwareSize)
+                                  sector_size);
+             if (result != 0)
+             {
+-                tr_debug("Erasing from 0x%08" PRIX32 " to 0x%08" PRIX32 " failed with retval %i",
++                tr_error("Erasing from 0x%08" PRIX32 " to 0x%08" PRIX32 " failed with retval %i",
+                          erase_address, erase_address + sector_size, result);
+                 break;
+             }
+@@ -224,7 +240,11 @@ bool eraseActiveFirmware(uint32_t firmwareSize)
+             {
+                 erase_address += sector_size;
+             }
++            fota::printProgress(erase_address - FIRMWARE_METADATA_HEADER_ADDRESS,
++                                size_needed,
++                                "Erasing");
+         }
++        tr_info("end flash erase");
+     }
+     else
+     {
+@@ -243,6 +263,8 @@ bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
  
      bool result = false;
  
 +    fota::printProgress(0, 100, "Write HDR");
++    tr_info("start flash HDR write");
      if (details)
      {
          /* round up program size to nearest page size */
-@@ -251,9 +265,11 @@ bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
+@@ -277,6 +299,7 @@ bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
              (output_buffer.size == ARM_UC_INTERNAL_HEADER_SIZE_V2))
          {
              /* write header using FlashIAP API */
 +            fota::printProgress(33, 100, "Write HDR");
              int ret = flash.program(buffer_array,
-                                     MBED_CONF_APP_FIRMWARE_METADATA_HEADER_ADDRESS,
+                                     FIRMWARE_METADATA_HEADER_ADDRESS,
                                      programSize);
-+            fota::printProgress(100, 100, "Write HDR");
- 
-             result = (ret == 0);
+@@ -285,6 +308,8 @@ bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
          }
-@@ -268,6 +284,7 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
+     }
+ 
++    fota::printProgress(100, 100, "Write HDR");
++    tr_info("end flash HDR write");
+     return result;
+ }
+ 
+@@ -294,6 +319,8 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
  
      bool result = false;
  
 +    fota::printProgress(0, 100, "Write FW");
++    tr_info("start flash write");
      if (details)
      {
          const uint32_t pageSize = flash.get_page_size();
-@@ -338,6 +355,9 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
+@@ -368,6 +395,9 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
  
  #if defined(SHOW_PROGRESS_BAR) && SHOW_PROGRESS_BAR == 1
                      printProgress(offset + programOffset, details->size);
@@ -120,7 +167,7 @@ index 2f3be57..8b5c97f 100755
  #endif
                  }
  
-@@ -356,6 +376,8 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
+@@ -386,9 +416,12 @@ bool writeActiveFirmware(uint32_t index, arm_uc_firmware_details_t* details)
              }
          }
  
@@ -129,7 +176,11 @@ index 2f3be57..8b5c97f 100755
          result = (retval == 0);
      }
  
-@@ -376,6 +398,7 @@ bool copyStoredApplication(uint32_t index,
++    tr_info("end flash write");
+     return result;
+ }
+ 
+@@ -406,6 +439,7 @@ bool copyStoredApplication(uint32_t index,
      /* Step 1. Erase active application                                      */
      /*************************************************************************/
  
@@ -137,7 +188,7 @@ index 2f3be57..8b5c97f 100755
      result = eraseActiveFirmware(details->size);
  
      /*************************************************************************/
-@@ -384,6 +407,7 @@ bool copyStoredApplication(uint32_t index,
+@@ -414,6 +448,7 @@ bool copyStoredApplication(uint32_t index,
  
      if (result)
      {
@@ -145,7 +196,7 @@ index 2f3be57..8b5c97f 100755
          result = writeActiveFirmwareHeader(details);
      }
  
-@@ -393,6 +417,7 @@ bool copyStoredApplication(uint32_t index,
+@@ -423,6 +458,7 @@ bool copyStoredApplication(uint32_t index,
  
      if (result)
      {
@@ -153,7 +204,7 @@ index 2f3be57..8b5c97f 100755
          result = writeActiveFirmware(index, details);
      }
  
-@@ -404,10 +429,16 @@ bool copyStoredApplication(uint32_t index,
+@@ -434,10 +470,16 @@ bool copyStoredApplication(uint32_t index,
      {
          tr_info("Verify new active firmware:");
  
@@ -277,7 +328,7 @@ index 0000000..5ad60b3
 +
 +#endif
 diff --git a/source/upgrade.cpp b/source/upgrade.cpp
-index bef539a..abf742f 100755
+index ae970a6..0a16f7f 100755
 --- a/source/upgrade.cpp
 +++ b/source/upgrade.cpp
 @@ -20,6 +20,7 @@
@@ -288,7 +339,7 @@ index bef539a..abf742f 100755
  #include "upgrade.h"
  
  #include "update-client-paal/arm_uc_paal_update.h"
-@@ -126,6 +127,7 @@ bool checkStoredApplication(uint32_t source,
+@@ -131,6 +132,7 @@ bool checkStoredApplication(uint32_t source,
  
  #if defined(SHOW_PROGRESS_BAR) && SHOW_PROGRESS_BAR == 1
              printProgress(offset, details->size);
@@ -296,7 +347,7 @@ index bef539a..abf742f 100755
  #endif
          }
  
-@@ -328,6 +330,7 @@ bool upgradeApplicationFromStorage(void)
+@@ -333,6 +335,7 @@ bool upgradeApplicationFromStorage(void)
                          index);
  
                  /* Validate candidate firmware body. */
@@ -305,5 +356,5 @@ index bef539a..abf742f 100755
                                                              &imageDetails);
  
 -- 
-2.14.2
+2.16.1
 
