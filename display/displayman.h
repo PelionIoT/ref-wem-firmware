@@ -53,6 +53,8 @@ public:
     void set_downloading();
     void set_download_complete();
     void set_installing();
+    void set_erasing();
+    void set_default_view();
     void set_progress(const std::string &message, uint32_t progress,
                       uint32_t total);
     void set_network_status(const std::string status);
