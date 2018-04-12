@@ -139,6 +139,7 @@ static bool wem_sensors_verbose_enabled = false;
 static I2C i2c(I2C_SDA, I2C_SCL);
 static TSL2591 tsl2591(i2c, TSL2591_ADDR);
 static Sht31 sht31(I2C_SDA, I2C_SCL);
+static InterruptIn button(PF_6);
 
 //our serial interface cli class
 Commander cmd;
@@ -928,7 +929,7 @@ static int init_fcc(void)
 // ****************************************************************************
 // Generic Helpers
 // ****************************************************************************
-static int platform_init(void)
+static int platform_init(bool format)
 {
     int ret;
 
@@ -948,6 +949,18 @@ static int platform_init(void)
     mbed_trace_mutex_wait_function_set(mbed_trace_helper_mutex_wait);
     mbed_trace_mutex_release_function_set(mbed_trace_helper_mutex_release);
 #endif
+    
+    if (format) {
+        ret = fs_format();
+        if (0 != ret) {
+            printf("ERROR: fs format failed: %d\n", ret);
+        } else {
+            display_evq_id = 0;
+            // Display "Factory Reset" message
+            display.set_erasing();
+            display.set_default_view();
+        }
+    }
 
     /* init the keystore */
     ret = Keystore::init();
@@ -1649,10 +1662,11 @@ static void init_app(EventQueue *queue)
 int main()
 {
     int ret;
+    // Check if the button is held down
+    bool erase_ks = button == 0;
 
     /* stack size 2048 is too small for fcc_developer_flow() */
     Thread thread(osPriorityNormal, 4224);
-
     /* init the console manager so we can printf */
     init_commander();
 
@@ -1667,7 +1681,7 @@ int main()
 
     /* minimal init sequence */
     cmd.printf("init platform\n");
-    ret = platform_init();
+    ret = platform_init(erase_ks);
     if (0 != ret) {
         cmd.printf("init platform: FAIL\n");
     } else {

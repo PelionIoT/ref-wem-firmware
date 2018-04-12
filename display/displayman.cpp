@@ -39,7 +39,7 @@ int DisplayMan::init(const std::string &version)
     self_test();
     led_setup();
 #endif
-    _view_mode = DISPLAY_VIEW_SENSOR;
+    set_default_view();
     return 0;
 }
 
@@ -78,6 +78,19 @@ void DisplayMan::set_installing()
     _lcd.printline(0, "Installing...    ");
     _lcd.printline(1, "");
     led_set_color(IND_FWUP, IND_COLOR_SUCCESS);
+}
+
+void DisplayMan::set_erasing()
+{
+    _view_mode = DISPLAY_VIEW_DOWNLOAD;
+    _lcd.printline(0, "Factory Reset...    ");
+    _lcd.printline(1, "");
+    led_set_color(IND_FWUP, IND_COLOR_SUCCESS);
+}
+
+void DisplayMan::set_default_view()
+{
+    _view_mode = DISPLAY_VIEW_SENSOR;
 }
 
 void DisplayMan::set_cloud_error()
