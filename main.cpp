@@ -954,7 +954,6 @@ static int platform_init(bool format)
         ret = fs_format();
         if (0 != ret) {
             printf("ERROR: fs format failed: %d\n", ret);
-            return ret;
         } else {
             display_evq_id = 0;
             // Display "Factory Reset" message
