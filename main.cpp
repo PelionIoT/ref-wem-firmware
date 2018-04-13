@@ -936,8 +936,6 @@ static int platform_init(bool format)
     /* setup the display */
     display.init(MBED_CONF_APP_VERSION);
     display.refresh();
-    /* set the refresh rate of the display. */
-    display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);
 
 #if MBED_CONF_MBED_TRACE_ENABLE
     /* Create mutex for tracing to avoid broken lines in logs */
@@ -958,14 +956,10 @@ static int platform_init(bool format)
             printf("ERROR: fs format failed: %d\n", ret);
             return ret;
         } else {
-            // Cancel display_refresh event 
-            evq.cancel(display_evq_id);
             display_evq_id = 0;
             // Display "Factory Reset" message
             display.set_erasing();
             display.set_default_view();
-            // Restart display_refresh
-            display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);
         }
     }
 
@@ -1695,6 +1689,8 @@ int main()
         cmd.printf("init platform: OK\n");
     }
 
+    /* set the refresh rate of the display. */
+    display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);
 
     /* use a separate thread to init the remaining components so that we
      * can continue to refresh the display */
