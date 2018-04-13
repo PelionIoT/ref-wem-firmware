@@ -83,7 +83,7 @@ void DisplayMan::set_installing()
 void DisplayMan::set_erasing()
 {
     _view_mode = DISPLAY_VIEW_DOWNLOAD;
-    _lcd.printline(0, "Erasing Keystore...    ");
+    _lcd.printline(0, "Factory Reset...    ");
     _lcd.printline(1, "");
     led_set_color(IND_FWUP, IND_COLOR_SUCCESS);
 }

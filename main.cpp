@@ -929,13 +929,15 @@ static int init_fcc(void)
 // ****************************************************************************
 // Generic Helpers
 // ****************************************************************************
-static int platform_init(void)
+static int platform_init(bool format)
 {
     int ret;
 
     /* setup the display */
     display.init(MBED_CONF_APP_VERSION);
     display.refresh();
+    /* set the refresh rate of the display. */
+    display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);
 
 #if MBED_CONF_MBED_TRACE_ENABLE
     /* Create mutex for tracing to avoid broken lines in logs */
@@ -949,7 +951,31 @@ static int platform_init(void)
     mbed_trace_mutex_wait_function_set(mbed_trace_helper_mutex_wait);
     mbed_trace_mutex_release_function_set(mbed_trace_helper_mutex_release);
 #endif
+    
+    if (format) {
+        ret = fs_format();
+        if (0 != ret) {
+            printf("ERROR: fs format failed: %d\n", ret);
+            return ret;
+        } else {
+            // Cancel display_refresh event 
+            evq.cancel(display_evq_id);
+            display_evq_id = 0;
+            // Display "Factory Reset" message
+            display.set_erasing();
+            display.set_default_view();
+            // Restart display_refresh
+            display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);
+        }
+    }
 
+    /* init the keystore */
+    ret = Keystore::init();
+    if (0 != ret) {
+        printf("ERROR: keystore init failed: %d\n", ret);
+        return ret;
+    }
+    printf("keystore init OK\n");
 
     return 0;
 }
@@ -1662,41 +1688,13 @@ int main()
 
     /* minimal init sequence */
     cmd.printf("init platform\n");
-    ret = platform_init();
+    ret = platform_init(erase_ks);
     if (0 != ret) {
         cmd.printf("init platform: FAIL\n");
     } else {
         cmd.printf("init platform: OK\n");
     }
-    display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);
-    
-    if(erase_ks){
-        fs_unmount();
-        ret = fs_format();
-        ret = Keystore::init();
 
-        if (0 != ret) {
-            cmd.printf("ERROR: keystore format failed: %d\n", ret);
-        }
-        else {
-            evq.cancel(display_evq_id);
-            display_evq_id = 0;
-            display.set_erasing();
-            display.set_default_view();
-        }
-    }
-    else {
-        /* init the keystore */
-        ret = Keystore::init();
-        if (0 != ret) {
-            printf("ERROR: keystore init failed: %d\n", ret);
-            return ret;
-        }
-        printf("keystore init OK\n");
-    }
-
-    /* set the refresh rate of the display. */
-    display_evq_id = evq.call_every(DISPLAY_UPDATE_PERIOD_MS, display_refresh, &display);
 
     /* use a separate thread to init the remaining components so that we
      * can continue to refresh the display */
