@@ -220,7 +220,7 @@ patchclean:
 .PHONY: distclean
 distclean: clean certclean
 	for lib in ${LIBS}; do rm -rf $${lib%.lib}; done
-	rm -rf manifest-tool-restricted
+	rm -rf manifest-tool
 	rm -rf mbed-cloud-client-restricted
 	rm -rf mbed-bootloader-restricted
 	rm -f .deps
