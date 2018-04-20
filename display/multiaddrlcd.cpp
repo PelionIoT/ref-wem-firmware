@@ -48,20 +48,6 @@ int MultiAddrLCD::printline(int line, const char *msg)
     return rc;
 }
 
-int MultiAddrLCD::printlinef(int line, const char *format, ...)
-{
-    int rc;
-    char buf[17];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buf, sizeof(buf), format, args);
-    va_end(args);
-    _lcd1.locate(0, line);
-    rc = _lcd1.printf("%-16s", buf);
-
-    return rc;
-}
-
 void MultiAddrLCD::setBacklight(TextLCD_Base::LCDBacklight mode)
 {
     _lcd1.setBacklight(mode);
