@@ -909,6 +909,13 @@ static int init_fcc(void)
         return ret;
     }
 
+    return 0;
+}
+
+static int do_fcc(void)
+{
+    fcc_status_e ret;
+
     ret = fcc_developer_flow();
     if (ret == FCC_STATUS_KCM_FILE_EXIST_ERROR) {
         cmd.printf("fcc: developer credentials already exists\n");
@@ -949,7 +956,7 @@ static int platform_init(bool format)
     mbed_trace_mutex_wait_function_set(mbed_trace_helper_mutex_wait);
     mbed_trace_mutex_release_function_set(mbed_trace_helper_mutex_release);
 #endif
-    
+
     if (format) {
         ret = fs_format();
         if (0 != ret) {
@@ -1582,6 +1589,11 @@ static void init_app(EventQueue *queue)
 {
     int ret;
 
+    /* init the fcc as early as possible to allow the user
+     * to call "reset certs" without having to wait for the
+     * network to connect */
+    init_fcc();
+
     /* create the network */
     cmd.printf("init network\n");
     net = network_create();
@@ -1623,14 +1635,14 @@ static void init_app(EventQueue *queue)
      * WARNING: the network must be connected first, otherwise this
      * will not return if creds haven't been provisioned for the first time.
      * */
-    cmd.printf("init factory configuration client\n");
-    ret = init_fcc();
+    cmd.printf("run factory configuration client\n");
+    ret = do_fcc();
     if (0 != ret) {
-        cmd.printf("ERROR: failed to init factory configuration client: %d\n",
+        cmd.printf("ERROR: failed to run factory configuration client: %d\n",
                    ret);
         return;
     }
-    cmd.printf("init factory configuration client: OK\n");
+    cmd.printf("run factory configuration client: OK\n");
 
     cmd.printf("init sensors\n");
     sensors_init(&sensors, m2mclient);
