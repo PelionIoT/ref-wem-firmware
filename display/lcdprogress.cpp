@@ -73,8 +73,8 @@ void LCDProgress::set_progress(const std::string &message, uint32_t progress,
     }
 
     char buffer[33];
-    snprintf(buffer, 33, "%-15s%c%s", message.c_str(), spinner,
-             progressbar.c_str());
+    copy_string_to_fixed_width(buffer, 15, message.c_str(), true);
+    snprintf(buffer + 15, 18, "%c%s", spinner, progressbar.c_str());
     _buffer = buffer;
 
     spinner_counter = (spinner_counter + 1) % 4;

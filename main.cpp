@@ -909,6 +909,13 @@ static int init_fcc(void)
         return ret;
     }
 
+    return 0;
+}
+
+static int do_fcc(void)
+{
+    fcc_status_e ret;
+
     ret = fcc_developer_flow();
     if (ret == FCC_STATUS_KCM_FILE_EXIST_ERROR) {
         cmd.printf("fcc: developer credentials already exists\n");
@@ -932,10 +939,7 @@ static int init_fcc(void)
 static int platform_init(bool format)
 {
     int ret;
-
-    /* setup the display */
-    display.init(MBED_CONF_APP_VERSION);
-    display.refresh();
+    Keystore k;
 
 #if MBED_CONF_MBED_TRACE_ENABLE
     /* Create mutex for tracing to avoid broken lines in logs */
@@ -949,26 +953,35 @@ static int platform_init(bool format)
     mbed_trace_mutex_wait_function_set(mbed_trace_helper_mutex_wait);
     mbed_trace_mutex_release_function_set(mbed_trace_helper_mutex_release);
 #endif
-    
+
+    ret = fs_init();
+    if (0 != ret) {
+        cmd.printf("fs_init failed: %d\n", ret);
+        return ret;
+    }
+
+    /* setup the display */
+    display.init(MBED_CONF_APP_VERSION);
+    display.refresh();
+
     if (format) {
+#if FACTORY_RESET_BUTTON_IS_WORKING
+        cmd.printf("FACTORY RESET\n");
         ret = fs_format();
         if (0 != ret) {
-            printf("ERROR: fs format failed: %d\n", ret);
+            cmd.printf("ERROR: fs format failed: %d\n", ret);
         } else {
             display_evq_id = 0;
             // Display "Factory Reset" message
             display.set_erasing();
             display.set_default_view();
         }
+#else
+        cmd.printf("FACTORY RESET SUPPRESSED\n");
+#endif
     }
 
-    /* init the keystore */
-    ret = Keystore::init();
-    if (0 != ret) {
-        printf("ERROR: keystore init failed: %d\n", ret);
-        return ret;
-    }
-    printf("keystore init OK\n");
+    cmd.printf("keystore path: %s\n", k.path().c_str());
 
     return 0;
 }
@@ -977,7 +990,6 @@ static void platform_shutdown()
 {
     /* stop the EventQueue */
     evq.break_dispatch();
-    Keystore::shutdown();
 }
 
 // ****************************************************************************
@@ -1289,10 +1301,7 @@ static void cmd_cb_format(vector<string>& params)
 
     type = params[1];
     if (type == "fat") {
-        fs_unmount();
         ret = fs_format();
-        fs_mount();
-
         if (0 != ret) {
             cmd.printf("ERROR: keystore format failed: %d\n", ret);
             return;
@@ -1387,9 +1396,12 @@ static void cmd_cb_reset(vector<string>& params)
     //delete fcc certifications?
     if (bcerts) {
         int ret = fcc_storage_delete();
-
         if (ret != FCC_STATUS_SUCCESS) {
-            cmd.printf("ERROR: fcc delete failed: %d\n", ret);
+            if (ret == FCC_STATUS_NOT_INITIALIZED) {
+                cmd.printf("ERROR: fcc delete failed: FCC not yet initialized\n");
+            } else {
+                cmd.printf("ERROR: fcc delete failed: %d\n", ret);
+            }
         }
     }
 
@@ -1579,6 +1591,11 @@ static void init_app(EventQueue *queue)
 {
     int ret;
 
+    /* init the fcc as early as possible to allow the user
+     * to call "reset certs" without having to wait for the
+     * network to connect */
+    init_fcc();
+
     /* create the network */
     cmd.printf("init network\n");
     net = network_create();
@@ -1620,14 +1637,14 @@ static void init_app(EventQueue *queue)
      * WARNING: the network must be connected first, otherwise this
      * will not return if creds haven't been provisioned for the first time.
      * */
-    cmd.printf("init factory configuration client\n");
-    ret = init_fcc();
+    cmd.printf("run factory configuration client\n");
+    ret = do_fcc();
     if (0 != ret) {
-        cmd.printf("ERROR: failed to init factory configuration client: %d\n",
+        cmd.printf("ERROR: failed to run factory configuration client: %d\n",
                    ret);
         return;
     }
-    cmd.printf("init factory configuration client: OK\n");
+    cmd.printf("run factory configuration client: OK\n");
 
     cmd.printf("init sensors\n");
     sensors_init(&sensors, m2mclient);

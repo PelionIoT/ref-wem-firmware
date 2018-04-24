@@ -27,6 +27,19 @@
 
 #include <TextLCD.h>
 
+/**
+ * Utilty to copy src string to dst where resulting string has a fixed width.
+ *
+ * Rough equivalent of:
+ *     sprintf(dst, "%<width>s", src);
+ * to be used where this printf implementation is unavailable
+ **/
+void copy_string_to_fixed_width(char *dst,
+                                int width,
+                                const char *src,
+                                bool left_justify = false,
+                                const char fillchar = ' ');
+
 // LCD which can have I2C slave address of eith 0x4e or 0x7e
 class MultiAddrLCD {
 public:
@@ -39,7 +52,6 @@ public:
     int printf(const char *format, ...);
     /*Print on the given line (0 or 1)*/
     int printline(int line, const char *msg);
-    int printlinef(int line, const char *format, ...);
     void setBacklight(TextLCD_Base::LCDBacklight mode);
     void setCursor(TextLCD_Base::LCDCursor mode);
     void setUDC(unsigned char c, char *udc_data);

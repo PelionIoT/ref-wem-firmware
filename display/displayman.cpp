@@ -220,7 +220,8 @@ void DisplayMan::cycle_status()
     char line[17];
 
     /* top line */
-    _lcd.printlinef(0, "Version: %s", _version_string.c_str());
+    snprintf(line, sizeof(line), "Version: %s", _version_string.c_str());
+    _lcd.printline(0, line);
 
     /* bottom line */
     if (_sensors.size() > 0) {
@@ -252,6 +253,7 @@ void DisplayMan::refresh()
     _cycle_count++;
 }
 
+#if MBED_CONF_APP_SELF_TEST
 void DisplayMan::self_test()
 {
     uint32_t i;
@@ -268,3 +270,4 @@ void DisplayMan::self_test()
         Thread::wait(10);
     }
 }
+#endif

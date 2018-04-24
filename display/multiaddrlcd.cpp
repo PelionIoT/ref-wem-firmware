@@ -16,6 +16,39 @@
 
 #include "multiaddrlcd.h"
 
+void copy_string_to_fixed_width(char *dst,
+                                int width,
+                                const char *src,
+                                bool left_justify,
+                                const char fillchar)
+{
+    int srclen = strlen(src);
+    int src_bytes_to_copy = (srclen < width) ? srclen : width;
+    int dir;
+    const char *srcp;
+    char *dstp;
+
+    if (left_justify) {
+        srcp = src;
+        dstp = dst;
+        dir = 1;
+    } else {
+        srcp = src + src_bytes_to_copy - 1;
+        dstp = dst + width - 1;
+        dir = -1;
+    }
+
+    for (int i = 0; i < src_bytes_to_copy; i++) {
+        *dstp = *srcp;
+        dstp += dir;
+        srcp += dir;
+    }
+    for (int i = 0; i < (width - src_bytes_to_copy); i++) {
+        *dstp = fillchar;
+        dstp += dir;
+    }
+}
+
 MultiAddrLCD::MultiAddrLCD(PinName rs, PinName e, PinName d4, PinName d5, PinName d6, PinName d7)
     : _lcd1(rs, e, d4, d5, d6, d7)
 {
@@ -40,24 +73,10 @@ int MultiAddrLCD::printf(const char *format, ...)
 int MultiAddrLCD::printline(int line, const char *msg)
 {
     int rc;
-    char buf[17];
-    snprintf(buf, sizeof(buf), "%s", msg);
+    char buf[17] = {0};
+    copy_string_to_fixed_width(buf, 16, msg, true);
     _lcd1.locate(0, line);
-    rc = _lcd1.printf("%-16s", buf);
-
-    return rc;
-}
-
-int MultiAddrLCD::printlinef(int line, const char *format, ...)
-{
-    int rc;
-    char buf[17];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buf, sizeof(buf), format, args);
-    va_end(args);
-    _lcd1.locate(0, line);
-    rc = _lcd1.printf("%-16s", buf);
+    rc = _lcd1.printf("%s", buf);
 
     return rc;
 }
