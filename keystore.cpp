@@ -13,22 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "keystore.h"
-#include "compat.h"
+#include "fs.h"
 
 #include <errno.h>
 #include <stdio.h>
 
 using namespace std;
 
-#define KEYSTORE_SUBDIR "keystore"
-#define KEYSTORE_FILENAME "keystore.data"
+Keystore::Keystore() : _strfilepath(KEYSTORE_DEFAULT_PATH)
+{
+}
 
-string Keystore::_strdir;
-string Keystore::_strfilepath;
-
-Keystore::Keystore()
+Keystore::Keystore(std::string path) : _strfilepath(path)
 {
 }
 
@@ -37,28 +34,39 @@ Keystore::~Keystore()
     //do cleanup
 }
 
-void Keystore::shutdown()
+std::string Keystore::realpath()
 {
-    fs_shutdown();
+    string path;
+
+    path = FS_MOUNT_POINT;
+    if (_strfilepath[0] != '/') {
+        path += "/";
+    }
+    path += _strfilepath;
+
+    return path;
 }
 
-int Keystore::init()
+std::string Keystore::path()
+{
+    return _strfilepath;
+}
+
+int Keystore::check_path()
 {
     int ret;
+    string dir;
+    size_t slash;
+    string path;
 
-    /* init our internal file name variables */
-    Keystore::_strdir = FS_MOUNT_POINT;
-    Keystore::_strdir += "/";
-    Keystore::_strdir += KEYSTORE_SUBDIR;
-    Keystore::_strfilepath = Keystore::_strdir + "/" + KEYSTORE_FILENAME;
-
-    printf("keystore path: %s\n", Keystore::_strfilepath.c_str());
-
-    /* make our keystore directory */
-    ret = ::mkdir(Keystore::_strdir.c_str(), 0777);
-    if (0 != ret && EEXIST != errno) {
-        printf("failed mkdir %s: %d\n", Keystore::_strdir.c_str(), errno);
-        return ret;
+    path = realpath();
+    slash = path.find_last_of("/");
+    if (string::npos != slash) {
+        dir = path.substr(0, slash);
+        ret = ::mkdir(dir.c_str(), 0777);
+        if (0 != ret && EEXIST != errno) {
+            return ret;
+        }
     }
 
     return 0;
@@ -66,11 +74,12 @@ int Keystore::init()
 
 void Keystore::kill_all()
 {
-    remove(Keystore::_strfilepath.c_str());
+    remove(realpath().c_str());
 }
 
-void Keystore::open()
+int Keystore::open()
 {
+    int ret;
     FILE *fp;
     char buffer[64];
     size_t bytes_read = 0;
@@ -78,9 +87,14 @@ void Keystore::open()
     //read the file into this
     std::string strfile;
 
-    fp = fopen(Keystore::_strfilepath.c_str(), "r");
+    ret = check_path();
+    if (0 != ret) {
+        return ret;
+    }
+
+    fp = fopen(realpath().c_str(), "r");
     if (NULL == fp) {
-        return;
+        return errno;
     }
 
     //start reading
@@ -107,6 +121,8 @@ void Keystore::open()
 
     //close the file
     fclose(fp);
+
+    return 0;
 };
 
 /* mbed-os does not implement tmpnam or tmpfile */
@@ -121,6 +137,7 @@ void Keystore::write()
     int ret;
     FILE *fp;
     size_t bytes;
+    string real;
     char fname[L_tmpnam] = {0};
 
     //convert the database to file writable string
@@ -143,11 +160,12 @@ void Keystore::write()
     bytes = fwrite(strfile.c_str(), 1, strfile.length(), fp);
     fclose(fp);
     if (bytes == strfile.length()) {
-        remove(Keystore::_strfilepath.c_str());
-        ret = rename(fname, Keystore::_strfilepath.c_str());
+        real = realpath();
+        remove(real.c_str());
+        ret = rename(fname, real.c_str());
         if (0 != ret) {
             printf("ERROR: failed to rename tmp file %s to real file %s\n",
-                   fname, Keystore::_strfilepath.c_str());
+                   fname, real.c_str());
         }
     } else {
         printf("ERROR: failed to write contents. length=%d, written=%u\n",
@@ -314,4 +332,3 @@ void Keystore::tokenize(string& strin, vector<string>& lsresult, char token)
     //add our last string
     lsresult.push_back(strtemp);
 }
-
