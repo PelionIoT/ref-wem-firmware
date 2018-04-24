@@ -939,6 +939,7 @@ static int do_fcc(void)
 static int platform_init(bool format)
 {
     int ret;
+    Keystore k;
 
 #if MBED_CONF_MBED_TRACE_ENABLE
     /* Create mutex for tracing to avoid broken lines in logs */
@@ -975,13 +976,7 @@ static int platform_init(bool format)
         }
     }
 
-    /* init the keystore */
-    ret = Keystore::init();
-    if (0 != ret) {
-        printf("ERROR: keystore init failed: %d\n", ret);
-        return ret;
-    }
-    printf("keystore init OK\n");
+    cmd.printf("keystore path: %s\n", k.path().c_str());
 
     return 0;
 }
@@ -990,7 +985,6 @@ static void platform_shutdown()
 {
     /* stop the EventQueue */
     evq.break_dispatch();
-    Keystore::shutdown();
 }
 
 // ****************************************************************************
