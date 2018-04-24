@@ -965,15 +965,20 @@ static int platform_init(bool format)
     display.refresh();
 
     if (format) {
+#if FACTORY_RESET_BUTTON_IS_WORKING
+        cmd.printf("FACTORY RESET\n");
         ret = fs_format();
         if (0 != ret) {
-            printf("ERROR: fs format failed: %d\n", ret);
+            cmd.printf("ERROR: fs format failed: %d\n", ret);
         } else {
             display_evq_id = 0;
             // Display "Factory Reset" message
             display.set_erasing();
             display.set_default_view();
         }
+#else
+        cmd.printf("FACTORY RESET SUPPRESSED\n");
+#endif
     }
 
     cmd.printf("keystore path: %s\n", k.path().c_str());
