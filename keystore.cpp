@@ -54,12 +54,6 @@ int Keystore::init()
 
     printf("keystore path: %s\n", Keystore::_strfilepath.c_str());
 
-    ret = fs_init();
-    if (0 != ret) {
-        printf("fs_init failed: %d\n", ret);
-        return ret;
-    }
-
     /* make our keystore directory */
     ret = ::mkdir(Keystore::_strdir.c_str(), 0777);
     if (0 != ret && EEXIST != errno) {

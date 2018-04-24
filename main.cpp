@@ -940,10 +940,6 @@ static int platform_init(bool format)
 {
     int ret;
 
-    /* setup the display */
-    display.init(MBED_CONF_APP_VERSION);
-    display.refresh();
-
 #if MBED_CONF_MBED_TRACE_ENABLE
     /* Create mutex for tracing to avoid broken lines in logs */
     if (!mbed_trace_helper_create_mutex()) {
@@ -956,6 +952,16 @@ static int platform_init(bool format)
     mbed_trace_mutex_wait_function_set(mbed_trace_helper_mutex_wait);
     mbed_trace_mutex_release_function_set(mbed_trace_helper_mutex_release);
 #endif
+
+    ret = fs_init();
+    if (0 != ret) {
+        cmd.printf("fs_init failed: %d\n", ret);
+        return ret;
+    }
+
+    /* setup the display */
+    display.init(MBED_CONF_APP_VERSION);
+    display.refresh();
 
     if (format) {
         ret = fs_format();
