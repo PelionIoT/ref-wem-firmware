@@ -18,15 +18,36 @@
 #include "compat.h"
 
 #include <SPIFBlockDevice.h>
+#include <SlicingBlockDevice.h>
 
 #include <errno.h>
 #include <stdio.h>
 
-SPIFBlockDevice bd(MBED_CONF_APP_SPI_MOSI,
-                   MBED_CONF_APP_SPI_MISO,
-                   MBED_CONF_APP_SPI_CLK,
-                   MBED_CONF_APP_SPI_CS);
-BlockDevice *arm_uc_blockdevice = &bd;
+/* Our external storage is provided by SPI Flash and is sliced into
+ * multiple sections */
+SPIFBlockDevice spifbd(MBED_CONF_APP_SPI_MOSI,
+                       MBED_CONF_APP_SPI_MISO,
+                       MBED_CONF_APP_SPI_CLK,
+                       MBED_CONF_APP_SPI_CS);
+
+/* The first slice is for the update-client for storage of downloaded
+ * firmware images for FOTA */
+SlicingBlockDevice slice1(&spifbd,
+                          MBED_CONF_UPDATE_CLIENT_STORAGE_ADDRESS,
+                          (MBED_CONF_UPDATE_CLIENT_STORAGE_SIZE *
+                              MBED_CONF_UPDATE_CLIENT_STORAGE_LOCATIONS));
+
+/* The second slice is for persistent application data */
+SlicingBlockDevice slice2(&spifbd,
+                          (MBED_CONF_UPDATE_CLIENT_STORAGE_ADDRESS +
+                          (MBED_CONF_UPDATE_CLIENT_STORAGE_SIZE *
+                              MBED_CONF_UPDATE_CLIENT_STORAGE_LOCATIONS)));
+
+/* HACK: This is required to get the update-client to build because it
+ * expects a blockdevice pointer to be defined with this hard-coded name. */
+BlockDevice *arm_uc_blockdevice = &slice1;
+
+/* our application filesystem uses slice 2 of the SPI Flash */
 FATFileSystem fs(FS_NAME);
 
 int fs_init()
@@ -34,11 +55,27 @@ int fs_init()
     int ret;
 
     /* init the underlying block device */
-    ret = bd.init();
+    ret = spifbd.init();
     if (ret != BD_ERROR_OK) {
-        printf("bd.init failed\n");
+        printf("blockdevice init failed: %d\n", ret);
         return ret;
     }
+    printf("spif block device size=%llu\n", spifbd.size());
+
+    /* init the partitions */
+    ret = slice1.init();
+    if (ret != BD_ERROR_OK) {
+        printf("partition 1 init failed: %d\n", ret);
+        return ret;
+    }
+    printf("partition 1 size=%llu\n", slice1.size());
+
+    ret = slice2.init();
+    if (ret != BD_ERROR_OK) {
+        printf("partition 2 init failed: %d\n", ret);
+        return ret;
+    }
+    printf("partition 2 size=%llu\n", slice2.size());
 
     /* mount the filesystem */
     ret = fs_mount();
@@ -52,7 +89,10 @@ int fs_init()
 
 void fs_shutdown()
 {
-    bd.deinit();
+    /* note: calling slice2.deinit() calls deinit() on the underlying
+     * blockdevice which could cause issues for slice1 because it is
+     * using the same underlying blockdevice. */
+    /* slice2.deinit(); */
 }
 
 int fs_remove(std::string &path)
@@ -128,12 +168,12 @@ int fs_mkdir(std::string &path)
 
 int fs_format()
 {
-    return fs.reformat(&bd);
+    return fs.reformat(&slice2);
 }
 
 int fs_mount()
 {
-    return fs.mount(&bd);
+    return fs.mount(&slice2);
 }
 
 int fs_unmount()
