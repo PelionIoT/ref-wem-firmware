@@ -1296,10 +1296,7 @@ static void cmd_cb_format(vector<string>& params)
 
     type = params[1];
     if (type == "fat") {
-        fs_unmount();
         ret = fs_format();
-        fs_mount();
-
         if (0 != ret) {
             cmd.printf("ERROR: keystore format failed: %d\n", ret);
             return;
