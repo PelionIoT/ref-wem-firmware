@@ -108,7 +108,7 @@
             "target.features_add": [
                 "COMMON_PAL"
             ],
-            "update-client.storage-address"  : "(1024*1024*2)",
+            "update-client.storage-address"  : "0",
             "update-client.storage-size"     : "(1024*1024*2)",
             "update-client.storage-locations": 1,
             "update-client.firmware-header-version": "2"
