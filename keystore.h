@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-#include "fs.h"
 #include <string>
 #include <vector>
 #include <map>
+
+#define KEYSTORE_DEFAULT_PATH "/keystore/keystore.data"
 
 /*
     class: keystore
@@ -52,24 +53,19 @@ class Keystore
 public:
 
     /*
-        constructor
+        default constructor
     */
     Keystore();
+
+    /*
+        constructor that takes a filename parameter
+    */
+    Keystore(std::string path);
 
     /*
         destructor
     */
     ~Keystore();
-
-    /*
-     * performs initialization of underlying storage
-     */
-    static int init();
-
-    /*
-     * performs de-initialization of underlying storage
-     */
-    static void shutdown();
 
     /*
         Function: open
@@ -80,9 +76,9 @@ public:
         none.
 
         Returns:
-        nothing.
+        0 for success, nonzero on failure
     */
-    void open();
+    int open();
 
     /*
         Function: write
@@ -288,6 +284,9 @@ public:
     */
     void kill_all();
 
+    /* returns the keyfile path */
+    std::string path();
+
 protected:
     /*
         variable: std::map<std::string, std::string> _mapdb
@@ -301,15 +300,17 @@ protected:
 
         the absolute path to the database file
     */
-    static std::string _strfilepath;
+    std::string _strfilepath;
 
     /*
-        variable: std::string _strdir
+     * calls mkdir if needed for the keystore path
+     */
+    int check_path();
 
-        the default directory for the database file
-    */
-    static std::string _strdir;
+    /* returns the real keyfile path including the filesystem mount pount */
+    std::string realpath();
 
+    /* creates a temporary file for writing */
     static char *mktmp(char *out);
 };
 
