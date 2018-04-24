@@ -128,7 +128,7 @@ int fs_mkdir(std::string &path)
 
 int fs_format()
 {
-    return fs.format(&bd);
+    return fs.reformat(&bd);
 }
 
 int fs_mount()
