@@ -912,6 +912,29 @@ static int init_fcc(void)
     return 0;
 }
 
+void print_fcc_output_info(fcc_output_info_s *output_info)
+{
+    fcc_warning_info_s *warning_list;
+
+    if (output_info == NULL) {
+        return;
+    }
+
+    /* print errors */
+    if (output_info->error_string_info != NULL) {
+        cmd.printf("ERROR: fcc: %s\n", output_info->error_string_info);
+    }
+
+    /* print warnings */
+    if (output_info->size_of_warning_info_list > 0) {
+        warning_list = output_info->head_of_warning_list;
+        while (warning_list != NULL) {
+            cmd.printf("WARN: fcc: %s\n", warning_list->warning_info_string);
+            warning_list = warning_list->next;
+        }
+    }
+}
+
 static int do_fcc(void)
 {
     fcc_status_e ret;
@@ -926,7 +949,9 @@ static int do_fcc(void)
 
     ret = fcc_verify_device_configured_4mbed_cloud();
     if (ret != FCC_STATUS_SUCCESS) {
-        cmd.printf("ERROR: fcc device not configured for mbed cloud\n");
+        cmd.printf("ERROR: fcc device not correctly configured for mbed cloud\n");
+        fcc_output_info_s* info = fcc_get_error_and_warning_data();
+        print_fcc_output_info(info);
         return ret;
     }
 
