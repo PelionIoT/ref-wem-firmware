@@ -67,6 +67,10 @@ namespace json = rapidjson;
 // ****************************************************************************
 // DEFINEs and type definitions
 // ****************************************************************************
+#ifndef MBED_CONF_APP_FACTORY_RESET_BUTTON_PRESS_SECS
+    #define MBED_CONF_APP_FACTORY_RESET_BUTTON_PRESS_SECS 5
+#endif
+
 #define MACADDR_STRLEN 18
 
 #define SSID_KEY "wifi.ssid"
@@ -139,7 +143,6 @@ static bool wem_sensors_verbose_enabled = false;
 static I2C i2c(I2C_SDA, I2C_SCL);
 static TSL2591 tsl2591(i2c, TSL2591_ADDR);
 static Sht31 sht31(I2C_SDA, I2C_SCL);
-static InterruptIn button(PF_6);
 
 //our serial interface cli class
 Commander cmd;
@@ -961,10 +964,47 @@ static int do_fcc(void)
 // ****************************************************************************
 // Generic Helpers
 // ****************************************************************************
-static int platform_init(bool format)
+static void do_factory_reset()
+{
+    int ret;
+
+    cmd.printf("FACTORY RESET\n");
+    ret = fs_format();
+    if (0 != ret) {
+        cmd.printf("ERROR: fs format failed: %d\n", ret);
+    } else {
+        display_evq_id = 0;
+        // Display "Factory Reset" message
+        display.set_erasing();
+        display.set_default_view();
+    }
+}
+
+static bool check_factory_reset()
+{
+    int button_secs;
+    bool button_pressed;
+    DigitalIn button(PF_6);
+
+    button.mode(PullUp);
+    button_secs = 0;
+    /* since our button is PullUp, pressed==0 and not-pressed==1 */
+    button_pressed = (button.read() == 0);
+    while ((true == button_pressed)
+            && (MBED_CONF_APP_FACTORY_RESET_BUTTON_PRESS_SECS > button_secs)) {
+        Thread::wait(1000);
+        button_pressed = (button.read() == 0);
+        button_secs++;
+    }
+
+    return (true == button_pressed);
+}
+
+static int platform_init()
 {
     int ret;
     Keystore k;
+    bool factory_reset;
 
 #if MBED_CONF_MBED_TRACE_ENABLE
     /* Create mutex for tracing to avoid broken lines in logs */
@@ -989,21 +1029,10 @@ static int platform_init(bool format)
     display.init(MBED_CONF_APP_VERSION);
     display.refresh();
 
-    if (format) {
-#if FACTORY_RESET_BUTTON_IS_WORKING
-        cmd.printf("FACTORY RESET\n");
-        ret = fs_format();
-        if (0 != ret) {
-            cmd.printf("ERROR: fs format failed: %d\n", ret);
-        } else {
-            display_evq_id = 0;
-            // Display "Factory Reset" message
-            display.set_erasing();
-            display.set_default_view();
-        }
-#else
-        cmd.printf("FACTORY RESET SUPPRESSED\n");
-#endif
+    /* check if the user wants to perform a factory reset */
+    factory_reset = check_factory_reset();
+    if (factory_reset) {
+        do_factory_reset();
     }
 
     cmd.printf("keystore path: %s\n", k.path().c_str());
@@ -1704,11 +1733,10 @@ static void init_app(EventQueue *queue)
 int main()
 {
     int ret;
-    // Check if the button is held down
-    bool erase_ks = button == 0;
 
     /* stack size 2048 is too small for fcc_developer_flow() */
     Thread thread(osPriorityNormal, 4224);
+
     /* init the console manager so we can printf */
     init_commander();
 
@@ -1723,7 +1751,7 @@ int main()
 
     /* minimal init sequence */
     cmd.printf("init platform\n");
-    ret = platform_init(erase_ks);
+    ret = platform_init();
     if (0 != ret) {
         cmd.printf("init platform: FAIL\n");
     } else {
