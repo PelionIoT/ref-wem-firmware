@@ -1006,6 +1006,9 @@ static int platform_init()
     Keystore k;
     bool factory_reset;
 
+    /* check if the user wants to perform a factory reset */
+    factory_reset = check_factory_reset();
+
 #if MBED_CONF_MBED_TRACE_ENABLE
     /* Create mutex for tracing to avoid broken lines in logs */
     if (!mbed_trace_helper_create_mutex()) {
@@ -1029,8 +1032,8 @@ static int platform_init()
     display.init(MBED_CONF_APP_VERSION);
     display.refresh();
 
-    /* check if the user wants to perform a factory reset */
-    factory_reset = check_factory_reset();
+    /* now that we have the fs and display up, perform the factory reset
+     * if so requested */
     if (factory_reset) {
         do_factory_reset();
     }
