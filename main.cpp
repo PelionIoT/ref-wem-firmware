@@ -972,12 +972,21 @@ static void do_factory_reset()
     ret = fs_format();
     if (0 != ret) {
         cmd.printf("ERROR: fs format failed: %d\n", ret);
-    } else {
-        display_evq_id = 0;
-        // Display "Factory Reset" message
-        display.set_erasing();
-        display.set_default_view();
+        return;
     }
+
+    /* formatting the fs isn't enough to reset fcc */
+    fcc_init();
+    ret = fcc_storage_delete();
+    if (ret != FCC_STATUS_SUCCESS) {
+        cmd.printf("ERROR: fcc delete failed: %d\n", ret);
+    }
+    fcc_finalize();
+
+    display_evq_id = 0;
+    // Display "Factory Reset" message
+    display.set_erasing();
+    display.set_default_view();
 }
 
 static bool check_factory_reset()
