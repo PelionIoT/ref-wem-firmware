@@ -147,7 +147,16 @@ make distclean
 
 ### Flashing your board
 
-The following command copies `bin/combined.bin` to a USB-attached device.
+**Important:** This version of the workplace environment monitor supports a software-generated Root of Trust mechanism called Software One Time Programming (SOTP).  SOTP generates a random private key and stores it on the internal flash.  The key is used for secure storage of configuration data related to the Mbed Cloud Client.  ***Be aware that flashing your board will destroy any previously existing software Root of Trust stored on the internal flash*** which means that your device will no longer be able to register with Mbed Cloud.  This is true of the current version of DAPLink, version 0246.  Look for a future version of DAPLink to support preservation of the SOTP section during a flash.
+
+Until DAPLink is updated, you must execute `reset certs` on the serial command line interface or perform a factory reset after the flash is complete.  You can perform a factory reset by holding down the button next to the power switch while you power on the device and releasing the button when "Factory Reset..." is displayed on the LCD. After resetting the certificates, new Mbed Cloud certificates and a new Device ID is generated using a new Root of Trust.
+
+The Root of Trust is preserved when performing a firmware update over the air (FOTA).
+
+For more about SOTP, [see the Mbed Cloud migration guide](https://cloud.mbed.com/docs/current/porting/changing-a-customized-porting-layer.html).
+
+
+The following command copies `bin/combined.hex` to a USB-attached device.
 
 ```
 make install
@@ -156,7 +165,7 @@ make install
 If this command fails or you have more than one device attached to your build system, you can manually copy the image to the device. For example:
 
 ```
-$ cp bin/combined.bin /Volumes/DAPLINK/
+$ cp bin/combined.hex /Volumes/DAPLINK/
 ```
 
 Be sure to substitute for the correct mount point of your device.
