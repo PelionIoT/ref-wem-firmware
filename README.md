@@ -92,24 +92,16 @@ If downloading an existing certificate, choose the name of the appropriate certi
 
 ### Compiling
 
-The project uses a Makefile to compile the source code. The Makefile detects the toolchain and target and calls the Mbed compiler with appropriate options. To build for the current hardware, you may need to set your Mbed target to UBLOX_EVK_ODIN_W2.
+The project uses a Makefile to compile the source code. The Makefile detects the toolchain and target and calls the Mbed compile command with appropriate options. To build for the current hardware, set the Mbed target to UBLOX_EVK_ODIN_W. Set the toolchain to GCC_ARM. 
 
-Assuming you are compiling with GCC, your `.mbed` file should look like the following:
-
-```
-$ cat .mbed
-ROOT=.
-TARGET=UBLOX_EVK_ODIN_W2
-TOOLCHAIN=GCC_ARM
-```
-
-If the file does not exist, you can either allow the Makefile to create it with default settings or create it yourself with the following commands.
-
+Configure Mbed CLI with the following commands:
 ```
 $ mbed config ROOT .
 $ mbed target UBLOX_EVK_ODIN_W2
 $ mbed toolchain GCC_ARM
 ```
+(**Note**: this only needs to be done once)
+
 
 Typing `make` builds the bootloader and application and combines them into a single image. The final images are copied into the `bin/` folder.
 
