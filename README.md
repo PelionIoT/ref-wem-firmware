@@ -10,7 +10,7 @@ This is an Arm Mbed reference deployment application of a workplace environmenta
 
 To build this project, you need to install the following:
 
-1. [GNU Arm Compiler](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads) version 6.3.1.20170215 or greater
+1. [GNU Arm Compiler](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads) version 6.3.1.20170215 or greater.
 
     Here is an example showing how to install on a Mac:
 
@@ -19,20 +19,20 @@ To build this project, you need to install the following:
     brew install arm-none-eabi-gcc
     ```
 
-2. Python 2.7
+2. Python 2.7.
 
-3. [Python virtualenv](https://virtualenv.pypa.io/en/stable/userguide/)
+3. [Python virtualenv](https://virtualenv.pypa.io/en/stable/userguide/).
 
-    It is *strongly* recommended to use a Python virtualenv to isolate your build environment from the underlying system.  If you do this step before you clone the ref-wem-firmware repo, then the venv folder will be placed outside of the ref-wem-firmware folder which is recommended.  If instead you place venv in the root of the ref-wem-firmware project, you will need to add venv to .mbedignore to prevent mbed-cli from attempting to build the files inside it.
+    We *strongly* recommend you use a Python virtualenv to isolate your build environment from the underlying system. If you do this step before you clone the `ref-wem-firmware` repo, then the venv folder is placed outside of the ref-wem-firmware folder, which we recommend. If instead you place venv in the root of the ref-wem-firmware project, you need to add venv to `.mbedignore` to prevent Mbed CLI from attempting to build the files inside it.
 
     ```
     virtualenv --no-site-packages --python=$(which python) venv
     source venv/bin/activate
     ```
 
-4. Copy your SSH public key to github
+4. Copy your SSH public key to GitHub.
 
-    The build preparation step involves cloning libraries from github using ssh, so you need to add an ssh key from your development system to your github account. Please see instructions [here](https://help.github.com/articles/connecting-to-github-with-ssh/).
+    The build preparation step involves cloning libraries from GitHub using ssh, so you need to add an ssh key from your development system to your GitHub account. Please see [instructions](https://help.github.com/articles/connecting-to-github-with-ssh/) for more details.
 
 ### Importing `ref-wem-firmware`
 
@@ -80,7 +80,7 @@ The project configuration file `mbed_app.json` specifies the network configurati
     ...
 ```
 
-You can also change the configuration at runtime by using a serial console. See the section ["Serial command help"](#serial-command-help)  for help with connecting to and using the console. See the section on ["Wi-Fi commissioning"](#wi-fi-commissioning) for the relevant keystore options.
+You can also change the configuration at runtime by using a serial console. See the section [Serial command help](#serial-command-help)  for help connecting to and using the console. See the section on [Wi-Fi commissioning](#wi-fi-commissioning) for the relevant keystore options.
 
 ### <a name="GetDevCert"></a>Downloading a developer certificate
 
@@ -94,7 +94,7 @@ If downloading an existing certificate, choose the name of the appropriate certi
 
 The project uses a Makefile to compile the source code. The Makefile detects the toolchain and target and calls the Mbed compiler with appropriate options. To build for the current hardware, you may need to set your Mbed target to UBLOX_EVK_ODIN_W2.
 
-Assuming you are compiling with GCC, your `.mbed` file should look like the following:
+If you are compiling with GCC, your `.mbed` file looks like the following:
 
 ```
 $ cat .mbed
@@ -103,7 +103,7 @@ TARGET=UBLOX_EVK_ODIN_W2
 TOOLCHAIN=GCC_ARM
 ```
 
-If the file does not exist, you can either allow the Makefile to create it with default settings or create it yourself with the following commands.
+If the file does not exist, you can either allow the Makefile to create it with default settings or create it yourself with the following commands:
 
 ```
 $ mbed config ROOT .
@@ -147,14 +147,13 @@ make distclean
 
 ### Flashing your board
 
-**Important:** This version of the workplace environment monitor supports a software-generated Root of Trust mechanism called Software One Time Programming (SOTP).  SOTP generates a random private key and stores it on the internal flash.  The key is used for secure storage of configuration data related to the Mbed Cloud Client.  ***Be aware that flashing your board will destroy any previously existing software Root of Trust stored on the internal flash*** which means that your device will no longer be able to register with Mbed Cloud.  This is true of the current version of DAPLink, version 0246.  Look for a future version of DAPLink to support preservation of the SOTP section during a flash.
+**Important:** This version of the workplace environment monitor supports a software-generated Root of Trust mechanism called Software One Time Programming (SOTP). SOTP generates a random private key and stores it on the internal flash. The key is used for secure storage of configuration data related to the Mbed Cloud Client. ***Be aware that flashing your board destroys any previously existing software Root of Trust stored on the internal flash***, which means that your device is no longer able to register with Mbed Cloud. This is true of the current version of DAPLink, version 0246. Look for a future version of DAPLink to support preservation of the SOTP section during a flash.
 
-Until DAPLink is updated, you must execute `reset certs` on the serial command line interface or perform a factory reset after the flash is complete.  You can perform a factory reset by holding down the button next to the power switch while you power on the device and releasing the button when "Factory Reset..." is displayed on the LCD. After resetting the certificates, new Mbed Cloud certificates and a new Device ID is generated using a new Root of Trust.
+Until DAPLink is updated, you must execute `reset certs` on the serial command-line interface or perform a factory reset after the flash is complete. You can perform a factory reset by holding down the button next to the power switch while you power on the device and releasing the button when the LCD displays **Factory Reset**. After resetting the certificates, new Mbed Cloud certificates and a new Device ID are generated using a new Root of Trust.
 
 The Root of Trust is preserved when performing a firmware update over the air (FOTA).
 
 For more about SOTP, [see the Mbed Cloud migration guide](https://cloud.mbed.com/docs/current/porting/changing-a-customized-porting-layer.html).
-
 
 The following command copies `bin/combined.hex` to a USB-attached device.
 
@@ -172,11 +171,11 @@ Be sure to substitute for the correct mount point of your device.
 
 ### Update over the air
 
-Login to the mbed cloud portal and copy your mbed cloud API key, which is a one-line string, into a new file called `.mbed-cloud-key`. Store this file in the root directory of this project. For more information, see [Access Mbed Cloud with API Keys](https://cloud.mbed.com/docs/v1.2/connecting/api-keys.html).
+Log in to the Mbed Cloud portal, and copy your Mbed Cloud API key, which is a one-line string, into a new file called `.mbed-cloud-key`. Store this file in the root directory of this project. For more information, see [Access Mbed Cloud with API Keys](https://cloud.mbed.com/docs/v1.2/connecting/api-keys.html).
 
-NOTE: If you are updating a device that was previously provisioned to a different Mbed cloud account, you must `reset certs` on the local device before initiating a campaign, otherwise the FOTA operation will encounter authorization failures.  See the section ["Serial command help"](#serial-command-help) for details on how to run commands on the device.
+NOTE: If you are updating a device that was previously provisioned to a different Mbed Cloud account, you must `reset certs` on the local device before initiating a campaign. Otherwise, the FOTA operation encounters authorization failures. See the section ["Serial command help"](#serial-command-help) for details on how to run commands on the device.
 
-Before starting the FOTA campaign, you should increment the version of your application.
+Before starting the FOTA campaign, increment the version of your application.
 
 Open the file `mbed_app.json` in the editor of your choice, and increment the version number.
 
@@ -204,20 +203,19 @@ Next, open your shell to your project folder.
 make campaign
 ```
 
-This launches the FOTA campaign and begins updating all the devices in your
-account.
+This launches the FOTA campaign and begins updating all the devices in your account.
 
 ### Serial command help
 
 You can connect a serial terminal to the device for the purpose of viewing diagnostic output and issuing serial commands. Serial connection is at a baud rate of 115200.
 
-Press enter at any time to get a command prompt.
+Press enter at any time to get a command prompt:
 
 ```
 >
 ```
 
-Typing `help` at the prompt provides a list of the commands and a brief set of usage instructions.
+Typing `help` at the prompt provides a list of the commands and a brief set of usage instructions:
 
 ```
 > help
@@ -310,7 +308,7 @@ The firmware also exposes the following resources:
 * Resource ID: 1
 * Path: /26241/0/1
 
-The application label is a user-friendly name that can be read and written. The application label is displayed on the LCD with a prefix of `Label: `.
+The application label is a user-friendly name that can be read and written. The LCD displays the application label with a prefix of `Label: `.
 
 You can write the application label in 3 ways:
 
@@ -325,9 +323,9 @@ You can write the application label in 3 ways:
         ...
     ```
 
-- Through M2M PUT requests
+- Through M2M PUT requests.
   
-  This can be demonstrated on the Mbed Cloud portal. After you register a device with Mbed Cloud, the `Connected Devices` page lists the device. Click on the Device ID to bring up device details, and then click on the `Resources` tab. Scroll to `Object ID 26241`, and click `/26241/0/1`. On the popup dialog, click `Edit`. Enter a new name in the `Value` text box. Make sure that the `PUT` request type is chosen, and then click the `Send` button.
+  The Mbed Cloud portal can demonstrate this. After you register a device with Mbed Cloud, the `Connected Devices` page lists the device. Click on the Device ID to bring up device details, and then click on the `Resources` tab. Scroll to `Object ID 26241`, and click `/26241/0/1`. On the popup dialog, click `Edit`. Enter a new name in the `Value` text box. Make sure that the `PUT` request type is chosen, and then click the `Send` button.
 
 - Through the serial console by setting the `app.label` key:
 
@@ -388,7 +386,7 @@ You can write geographical data in 3 ways:
 
 - Through M2M PUT requests
   
-  This can be demonstrated on the Mbed Cloud portal. After you register a device with Mbed Cloud, the `Connected Devices` page lists the device. Click on the Device ID to bring up device details, and then click on the `Resources` tab. Scroll to `Object ID 3336`, and click on resources attached to instance 0, such as `/3336/0/5514`, which shows latitude; `/3336/0/5515` which shows longitude; and `/3336/0/5516`, which shows accuracy. On the popup dialog, click `Edit`, and enter a new value in the `Value` text box. Make sure that the `PUT` request type is chosen. Then click the `Send` button.
+  The Mbed Cloud portal can demonstrate this. After you register a device with Mbed Cloud, the `Connected Devices` page lists the device. Click on the Device ID to bring up device details, and then click on the `Resources` tab. Scroll to `Object ID 3336`, and click on resources attached to instance 0, such as `/3336/0/5514`, which shows latitude; `/3336/0/5515`, which shows longitude; and `/3336/0/5516`, which shows accuracy. On the popup dialog, click `Edit`, and enter a new value in the `Value` text box. Make sure that the `PUT` request type is chosen. Then click the `Send` button.
 
 Here are some additional details about each of the user-configurable geographical resources. Unless otherwise specified, each resource has a keystore option that you can modify on the serial console. Please see the section entitled [Option keystore](#option-keystore) for more details about how to use this interface.
 
