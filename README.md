@@ -19,7 +19,14 @@ To build this project, you need to install the following:
     brew install arm-none-eabi-gcc
     ```
 
-2. Python 2.7.
+2. Python 2.7 and pip.
+
+    On a Mac, pip and virtualenv are not preinstalled. Here is how to install them:
+    
+    ```
+    sudo easy_install pip
+    sudo pip install virtualenv virtualenvwrapper
+    ```
 
 3. [Python virtualenv](https://virtualenv.pypa.io/en/stable/userguide/).
 
@@ -55,9 +62,16 @@ To import the project from the command-line:
 
 3. Install the Python dependencies:
 
-	```
-	pip install -r requirements.txt
-	```
+    Some Mbed libraries rely on pip internals which were reorganized in version 10. Please make sure you are running pip
+    9.0.3 to avoid dependency installation failures:
+    ```
+    pip install --upgrade pip==9.0.3
+    ```
+
+    Next, you can install all the Python dependencies:
+    ```
+    pip install -r requirements.txt
+    ```
 
 ### Specifying a network configuration
 
