@@ -50,6 +50,10 @@
 #include "TSL2591.h"
 #include "Sht31/Sht31.h"
 
+#include "MQTTDataProvider.h"
+#include "DeviceResource.h"
+#include "M2MDeviceResource.h"
+
 #define TRACE_GROUP "main"
 
 // Convert the value of a C macro to a string that can be printed.  This trick
@@ -1722,6 +1726,17 @@ static void init_app(EventQueue *queue)
      * before the mbed client connects to the cloud, otherwise the
      * sensor resources will not exist in the portal. */
     register_mbed_client(net, m2mclient);
+
+    std::map<std::string, DeviceResource*>  all_resources_map;
+
+    all_resources_map["light"]=new M2MDeviceResource(sensors.light.res);
+    all_resources_map["temperature"]=new M2MDeviceResource(sensors.dht.t_res);
+    all_resources_map["humidity"]=new M2MDeviceResource(sensors.dht.h_res);
+
+    const char* devicename="WEMDevice1";
+    MQTTDataProvider data_provider(devicename, all_resources_map);
+    data_provider.run(net);
+
 }
 
 // ****************************************************************************
