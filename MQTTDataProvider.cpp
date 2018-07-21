@@ -468,7 +468,7 @@ void MQTTDataProvider::run(NetworkInterface *network){
     int i=0;
     while(true)
     {
-         Thread::wait(1000);
+         Thread::wait(10 * 1000);
          PubMessage message;
          message.qos = QOS0;
          message.id = 123;
