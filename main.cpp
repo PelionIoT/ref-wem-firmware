@@ -1725,7 +1725,7 @@ static void init_app(EventQueue *queue)
     /* WARNING: the sensor resources must be added to the mbed client
      * before the mbed client connects to the cloud, otherwise the
      * sensor resources will not exist in the portal. */
-    register_mbed_client(net, m2mclient);
+    // register_mbed_client(net, m2mclient);
 
     std::map<std::string, DeviceResource*>  all_resources_map;
 
@@ -1736,7 +1736,6 @@ static void init_app(EventQueue *queue)
     const char* devicename="WEMDevice1";
     MQTTDataProvider data_provider(devicename, all_resources_map);
     data_provider.run(net);
-
 }
 
 // ****************************************************************************
