@@ -108,7 +108,7 @@ public:
           isDERformat(isDER),
           useTLS(ca != NULL)
     {
-        tcpSocket = new TCPSocket();
+        tcpSocket = new TCPSocket(aNetwork);
         setupTLS();
     }
     
