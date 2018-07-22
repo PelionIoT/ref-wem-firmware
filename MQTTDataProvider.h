@@ -19,7 +19,7 @@ class MQTTDataProvider{
     ~MQTTDataProvider(){}
 
     void run(NetworkInterface *net);
-    std::string getData(int counter); //returns JSON as described here: https://confluence.arm.com/display/IoTBU/Message+Structure
+    std::string getData(); //returns JSON as described here: https://confluence.arm.com/display/IoTBU/Message+Structure
     std::string getDataOld(int counter); //returns JSON in format used in 1st demo with plotting
     void publish_data(std::string key, std::string value);
 
