@@ -259,20 +259,13 @@ const uint8_t DS_P_K[] =
  0x30, 0x33, 0x60, 0xda, 0xd3, 0xda, 0x59, 0xba,
  0x7a, 0x5f, 0xb4, 0x74, 0x07, 0x29 };
 
-
-//#define AMAZON_CERT
 #define MBED_CLOUD_CERT
 
 #ifdef MBED_CLOUD_CERT
        #include "mbed_cloud_dev_credentials.c"
        bool isDER = true;
-       static const char * clientID = "mbed-sample";
        static const char * topic_1 = "topic/test";
        const char* hostname = "ingest.mqtt.data.mbedcloudintegration.net";
-#elif defined(AMAZON_CERT)
-  bool isDER = false;
-  #include "amazon_mqtt_conf_new.h"   // TLS handshake issue??
-  //#include "amazon_mqtt_conf.h"
 #elif defined(LOCAL_CERT)
       #include "local_mqtt_conf.h"
       bool isDER=false;
@@ -436,10 +429,12 @@ void MQTTDataProvider::run(NetworkInterface *network){
     }
 
     int port = 8883;
+    // int port = 1883;
 
 #ifdef MBED_CLOUD_CERT
       // DER format
       MQTTThreadedClient mqtt(network, (const unsigned char*)(MBED_CLOUD_DEV_LWM2M_SERVER_ROOT_CA_CERTIFICATE), (const unsigned char*)MBED_CLOUD_DEV_BOOTSTRAP_DEVICE_CERTIFICATE, (const unsigned char*)MBED_CLOUD_DEV_BOOTSTRAP_DEVICE_PRIVATE_KEY, isDER);
+      // MQTTThreadedClient mqtt(network, (const unsigned char*)(NULL), (const unsigned char*)MBED_CLOUD_DEV_BOOTSTRAP_DEVICE_CERTIFICATE, (const unsigned char*)MBED_CLOUD_DEV_BOOTSTRAP_DEVICE_PRIVATE_KEY, isDER);
 
       // printf ("MBED_CLOUD_DEV_BOOTSTRAP_SERVER_ROOT_CA_CERTIFICATE sizeof=  %d \r\n", sizeof(DS_MBED_CLOUD_DEV_BOOTSTRAP_SERVER_ROOT_CA_CERTIFICATE));  // do not use it!
       // printf (" MBED_CLOUD_DEV_LWM2M_SERVER_ROOT_CA_CERTIFICATE    sizeof=  %d \r\n", sizeof(DS_MBED_CLOUD_DEV_LWM2M_SERVER_ROOT_CA_CERTIFICATE));  //   use it!
@@ -457,7 +452,7 @@ void MQTTDataProvider::run(NetworkInterface *network){
     logindata.MQTTVersion = 3;
 
 
-    logindata.clientID.cstring = (char *)  clientID;
+    logindata.clientID.cstring = (char *)  deviceId;
 
     mqtt.setConnectionParameters(hostname, port, logindata);
     mqtt.addTopicHandler(topic_1, messageArrived);

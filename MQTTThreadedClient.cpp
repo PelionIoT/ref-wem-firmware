@@ -870,6 +870,7 @@ void MQTTThreadedClient::startListener()
             disconnect();
             // Wait for a few secs and reconnect ...
             Thread::wait(6000); //6000 millisec = 6 sec
+            tcpSocket = new TCPSocket(network);
             continue;
         }
 

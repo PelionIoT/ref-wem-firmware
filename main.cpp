@@ -1690,12 +1690,14 @@ static void init_app(EventQueue *queue)
     cmd.printf("init network: OK\n");
 
     /* scan the network for nearby devices or APs. */
+/* TBD: ARDAMAN: Disable scanning to speed up reboot
     cmd.printf("scanning network for nearby devices...\n");
     display.set_network_scanning();
     ret = network_scan(net, m2mclient);
     if (0 > ret) {
         cmd.printf("WARN: failed to scan network! %d\n", ret);
     }
+*/
 
     /* network_scan can take some time to perform when on WiFi, and since we
      * don't have a separate indicator to show progress we delay the setting
@@ -1733,7 +1735,10 @@ static void init_app(EventQueue *queue)
     all_resources_map["temperature"]=new M2MDeviceResource(sensors.dht.t_res);
     all_resources_map["humidity"]=new M2MDeviceResource(sensors.dht.h_res);
 
-    const char* devicename="WEMDevice1";
+    const ConnectorClientEndpointInfo* endpoint = m2mclient->get_cloud_client().endpoint_info();
+    const char* devicename = endpoint->internal_endpoint_name.c_str();
+    if (strcmp("",devicename) == 0)
+       devicename = "9164246ec9d4000000000001001002f1"; // TBD: some dummy
     MQTTDataProvider data_provider(devicename, all_resources_map);
     data_provider.run(net);
 }

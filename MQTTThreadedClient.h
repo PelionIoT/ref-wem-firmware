@@ -8,7 +8,7 @@
 #include "FP.h"
 #include "mbedtls/debug.h"
 
-#define MQTT_DEBUG 1
+// #define MQTT_DEBUG 1
 
 #define DEBUG_LEVEL 0
 
