@@ -411,7 +411,7 @@ string MQTTDataProvider::getData(int i){
 
     json += "]}";
 
-    printf(" ===> END getData() counter=%d \r\n", i);
+    // printf(" ===> END getData() counter=%d \r\n", i);
     return json;
 }
 
