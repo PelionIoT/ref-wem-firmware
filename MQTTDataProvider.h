@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include "ntp-client/NTPClient.h"
 
 #include "DeviceResource.h"
 
