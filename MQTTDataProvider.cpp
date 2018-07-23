@@ -86,7 +86,41 @@ string MQTTDataProvider::getData() {
     return json;
 }
 
-void MQTTDataProvider::run(NetworkInterface *network){
+int checkAndSetTime(NetworkInterface *network) {
+   uint64_t currTimeSeconds = pal_osGetTime();
+   if (currTimeSeconds != 0)
+      return 0;
+
+   printf("!!! RTC Clock is set to zero. Trying to get time from NTP\r\n");
+   NTPClient ntp(network);
+   int i = 0;
+   time_t timestamp = 0;
+   while(i < 5) {
+      timestamp = ntp.get_timestamp();
+        
+      if (timestamp < 0) {
+         printf("   An error occurred when getting the time. Code: %lld\r\n", timestamp);
+      } else {
+         printf("   Current time is %s\r\n", ctime(&timestamp));
+         pal_osSetStrongTime(timestamp);
+         break;
+      }
+        
+      printf("   Waiting 5 seconds before trying again...\r\n");
+      wait(5);
+      i++;
+   }
+
+   if (timestamp <= 0) {
+     printf("Could not get NTP time. Giving up.\r\n");
+     return -1;
+   }
+
+   printf("Done setting RTC clock.\r\n");
+   return 0;
+}
+
+void MQTTDataProvider::run(NetworkInterface *network) {
 
     Thread msgSender(osPriorityNormal); // there are optional args: stack_size, etc
 
@@ -97,6 +131,12 @@ void MQTTDataProvider::run(NetworkInterface *network){
     if (!network) {
         mbedtls_printf("===ERROR=== easy_get_netif inside MQTTDataProvider::run \r\n");
         return ;
+    }
+
+    // make sure we have non zero time
+    if (checkAndSetTime(network) < 0) {
+       printf("Time not set. Exiting!!\r\n");
+       return;
     }
 
     int port = 8883;
