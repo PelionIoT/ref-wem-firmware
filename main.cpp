@@ -50,6 +50,10 @@
 #include "TSL2591.h"
 #include "Sht31/Sht31.h"
 
+#include "MQTTDataProvider.h"
+#include "DeviceResource.h"
+#include "M2MDeviceResource.h"
+
 #define TRACE_GROUP "main"
 
 // Convert the value of a C macro to a string that can be printed.  This trick
@@ -1686,12 +1690,14 @@ static void init_app(EventQueue *queue)
     cmd.printf("init network: OK\n");
 
     /* scan the network for nearby devices or APs. */
+/* TBD: ARDAMAN: Disable scanning to speed up reboot
     cmd.printf("scanning network for nearby devices...\n");
     display.set_network_scanning();
     ret = network_scan(net, m2mclient);
     if (0 > ret) {
         cmd.printf("WARN: failed to scan network! %d\n", ret);
     }
+*/
 
     /* network_scan can take some time to perform when on WiFi, and since we
      * don't have a separate indicator to show progress we delay the setting
@@ -1721,7 +1727,20 @@ static void init_app(EventQueue *queue)
     /* WARNING: the sensor resources must be added to the mbed client
      * before the mbed client connects to the cloud, otherwise the
      * sensor resources will not exist in the portal. */
-    register_mbed_client(net, m2mclient);
+    // register_mbed_client(net, m2mclient);
+
+    std::map<std::string, DeviceResource*>  all_resources_map;
+
+    all_resources_map["light"]=new M2MDeviceResource(sensors.light.res);
+    all_resources_map["temperature"]=new M2MDeviceResource(sensors.dht.t_res);
+    all_resources_map["humidity"]=new M2MDeviceResource(sensors.dht.h_res);
+
+    const ConnectorClientEndpointInfo* endpoint = m2mclient->get_cloud_client().endpoint_info();
+    const char* devicename = endpoint->internal_endpoint_name.c_str();
+    if (strcmp("",devicename) == 0)
+       devicename = "9164246ec9d4000000000001001002f1"; // TBD: some dummy
+    MQTTDataProvider data_provider(devicename, all_resources_map);
+    data_provider.run(net);
 }
 
 // ****************************************************************************
