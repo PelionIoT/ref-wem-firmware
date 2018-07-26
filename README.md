@@ -19,6 +19,14 @@ To build this project, you need to install the following:
     brew install arm-none-eabi-gcc
     ```
 
+    Here is an example showing how to install on a Ubuntu 16.04:
+
+    ```
+    sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
+    sudo apt-get update
+    sudo apt-get install gcc-arm-embedded
+    ```
+
 2. Python virtualenv
 
     It is *strongly* recommended to use a Python virtualenv to isolate your build environment from the underlying system.  If you do this step before you clone the fota-demo repo, then the venv folder will be placed outside of the fota-demo folder which is recommended.  If instead you place venv in the root of the fota-demo project, you will need to add venv to .mbedignore to prevent mbed-cli from attempting to build the files inside it.
