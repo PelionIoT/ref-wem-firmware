@@ -19,6 +19,14 @@ To build this project, you need to install the following:
     brew install arm-none-eabi-gcc
     ```
 
+    Here is an example showing how to install on a Ubuntu 16.04:
+
+    ```
+    sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
+    sudo apt-get update
+    sudo apt-get install gcc-arm-embedded
+    ```
+
 2. Python 2.7 and pip.
 
     On a Mac, pip and virtualenv are not preinstalled. Here is how to install them:
