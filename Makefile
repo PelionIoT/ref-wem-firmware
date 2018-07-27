@@ -50,17 +50,13 @@ endif
 # The following methods are checked for a target board type, in order:
 # 1. 'mbed target'.  To specify a target using this mechanism, run
 # 	'mbed target <target>' in your build environment.
-# 2. 'mbed detect'
-# 3. otherwise a default target is used as specified at the top of this file
+# 2. otherwise a default target is used as specified at the top of this file
 #
 # Note this reads the file .mbed directly because 'mbed target'
 # returns a "helpful" string instead of an empty string if no value is set.
 MBED_TARGET:=$(shell cat .mbed 2>/dev/null | grep TARGET | awk -F'=' '{print $$2}')
 ifeq (${MBED_TARGET},)
-  MBED_TARGET:=$(shell mbed detect 2>/dev/null | grep "Detected" | awk '{ print $$3 }' | sed 's/[,"]//g')
-  ifeq (${MBED_TARGET},)
-    MBED_TARGET:=${DEFAULT_TARGET}
-  endif
+  MBED_TARGET:=${DEFAULT_TARGET}
 endif
 
 # Make sure the board type is supported
