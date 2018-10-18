@@ -10,7 +10,9 @@ This is an Arm Mbed reference deployment application of a workplace environmenta
 
 To build this project, you need to install the following:
 
-1. [GNU Arm Compiler](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads) version 6.3.1.20170215 or greater.
+1. Mac OS X or Linux build system.  Windows is not supported.
+
+2. [GNU Arm Compiler](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads) version 6.3.1.20170215 or greater.
 
     Here is an example showing how to install on a Mac:
 
@@ -27,7 +29,7 @@ To build this project, you need to install the following:
     sudo apt-get install gcc-arm-embedded
     ```
 
-2. Python 2.7 and pip.
+3. Python 2.7 and pip.
 
     On a Mac, pip and virtualenv are not preinstalled. Here is how to install them:
     
@@ -36,7 +38,7 @@ To build this project, you need to install the following:
     sudo pip install virtualenv virtualenvwrapper
     ```
 
-3. [Python virtualenv](https://virtualenv.pypa.io/en/stable/userguide/).
+4. [Python virtualenv](https://virtualenv.pypa.io/en/stable/userguide/).
 
     We *strongly* recommend you use a Python virtualenv to isolate your build environment from the underlying system. If you do this step before you clone the `ref-wem-firmware` repo, then the venv folder is placed outside of the ref-wem-firmware folder, which we recommend. If instead you place venv in the root of the ref-wem-firmware project, you need to add venv to `.mbedignore` to prevent Mbed CLI from attempting to build the files inside it.
 
@@ -45,7 +47,7 @@ To build this project, you need to install the following:
     source venv/bin/activate
     ```
 
-4. Copy your SSH public key to GitHub.
+5. Copy your SSH public key to GitHub.
 
     The build preparation step involves cloning libraries from GitHub using ssh, so you need to add an ssh key from your development system to your GitHub account. Please see [instructions](https://help.github.com/articles/connecting-to-github-with-ssh/) for more details.
 
