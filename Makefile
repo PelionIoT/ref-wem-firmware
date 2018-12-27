@@ -86,10 +86,10 @@ endif
 # Example:
 # ./BUILD/UBLOX_EVK_ODIN_W2/GCC_ARM/ becomes
 # ./BUILD/UBLOX_EVK_ODIN_W2/GCC_ARM-RELEASE/
-MBED_TOOLCHAIN_EXTENSION=$(shell basename ${BUILD_PROFILE} .json | awk '{print toupper($$0)}')
-BOOTLDR_TOOLCHAIN_EXTENSION=$(shell basename ${BOOTLOADER_BUILD_PROFILE} .json | awk '{print toupper($$0)}')
-MBED_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}-${MBED_TOOLCHAIN_EXTENSION}
-BOOTLDR_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}-${BOOTLDR_TOOLCHAIN_EXTENSION}
+MBED_TOOLCHAIN_EXTENSION=-$(shell basename ${BUILD_PROFILE} .json | awk '{print toupper($$0)}')
+BOOTLDR_TOOLCHAIN_EXTENSION=-$(shell basename ${BOOTLOADER_BUILD_PROFILE} .json | awk '{print toupper($$0)}')
+MBED_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}${MBED_TOOLCHAIN_EXTENSION}
+BOOTLDR_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}${BOOTLDR_TOOLCHAIN_EXTENSION}
 
 # Maximum size for the bootloader.  Any larger than this and it will
 # overflow into the next partition and potentially overwrite other
