@@ -37,6 +37,7 @@ ifeq (${DEBUG}, )
 	BOOTLOADER_BUILD_PROFILE:=tiny.json
 else
 	BUILD_PROFILE:=mbed-os/tools/profiles/debug.json
+	BOOTLOADER_BUILD_PROFILE:=tiny.json
 endif
 
 # Capture the GIT version that we are building from.  Later in the compile
@@ -79,8 +80,16 @@ ifeq (${MBED_TOOLCHAIN},)
   MBED_TOOLCHAIN:=${DEFAULT_TOOLCHAIN}
 endif
 
-# Specifies the path to the directory containing build output files
-MBED_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}
+# Specifies the path to the directory containing build output files.
+# When building with mbed-cli 1.8.x, build profiles are appended to
+# target build directory names in upper case letters.
+# Example:
+# ./BUILD/UBLOX_EVK_ODIN_W2/GCC_ARM/ becomes
+# ./BUILD/UBLOX_EVK_ODIN_W2/GCC_ARM-RELEASE/
+MBED_TOOLCHAIN_EXTENSION=-$(shell basename ${BUILD_PROFILE} .json | awk '{print toupper($$0)}')
+BOOTLDR_TOOLCHAIN_EXTENSION=-$(shell basename ${BOOTLOADER_BUILD_PROFILE} .json | awk '{print toupper($$0)}')
+MBED_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}${MBED_TOOLCHAIN_EXTENSION}
+BOOTLDR_BUILD_DIR:=./BUILD/${MBED_TARGET}/${MBED_TOOLCHAIN}${BOOTLDR_TOOLCHAIN_EXTENSION}
 
 # Maximum size for the bootloader.  Any larger than this and it will
 # overflow into the next partition and potentially overwrite other
@@ -141,7 +150,7 @@ define Build/Bootloader/Compile
 endef
 
 define Build/Bootloader/CheckSize
-	@blsize=$(shell tail -n 1 ${BOOTLDR_DIR}/${MBED_BUILD_DIR}/${BOOTLDR_DIR}_map.csv | awk -F',' '{ print $$NF }'); \
+	@blsize=$(shell tail -n 1 ${BOOTLDR_DIR}/${BOOTLDR_BUILD_DIR}/${BOOTLDR_PROG}_map.csv | awk -F',' '{ print $$NF }'); \
 	max=$(shell printf "%d" ${1}); \
 	if [ "$${blsize}" -gt "$${max}" ]; then \
 		echo "bootloader size $${blsize} is too big.  max=$${max}"; \
@@ -162,7 +171,7 @@ ${PROG_BIN}: prepare ${SRCS} ${HDRS}
 
 ${BOOTLDR_BIN}: prepare
 	@$(call Build/Bootloader/Compile)
-	cp ${BOOTLDR_DIR}/${MBED_BUILD_DIR}/${BOOTLDR_PROG}.bin $@
+	cp ${BOOTLDR_DIR}/${BOOTLDR_BUILD_DIR}/${BOOTLDR_PROG}.bin $@
 
 .PHONY: stats
 stats:

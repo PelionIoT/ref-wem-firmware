@@ -29,7 +29,7 @@ To build this project, you need to install the following:
     sudo apt-get install gcc-arm-embedded
     ```
 
-3. Python 2.7 and pip.
+3. Python 2.7.12+ and pip 9.0.3.
 
     On a Mac, pip and virtualenv are not preinstalled. Here is how to install them:
     
