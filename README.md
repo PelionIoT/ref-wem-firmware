@@ -171,6 +171,8 @@ make distclean
 
 ### Flashing your board
 
+**Important:** Do not remove battery while running this firmware on the device.
+
 **Important:** This version of the workplace environment monitor supports a software-generated Root of Trust mechanism called Software One Time Programming (SOTP). SOTP generates a random private key and stores it on the internal flash. The key is used for secure storage of configuration data related to the Mbed Cloud Client. ***Be aware that flashing your board destroys any previously existing software Root of Trust stored on the internal flash***, which means that your device is no longer able to register with Mbed Cloud. This is true of the current version of DAPLink, version 0246. Look for a future version of DAPLink to support preservation of the SOTP section during a flash.
 
 Until DAPLink is updated, you must execute `reset certs` on the serial command-line interface or perform a factory reset after the flash is complete. You can perform a factory reset by holding down the button next to the power switch while you power on the device and releasing the button when the LCD displays **Factory Reset**. After resetting the certificates, new Mbed Cloud certificates and a new Device ID are generated using a new Root of Trust.
